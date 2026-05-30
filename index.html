@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BFT Portal — Bofram</title>
+  <link rel="stylesheet" href="library/css/bofram-style.css">
+  <style>
+    :root { --shadow-lg: 0 8px 32px rgba(0,0,0,0.14); }
+
+    /* ── Auth-knop in header ── */
+    .bf-auth {
+      display: flex; align-items: center; gap: 10px;
+      font-family: var(--mono); font-size: 11px;
+    }
+    .bf-auth-naam { color: #fff; opacity: 0.85; }
+    .bf-auth-btn {
+      padding: 6px 14px; border-radius: 4px;
+      border: 1.5px solid rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.08);
+      color: #fff; cursor: pointer; font-family: var(--mono);
+      font-size: 11px; font-weight: 600; transition: all 0.15s;
+    }
+    .bf-auth-btn:hover { background: rgba(255,255,255,0.16); border-color: rgba(255,255,255,0.45); }
+    .bf-auth-btn.uitloggen { border-color: rgba(214,48,48,0.4); }
+    .bf-auth-btn.uitloggen:hover { background: rgba(214,48,48,0.2); }
+
+    /* ── Mock banner ── */
+    .mock-banner {
+      background: rgba(26,110,199,0.08);
+      border-bottom: 1px solid rgba(26,110,199,0.2);
+      padding: 9px 32px;
+      font-family: var(--mono); font-size: 11px; color: var(--accent2);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .mock-banner a { color: var(--accent2); text-decoration: underline; cursor: pointer; }
+
+    /* ── Hero ── */
+    .hero {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 28px 32px 24px;
+    }
+    .hero-label {
+      font-family: var(--mono); font-size: 10px; font-weight: 700;
+      color: var(--accent); letter-spacing: 1.5px; text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .hero-title {
+      font-size: 22px; font-weight: 700; color: var(--text);
+      line-height: 1.25; margin-bottom: 6px;
+    }
+    .hero-title em { color: var(--accent-dk); font-style: normal; }
+    .hero-sub { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+    .hero-stats {
+      display: flex; gap: 0; margin-top: 20px;
+      border: 1px solid var(--border2); border-radius: 6px;
+      overflow: hidden; width: fit-content; background: var(--surface);
+    }
+    .hero-stat {
+      padding: 9px 20px; display: flex; flex-direction: column; gap: 2px;
+      border-right: 1px solid var(--border);
+    }
+    .hero-stat:last-child { border-right: none; }
+    .hero-stat-val {
+      font-family: var(--mono); font-size: 16px; font-weight: 700;
+      color: var(--accent-dk);
+    }
+    .hero-stat-lbl {
+      font-family: var(--mono); font-size: 9px; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--muted);
+    }
+
+    /* ── Container ── */
+    .container { max-width: 1140px; margin: 0 auto; padding: 28px 32px 80px; }
+
+    /* ── Featured tool (Projectoverzicht) ── */
+    .featured {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent2);
+      border-radius: 10px;
+      padding: 22px 24px;
+      margin-bottom: 32px;
+      display: flex; align-items: center; gap: 20px;
+      box-shadow: var(--shadow-md);
+      text-decoration: none; color: inherit;
+      transition: box-shadow 0.2s, transform 0.2s;
+      cursor: pointer;
+    }
+    .featured:hover { box-shadow: var(--shadow-lg); transform: translateY(-1px); }
+    .featured-icon {
+      width: 52px; height: 52px; border-radius: 10px; flex-shrink: 0;
+      background: rgba(26,110,199,0.09); border: 1px solid rgba(26,110,199,0.22);
+      display: flex; align-items: center; justify-content: center; font-size: 22px;
+    }
+    .featured-body { flex: 1; }
+    .featured-label {
+      font-family: var(--mono); font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px; color: var(--accent2);
+      margin-bottom: 4px;
+    }
+    .featured-naam { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .featured-desc { font-size: 12px; color: var(--text2); line-height: 1.6; }
+    .featured-arrow { font-size: 20px; color: var(--accent2); }
+
+    /* ── Categorie-header ── */
+    .toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; flex-wrap: wrap; padding: 0 0 10px;
+    }
+    .panel-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--muted); font-family: var(--mono);
+    }
+    .filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
+    .fbtn {
+      font-family: var(--mono); font-size: 10px; font-weight: 600;
+      padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border2);
+      background: var(--surface); color: var(--muted);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .fbtn:hover { border-color: var(--accent); color: var(--accent-dk); }
+    .fbtn.active { background: var(--accent); color: #fff; border-color: var(--accent-dk); }
+
+    .tool-section { margin-bottom: 32px; }
+    .category-header {
+      font-family: var(--mono); font-size: 11px; font-weight: 700;
+      letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted);
+      margin-bottom: 12px; padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .category-header::before {
+      content: ''; width: 3px; height: 14px;
+      background: var(--accent); border-radius: 2px;
+    }
+    .category-count {
+      font-family: var(--mono); font-size: 10px; font-weight: 500;
+      color: var(--muted); margin-left: auto;
+    }
+
+    /* ── Tool grid ── */
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(272px, 1fr));
+      gap: 14px;
+    }
+
+    /* ── Tool kaart ── */
+    .tool-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; box-shadow: var(--shadow);
+      display: flex; flex-direction: column; overflow: hidden;
+      transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+      text-decoration: none; color: inherit; cursor: pointer;
+    }
+    .tool-card:hover {
+      box-shadow: var(--shadow-lg); transform: translateY(-2px);
+      border-color: var(--tc, var(--accent));
+    }
+    .tool-card-top { height: 4px; background: var(--tc, var(--accent)); }
+    .tool-card-body { padding: 18px 18px 14px; flex: 1; }
+    .tool-card-icon {
+      width: 36px; height: 36px; border-radius: 7px; margin-bottom: 12px;
+      display: flex; align-items: center; justify-content: center; font-size: 17px;
+      background: var(--ic-bg, rgba(232,160,0,0.09));
+      border: 1px solid var(--ic-br, rgba(232,160,0,0.22));
+    }
+    .tool-card-name { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 5px; line-height: 1.3; }
+    .tool-card-desc { font-size: 11px; color: var(--text2); line-height: 1.65; }
+    .tool-card-foot {
+      padding: 10px 18px; border-top: 1px solid var(--border);
+      background: var(--surface2);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .tool-tag {
+      font-family: var(--mono); font-size: 9px; font-weight: 700;
+      padding: 3px 7px; border-radius: 3px; letter-spacing: 0.5px;
+      text-transform: uppercase;
+      background: rgba(232,160,0,0.1); color: var(--accent-dk);
+      border: 1px solid rgba(232,160,0,0.22);
+    }
+    .tool-tag.blue   { background: rgba(26,110,199,0.09);  color: #1a6ec7;  border-color: rgba(26,110,199,0.22); }
+    .tool-tag.green  { background: rgba(30,158,94,0.09);   color: #1e9e5e;  border-color: rgba(30,158,94,0.22); }
+    .tool-tag.red    { background: rgba(214,48,48,0.09);   color: #d63030;  border-color: rgba(214,48,48,0.22); }
+    .tool-tag.purple { background: rgba(124,58,237,0.09);  color: #7c3aed;  border-color: rgba(124,58,237,0.22); }
+    .tool-tag.grey   { background: rgba(122,132,154,0.10); color: var(--muted); border-color: var(--border2); }
+    .tool-arrow { font-size: 13px; color: var(--muted); transition: transform 0.18s, color 0.18s; }
+    .tool-card:hover .tool-arrow { transform: translateX(4px); color: var(--tc, var(--accent)); }
+
+    /* ── Binnenkort ── */
+    .tool-card.binnenkort {
+      opacity: 0.5; pointer-events: none;
+    }
+    .tool-card.binnenkort .tool-card-top { background: var(--border2); }
+    .soon-tag {
+      font-family: var(--mono); font-size: 9px; font-weight: 700;
+      padding: 3px 7px; border-radius: 3px;
+      background: var(--bg2); color: var(--muted); border: 1px solid var(--border2);
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+
+    /* ── Live badge ── */
+    .live-dot {
+      display: inline-block; width: 7px; height: 7px;
+      border-radius: 50%; background: var(--success);
+      margin-right: 6px; animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* ── Animaties ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .tool-card { animation: fadeUp 0.35s ease both; }
+    .tool-card:nth-child(1) { animation-delay: 0.04s; }
+    .tool-card:nth-child(2) { animation-delay: 0.08s; }
+    .tool-card:nth-child(3) { animation-delay: 0.12s; }
+    .tool-card:nth-child(4) { animation-delay: 0.16s; }
+    .tool-card:nth-child(5) { animation-delay: 0.20s; }
+    .tool-card:nth-child(6) { animation-delay: 0.24s; }
+
+    /* ── Footer ── */
+    .page-footer {
+      border-top: 1px solid var(--border); padding: 16px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 8px; max-width: 1140px; margin: 0 auto;
+    }
+    .footer-txt { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+
+    @media (max-width: 640px) {
+      .hero { padding: 20px 16px; }
+      .container { padding: 20px 16px 60px; }
+      .featured { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="bf-header">
+  <div class="bf-header-left">
+    <div class="bf-logo"></div>
+    <div class="bf-header-div"></div>
+    <div class="bf-header-title">
+      <h1>BFT Portal</h1>
+      <p>Bofram — Digitale toolset v2</p>
+    </div>
+  </div>
+  <div class="bf-auth" id="authZone">
+    <button class="bf-auth-btn" id="loginBtn" onclick="handleLogin()">Inloggen</button>
+  </div>
+</header>
+
+<!-- Mock-data banner (verbergen zodra Graph API live is) -->
+<div class="mock-banner" id="mockBanner">
+  ⚠ Mock-modus — tools werken met nep-data. Wacht op
+  <a onclick="document.getElementById('mockBanner').style.display='none'">IT App Registration</a>
+  voor live SharePoint-koppeling.
+</div>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-label">BFT Portal — Bofram Techniek B.V.</div>
+  <h2 class="hero-title">Digitale gereedschappen voor<br><em>project- en servicebeheer</em></h2>
+  <p class="hero-sub">SharePoint-gekoppeld · Multi-user · Consistent documentbeheer</p>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <span class="hero-stat-val" id="statLive">3</span>
+      <span class="hero-stat-lbl">Live</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-val" id="statTotal">8</span>
+      <span class="hero-stat-lbl">Tools totaal</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-val">v2</span>
+      <span class="hero-stat-lbl">Versie</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-val">M365</span>
+      <span class="hero-stat-lbl">Backend</span>
+    </div>
+  </div>
+</section>
+
+<!-- Container -->
+<div class="container">
+
+  <!-- Featured: Projectoverzicht -->
+  <a href="tools/BFT_Projectoverzicht.html" class="featured">
+    <div class="featured-icon">📊</div>
+    <div class="featured-body">
+      <div class="featured-label"><span class="live-dot"></span>Live · Start hier</div>
+      <div class="featured-naam">Projectoverzicht</div>
+      <div class="featured-desc">
+        Centraal dashboard met alle projecten. Klik een project aan voor een volledig overzicht
+        van alle tool-data: checklist, IBN, storingen, planning en evaluatie — op één scherm.
+      </div>
+    </div>
+    <div class="featured-arrow">→</div>
+  </a>
+
+  <!-- Toolbar + filters -->
+  <div class="toolbar">
+    <span class="panel-label">Alle tools</span>
+    <div class="filter-row" id="filterRow">
+      <button class="fbtn active" data-filter="all">Alle</button>
+      <button class="fbtn" data-filter="productie">Productie</button>
+      <button class="fbtn" data-filter="service">Service</button>
+      <button class="fbtn" data-filter="planning">Planning</button>
+      <button class="fbtn" data-filter="document">Document</button>
+    </div>
+  </div>
+
+  <!-- ─── Productie & In Bedrijf Name ─── -->
+  <div class="tool-section">
+    <div class="category-header">
+      Productie &amp; In Bedrijf Name
+      <span class="category-count">3 tools</span>
+    </div>
+    <div class="tools-grid">
+
+      <a href="tools/BFT_MachinebouwChecklist.html" class="tool-card" data-tags="productie"
+         style="--tc:#0d7377; --ic-bg:rgba(13,115,119,0.09); --ic-br:rgba(13,115,119,0.25);">
+        <div class="tool-card-top"></div>
+        <div class="tool-card-body">
+          <div class="tool-card-icon">🏭</div>
+          <div class="tool-card-name">MachinebouwChecklist</div>
+          <div class="tool-card-desc">Doorloop alle 10 productiefasen van engineering tot verzending. Audit-stempel per item, notities, PDF-export.</div>
+        </div>
+        <div class="tool-card-foot">
+          <span class="tool-tag" style="background:rgba(13,115,119,0.09);color:#0d7377;border-color:rgba(13,115,119,0.25)"><span class="live-dot"></span>Live</span>
+          <span class="tool-arrow">→</span>
+        </div>
+      </a>
+
+      <a href="#" class="tool-card binnenkort" data-tags="productie"
+         style="--tc:#0d7377;">
+        <div class="tool-card-top"></div>
+        <div class="tool-card-body">
+          <div class="tool-card-icon" style="--ic-bg:rgba(13,115,119,0.09);--ic-br:rgba(13,115,119,0.25);">🔧</div>
+          <div class="tool-card-name">Bouwvolgordelijst</div>
+          <div class="tool-card-desc">Machine-specifieke bouw- en bestelvolgorde. Fasen met referentietabellen voor kabels en hydrauliekslangen.</div>
+        </div>
+        <div class="tool-card-foot">
+          <span class="soon-tag">Binnenkort</span>
+          <span class="tool-arrow">→</span>
+        </div>
+      </a>
+
+      <a href="tools/BFT_IBNTestprotocol.html" class="tool-card" data-tags="productie"
+         style="--tc:#1a6ec7; --ic-bg:rgba(26,110,199,0.09); --ic-br:rgba(26,110,199,0.25);">
+        <div class="tool-card-top"></div>
+        <div class="tool-card-body">
+          <div class="tool-card-icon">✅</div>
+          <div class="tool-card-name">IBN Testprotocol</div>
+          <div class="tool-card-desc">8 fasen van pre-power check tot verzendgereed. Gate GO/NOGO per fase, audit-stempel, PDF-export.</div>
+        </div>
+        <div class="tool-card-foot">
+          <span class="tool-tag blue"><span class="live-dot"></span>Live</span>
+          <span class="tool-arrow">→</span>
+        </div>
+      </a>
+
+    </div>
+  </div>
+
+  <!-- ─── Service & Storingen ─── -->
+  <div class="tool-section">
+    <div class="category-header">
+      Service &amp; Storingen
+      <span class="category-count">1 tool</span>
+    </div>
+    <div class="tools-grid">
+
+      <a href="#" class="tool-card binnenkort" data-tags="service"
+         style="--tc:#d63030;">
+        <div class="tool-card-top"></div>
+        <div class="tool-card-body">
+          <div class="tool-card-icon" style="--ic-bg:rgba(214,48,48,0.09);--ic-br:rgba(214,48,48,0.25);">⚠️</div>
+          <div class="tool-card-name">Storingslog</div>
+          <div class="tool-card-desc">Registreer storingen volledig: identificatie, diagnose, actie en resultaat. Opslaan naar SharePoint, PDF-export.</div>
+        </div>
+        <div class="tool-card-foot">
+          <span class="soon-tag">Binnenkort</span>
+          <span class="tool-arrow">→</span>
+        </div>
+      </a>
+
+    </div>
+  </div>
+
+  <!-- ─── Planning & Beheer ─── -->
+  <div class="tool-section">
+    <div class="category-header">
+      Planning &amp; Beheer
+      <span class="category-count">2 tools</span>
+    </div>
+    <div class="tools-grid">
+
+      <a href="#" class="tool-card binnenkort" data-tags="planning"
+         style="--tc:#e8a000;">
+        <div class="tool-card-top"></div>
+        <div class="tool-card-body">
+          <div class="tool-card-icon" style="--ic-bg:rgba(232,160,0,0.09);--ic-br:rgba(232,160,0,0.25);">📅</div>
+          <div class="tool-card-name">Overall Planning</div>
+          <div class="tool-card-desc">Gantt-grid per project en discipline. Week- en maandweergave, inklapbare rijen. Koppeling met Projectoverzicht.</div>
+        </div>
+        <div class="tool-card-foot">
+          <span class="soon-tag">Binnenkort</span>
+          <span class="tool-arrow">→</span>
+        </div>
+      </a>
+
+      <a href="#" class="tool-card binnenkort" data-tags="planning"
+         style="--tc:#7c3aed;">
+        <div class="tool-card-top"></div>
+        <div class="tool-card-body">
+          <div class="tool-card-icon" style="--ic-bg:rgba(124,58,237,0.09);--ic-br:rgba(124,58,237,0.25);">👷</div>
+          <div class="tool-card-name">Resource Planning</div>
+          <div class="tool-card-desc">Bezettiging per medewerker en discipline per week. Overzicht van beschikbare capaciteit per project.</div>
+        </div>
+        <div class="tool-card-foot">
+          <span class="soon-tag">Binnenkort</span>
+          <span class="tool-arrow">→</span>
+        </div>
+      </a>
+
+    </div>
+  </div>
+
+  <!-- ─── Evaluatie ─── -->
+  <div class="tool-section">
+    <div class="category-header">
+      Evaluatie
+      <span class="category-count">1 tool</span>
+    </div>
+    <div class="tools-grid">
+
+      <a href="#" class="tool-card binnenkort" data-tags="document"
+         style="--tc:#3d4558;">
+        <div class="tool-card-top"></div>
+        <div class="tool-card-body">
+          <div class="tool-card-icon" style="--ic-bg:rgba(61,69,88,0.09);--ic-br:rgba(61,69,88,0.25);">📝</div>
+          <div class="tool-card-name">Projectevaluatie</div>
+          <div class="tool-card-desc">Stap-voor-stap evaluatieformulier na oplevering. Schaalscores en opmerkingen per categorie, opgeslagen in SharePoint.</div>
+        </div>
+        <div class="tool-card-foot">
+          <span class="soon-tag">Binnenkort</span>
+          <span class="tool-arrow">→</span>
+        </div>
+      </a>
+
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<!-- Footer -->
+<div class="page-footer">
+  <span class="footer-txt">Bofram Techniek B.V. — BFT Portal v2</span>
+  <span class="footer-txt" id="footerDatum"></span>
+</div>
+
+<!-- MSAL CDN — geladen maar inactief tot Tenant ID / Client ID zijn ingevuld -->
+<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+<script src="library/js/bft-auth.js" defer></script>
+
+<script>
+/* ── Auth UI ── */
+async function handleLogin() {
+  if (!window.BFTAuth || !BFTAuth.isConfigured()) {
+    alert('Inloggen is nog niet beschikbaar.\nWacht op de IT App Registration (Tenant ID + Client ID).');
+    return;
+  }
+  try {
+    await BFTAuth.login();
+    updateAuthUI();
+  } catch(e) {
+    console.error('Login mislukt:', e);
+  }
+}
+
+async function handleLogout() {
+  if (!window.BFTAuth) return;
+  await BFTAuth.logout();
+  updateAuthUI();
+}
+
+function updateAuthUI() {
+  if (!window.BFTAuth) return;
+  const zone = document.getElementById('authZone');
+  const user  = BFTAuth.getUser();
+  if (user) {
+    zone.innerHTML = `
+      <span class="bf-auth-naam">${user.naam}</span>
+      <button class="bf-auth-btn uitloggen" onclick="handleLogout()">Uitloggen</button>
+    `;
+  } else {
+    zone.innerHTML = `<button class="bf-auth-btn" onclick="handleLogin()">Inloggen</button>`;
+  }
+}
+
+/* ── Filter ── */
+document.getElementById('filterRow').addEventListener('click', function(e) {
+  const btn = e.target.closest('.fbtn');
+  if (!btn) return;
+  document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const filter = btn.dataset.filter;
+  document.querySelectorAll('.tool-card').forEach(card => {
+    if (filter === 'all') {
+      card.style.display = '';
+    } else {
+      const tags = (card.dataset.tags || '').split(' ');
+      card.style.display = tags.includes(filter) ? '' : 'none';
+    }
+  });
+});
+
+/* ── Footer datum ── */
+document.getElementById('footerDatum').textContent =
+  new Date().toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
+
+/* ── Init auth indien geconfigureerd ── */
+window.addEventListener('load', async () => {
+  if (window.BFTAuth && BFTAuth.isConfigured()) {
+    await BFTAuth.init();
+    updateAuthUI();
+    document.getElementById('mockBanner').style.display = 'none';
+  }
+});
+</script>
+
+</body>
+</html>

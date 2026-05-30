@@ -1,0 +1,370 @@
+/*
+ * ============================================================
+ *  BOFRAM HUISSTIJL — bofram-style.css
+ *  Gebruik: <link rel="stylesheet" href="bofram-style.css">
+ *  Of upload dit bestand in een nieuwe chat met de instructie:
+ *  "Gebruik de Bofram huisstijl uit dit CSS-bestand"
+ * ============================================================
+ */
+
+/* ── Google Fonts ── */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+
+/* ── Design tokens ── */
+:root {
+  /* Kleuren */
+  --bg:        #f4f5f7;
+  --bg2:       #eef0f3;
+  --surface:   #ffffff;
+  --surface2:  #f8f9fa;
+  --border:    #dde1e8;
+  --border2:   #c8cdd8;
+  --accent:    #e8a000;        /* Bofram geel */
+  --accent-dk: #b87a00;        /* Donker geel (hover/tekst) */
+  --accent2:   #1a6ec7;        /* Blauw accent */
+  --success:   #1e9e5e;
+  --danger:    #d63030;
+  --warn:      #d08000;
+  --text:      #1a1f2e;        /* Primaire tekst */
+  --text2:     #3d4558;        /* Secundaire tekst */
+  --muted:     #7a849a;        /* Plaatshouder / label */
+
+  /* Typografie */
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+
+  /* Schaduwen */
+  --shadow:    0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.10);
+
+  /* Logo als data-URI (geen extern bestand nodig) */
+  --logo-url: url('data:image/png;base64,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');
+}
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Body ── */
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+}
+
+/* Subtiele diagonale streepjes achtergrond */
+body::before {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image: repeating-linear-gradient(
+    -45deg, transparent, transparent 60px,
+    rgba(0,0,0,0.012) 60px, rgba(0,0,0,0.012) 61px
+  );
+}
+
+/* ── Header ── */
+.bf-header {
+  position: sticky; top: 0; z-index: 100;
+  background: #000000;
+  border-bottom: 3px solid var(--accent);
+  box-shadow: var(--shadow-md);
+  padding: 0 32px; height: 64px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.bf-header-left  { display: flex; align-items: center; gap: 20px; }
+/* Logo — DE STANDAARDAFMETING voor alle BFT-tools (38px hoog x 110px breed).
+   Werkt op een leeg <div class="bf-logo"></div> via background-image.
+   Legacy <img class="bf-logo" src="..."> blijft werken via object-fit/width:auto. */
+.bf-logo {
+  display: inline-block;
+  height: 38px;
+  width: 110px;
+  background-image: var(--logo-url);
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: contain;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.bf-header-div   { width: 1px; height: 30px; background: rgba(255,255,255,0.15); }
+.bf-header-title h1 { font-size: 15px; font-weight: 600; color: #fff; }
+.bf-header-title p  { font-size: 11px; color: rgba(255,255,255,0.4); font-family: var(--mono); margin-top: 2px; }
+.bf-badge {
+  font-family: var(--mono); font-size: 12px; font-weight: 600;
+  color: var(--accent); background: rgba(232,160,0,0.15);
+  border: 1px solid rgba(232,160,0,0.4); padding: 5px 14px; border-radius: 4px;
+}
+
+/* ── Containers ── */
+.bf-container { max-width: 980px; margin: 0 auto; padding: 28px 24px 80px; position: relative; z-index: 1; }
+.bf-container-wide { max-width: 1280px; margin: 0 auto; padding: 28px 24px 80px; position: relative; z-index: 1; }
+
+/* ── Sectie-kaarten ── */
+.bf-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; margin-bottom: 12px; overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.bf-card:focus-within { border-color: rgba(26,110,199,0.4); }
+
+.bf-card-head {
+  padding: 13px 18px; background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+  cursor: pointer; user-select: none;
+}
+.bf-card-head:hover { background: var(--bg2); }
+
+.bf-card-num {
+  width: 24px; height: 24px; border-radius: 4px;
+  background: var(--accent); color: #fff;
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.bf-card-num.done { background: var(--success); }
+.bf-card-label { font-size: 12px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text2); }
+.bf-card-sub   { font-size: 10px; color: var(--muted); font-family: var(--mono); margin-left: auto; }
+.bf-card-chev  { color: var(--muted); font-size: 11px; margin-left: 6px; transition: transform 0.2s; }
+.bf-card.collapsed .bf-card-chev { transform: rotate(-90deg); }
+.bf-card.collapsed .bf-card-body { display: none; }
+.bf-card-body { padding: 18px; }
+
+/* ── Formulier grid ── */
+.bf-grid   { display: grid; gap: 13px; }
+.bf-grid-2 { grid-template-columns: 1fr 1fr; }
+.bf-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+@media (max-width: 640px) { .bf-grid-2, .bf-grid-3 { grid-template-columns: 1fr; } }
+
+/* ── Velden ── */
+.bf-field { display: flex; flex-direction: column; gap: 5px; }
+.bf-field label {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.9px;
+  text-transform: uppercase; color: var(--muted); font-family: var(--mono);
+}
+.bf-field label .req { color: var(--danger); }
+
+input, select, textarea {
+  background: #fff; border: 1.5px solid var(--border);
+  border-radius: 5px; color: var(--text);
+  font-family: var(--sans); font-size: 13px;
+  padding: 9px 11px; outline: none; width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent2);
+  box-shadow: 0 0 0 3px rgba(26,110,199,0.12);
+}
+textarea { resize: vertical; min-height: 78px; line-height: 1.55; }
+select option { background: #fff; }
+
+/* ── Knoppen ── */
+.bf-btn { padding: 11px 22px; border-radius: 6px; font-family: var(--mono); font-size: 12px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+.bf-btn-ghost   { background: #fff; color: var(--text2); border: 1.5px solid var(--border); }
+.bf-btn-ghost:hover { border-color: var(--text2); }
+.bf-btn-sec     { background: rgba(26,110,199,0.08); color: var(--accent2); border: 1.5px solid rgba(26,110,199,0.3); }
+.bf-btn-sec:hover { background: rgba(26,110,199,0.14); }
+.bf-btn-primary { background: var(--accent); color: #fff; }
+.bf-btn-primary:hover { background: var(--accent-dk); box-shadow: 0 4px 14px rgba(232,160,0,0.35); }
+.bf-btn-danger  { background: rgba(214,48,48,0.08); color: var(--danger); border: 1.5px solid rgba(214,48,48,0.3); }
+
+/* ── Tags (klikbare pills) ── */
+.bf-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.bf-tag {
+  padding: 5px 11px; border-radius: 20px;
+  border: 1.5px solid var(--border); background: #fff;
+  color: var(--muted); font-size: 11px; font-family: var(--mono);
+  cursor: pointer; transition: all 0.13s; user-select: none;
+}
+.bf-tag:hover  { border-color: var(--accent); color: var(--accent-dk); }
+.bf-tag.on     { background: rgba(232,160,0,0.10); border-color: var(--accent); color: var(--accent-dk); font-weight: 500; }
+.bf-tag.on-blauw { background: rgba(26,110,199,0.08); border-color: var(--accent2); color: var(--accent2); font-weight: 500; }
+.bf-tag.on-rood  { background: rgba(214,48,48,0.08); border-color: var(--danger); color: var(--danger); font-weight: 500; }
+
+/* ── Status-rij knoppen (Ja/Nee/Misschien e.d.) ── */
+.bf-statusrow { display: flex; gap: 7px; }
+.bf-sbtn {
+  flex: 1; padding: 9px 6px; border-radius: 5px;
+  border: 1.5px solid var(--border); background: #fff;
+  color: var(--muted); font-family: var(--mono); font-size: 11px; font-weight: 500;
+  cursor: pointer; transition: all 0.13s; text-align: center;
+}
+.bf-sbtn:hover { border-color: var(--text2); color: var(--text2); }
+.bf-sbtn.groen  { background: rgba(30,158,94,0.08); border-color: var(--success); color: var(--success); }
+.bf-sbtn.oranje { background: rgba(232,160,0,0.10); border-color: var(--accent);  color: var(--accent-dk); }
+.bf-sbtn.rood   { background: rgba(214,48,48,0.08); border-color: var(--danger);  color: var(--danger); }
+
+/* ── Tabel ── */
+.bf-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.bf-table thead { background: var(--surface2); }
+.bf-table th {
+  padding: 10px 12px; text-align: left;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
+  text-transform: uppercase; color: var(--muted); font-family: var(--mono);
+  border-bottom: 1px solid var(--border);
+}
+.bf-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text2); }
+.bf-table tbody tr:hover { background: var(--bg2); }
+.bf-table tbody tr:last-child td { border-bottom: none; }
+
+/* ── Dividers / pills ── */
+.bf-sep  { height: 1px; background: var(--border); margin: 14px 0; }
+.bf-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(26,110,199,0.08); border: 1px solid rgba(26,110,199,0.2);
+  color: var(--accent2); font-size: 10px; font-family: var(--mono);
+  padding: 3px 9px; border-radius: 20px; margin-bottom: 11px;
+}
+.bf-pill.geel {
+  background: rgba(232,160,0,0.08); border-color: rgba(232,160,0,0.25);
+  color: var(--accent-dk);
+}
+.bf-pill.groen {
+  background: rgba(30,158,94,0.08); border-color: rgba(30,158,94,0.25);
+  color: var(--success);
+}
+
+/* ── Sectie-label (paneel-divider) ── */
+.bf-plabel {
+  font-size: 10px; font-family: var(--mono); font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted);
+  margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+}
+.bf-plabel::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ── Twee-kolom layout (links invoer, rechts resultaat) ── */
+.bf-layout       { display: grid; grid-template-columns: 400px 1fr; min-height: calc(100vh - 64px); }
+.bf-panel-left   { border-right: 1px solid var(--border); padding: 24px 20px; overflow-y: auto; background: var(--bg2); }
+.bf-panel-right  { padding: 24px; overflow-y: auto; background: var(--bg); }
+@media (max-width: 860px) { .bf-layout { grid-template-columns: 1fr; } }
+
+/* ── Resultaat-kaart (rechter paneel) ── */
+.bf-rcard { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 12px; overflow: hidden; box-shadow: var(--shadow); }
+.bf-rcard-head {
+  padding: 11px 15px; background: var(--surface2); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 9px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase;
+  color: var(--text2); font-family: var(--mono);
+}
+.bf-rbadge { padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 700; margin-left: auto; }
+.bf-rbadge.groen  { background: rgba(30,158,94,0.12); color: var(--success); }
+.bf-rbadge.blauw  { background: rgba(26,110,199,0.12); color: var(--accent2); }
+.bf-rbadge.oranje { background: rgba(232,160,0,0.12); color: var(--warn); }
+.bf-rbadge.rood   { background: rgba(214,48,48,0.12); color: var(--danger); }
+.bf-rcard-body { padding: 15px; }
+
+/* ── Toast melding ── */
+.bf-toast {
+  position: fixed; bottom: 24px; right: 24px; z-index: 999;
+  background: var(--success); color: #fff;
+  padding: 11px 18px; border-radius: 6px;
+  font-family: var(--mono); font-size: 12px; font-weight: 600;
+  box-shadow: var(--shadow-md);
+  transform: translateY(80px); opacity: 0; transition: all 0.3s;
+}
+.bf-toast.show { transform: translateY(0); opacity: 1; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* ══════════════════════════════════════════════════════
+   CHECKLIST-TOOLS — gedeelde stijlen (BVL / MBCL / IBN)
+   ══════════════════════════════════════════════════════ */
+
+/* ── Sidebar-layout ── */
+.layout{display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - 64px)}
+@media(max-width:860px){.layout{grid-template-columns:1fr}}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:16px 0;position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto}
+.content{padding:24px;max-width:960px}
+.sb-label{font-size:10px;font-family:var(--mono);font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);padding:8px 16px 4px}
+.sb-item{display:flex;align-items:center;gap:9px;padding:7px 16px;cursor:pointer;border-left:2px solid transparent;font-size:12px;color:var(--text2);transition:all .12s}
+.sb-item:hover{background:var(--bg2)}
+.sb-item.active{border-left-color:var(--accent);background:rgba(232,160,0,0.06);color:var(--text);font-weight:500}
+.sb-item.done{color:var(--success)}
+.sb-dot{width:16px;height:16px;border-radius:3px;border:1.5px solid var(--border2);background:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0}
+.sb-item.done .sb-dot{background:var(--success);border-color:var(--success);color:#fff}
+.sb-item.active .sb-dot{border-color:var(--accent)}
+.sb-count{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--muted)}
+
+/* ── Sidebar opleverdatum-banner ── */
+.sb-divider{height:1px;background:var(--border);margin:8px 0}
+.sb-deadline{margin:8px 12px 12px;padding:10px 12px;background:var(--surface2);border-radius:6px;font-family:var(--mono);font-size:11px;color:var(--text2);line-height:1.4}
+.sb-deadline.over{background:rgba(214,48,48,0.07);color:var(--danger);border-left:3px solid var(--danger)}
+.sb-deadline.soon{background:rgba(232,160,0,0.10);color:#7a5a00;border-left:3px solid var(--accent)}
+.sb-deadline .sb-dl-big{display:block;font-size:14px;font-weight:700;margin-bottom:2px;color:var(--text);font-family:var(--sans)}
+.sb-deadline.over .sb-dl-big,.sb-deadline.soon .sb-dl-big{color:inherit}
+.sb-deadline .sb-dl-date{font-size:10px;color:var(--muted)}
+.sb-deadline.over .sb-dl-date,.sb-deadline.soon .sb-dl-date{color:inherit;opacity:.85}
+
+/* ── Fase-secties ── */
+.fase-section{margin-bottom:20px;scroll-margin-top:80px}
+.fase-head{background:var(--surface);border:1px solid var(--border);border-radius:8px 8px 0 0;padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);box-shadow:var(--shadow)}
+.fase-num{width:26px;height:26px;border-radius:5px;background:var(--accent);color:#fff;font-family:var(--mono);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.fase-num.done{background:var(--success)}
+.fase-title{font-size:13px;font-weight:600;color:var(--text)}
+.fase-progress{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--muted)}
+
+/* ── Check-tabel + rijen ── */
+.check-table{background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;overflow:hidden;margin-bottom:4px}
+.check-table-head{display:grid;grid-template-columns:1fr 40px 80px 80px;padding:7px 16px;background:var(--surface2);font-size:10px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border)}
+.check-row{display:grid;grid-template-columns:1fr 40px 80px 80px;padding:10px 16px;border-bottom:1px solid var(--border);align-items:center;transition:background .1s}
+.check-row:last-child{border-bottom:none}
+.check-row:hover{background:rgba(232,160,0,0.02)}
+.check-row.is-done{background:rgba(30,158,94,0.13)}
+.check-row.is-nvt{background:rgba(0,0,0,0.045)}
+.item-desc{font-size:13px;color:var(--text);line-height:1.4}
+.item-desc small{display:block;font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+.gedaan-stamp{display:none;font-size:10px;font-family:var(--mono);color:var(--success);margin-top:3px}
+.check-row.is-done .gedaan-stamp{display:block}
+
+/* ── Note-knoppen + rijen ── */
+.note-btn{width:30px;height:30px;border:1px solid var(--border2);background:transparent;border-radius:5px;cursor:pointer;color:var(--muted);font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .12s;padding:0;line-height:1}
+.note-btn:hover{background:var(--bg2);border-color:var(--accent);color:var(--text)}
+.note-btn.has-note{background:rgba(232,160,0,0.14);border-color:#e8a000;color:#7a5a00}
+.note-row{display:none;padding:0 16px 12px 16px;border-bottom:1px solid var(--border);background:rgba(232,160,0,0.03)}
+.note-row.open{display:block}
+.note-row label{display:block;font-size:10px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:0 0 5px}
+.note-row textarea{width:100%;min-height:54px;padding:8px 10px;border:1px solid var(--border2);border-radius:5px;font-size:12px;font-family:var(--sans);resize:vertical;box-sizing:border-box;line-height:1.4}
+.note-row textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(232,160,0,0.15)}
+
+/* ── Afvink-knoppen ── */
+.check-controls{display:flex;justify-content:center}
+.chk{width:26px;height:26px;border-radius:4px;border:1.5px solid var(--border2);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .12s;user-select:none}
+.chk:hover{border-color:var(--accent);background:rgba(232,160,0,0.08)}
+.chk.ok{background:var(--success);border-color:var(--success);color:#fff}
+.chk.ok::after{content:"\2713";font-weight:700}
+.chk.nvt{background:#c8c8c8;border-color:#999;color:#555}
+.chk.nvt::after{content:"\2014";font-family:var(--mono);font-size:11px;font-weight:700}
+
+/* ── Voortgangsring (header) ── */
+.prog-ring{position:relative;width:42px;height:42px}
+.prog-ring svg{transform:rotate(-90deg)}
+.prog-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;color:var(--accent);font-weight:600}
+
+/* ── Waarschuwingsbanner ── */
+.warn-banner{background:rgba(214,48,48,0.07);border:1px solid rgba(214,48,48,0.25);border-left:3px solid var(--danger);border-radius:4px;padding:11px 15px;margin-bottom:16px;font-size:12px;color:var(--danger);font-family:var(--mono);display:none}
+.warn-banner.show{display:block}
+
+/* ── Voetbalk ── */
+.footer-bar{position:sticky;bottom:0;z-index:50;background:var(--surface);border-top:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;gap:14px;box-shadow:0 -2px 8px rgba(0,0,0,0.06)}
+.footer-status{font-size:11px;font-family:var(--mono);color:var(--muted);flex:1}
+
+/* ── Monteur twee-staat indicator ── */
+.monteur-bar{grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:12px 14px;border-top:1px solid var(--border);margin-top:4px;border-radius:0 0 8px 8px;transition:background .25s,border-top-color .25s}
+.monteur-bar.is-empty{background:rgba(232,160,0,0.10);border-top-color:#e8a000;animation:monteur-pulse 2.2s ease-in-out infinite}
+.monteur-bar.is-filled{background:rgba(30,158,94,0.07);border-top-color:var(--success)}
+@keyframes monteur-pulse{0%,100%{box-shadow:0 0 0 0 rgba(232,160,0,0)}50%{box-shadow:0 0 0 3px rgba(232,160,0,0.28)}}
+.monteur-bar label{font-size:11px;font-family:var(--mono);font-weight:700;white-space:nowrap;text-transform:uppercase;letter-spacing:.06em;transition:color .2s}
+.monteur-bar.is-empty label{color:#b07000}
+.monteur-bar.is-filled label{color:var(--success)}
+.monteur-bar input{flex:1;max-width:260px}
+.monteur-chip{display:inline-flex;align-items:center;gap:7px;background:var(--success);color:#fff;border-radius:20px;padding:4px 10px 4px 4px;font-size:12px;font-family:var(--mono);font-weight:600;white-space:nowrap}
+.monteur-chip .chip-initials{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.monteur-warn{font-size:11px;font-family:var(--mono);color:#b07000;font-weight:500}
+.header-monteur{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.12);border-radius:12px;padding:3px 9px 3px 3px;font-size:11px;font-family:var(--mono);color:#fff;white-space:nowrap;margin-right:4px}
+.header-monteur .hm-ini{width:20px;height:20px;border-radius:50%;background:#e8a000;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#000;flex-shrink:0}
+.header-monteur.hidden{display:none!important}
+
+/* ── Popup-formaat override (library default 1100×520 → 800×380) ── */
+.bft-dlg-modal,.bft-wiz-modal,.bft-audit-modal,.bft-dl-modal{max-width:800px!important;min-height:380px!important}

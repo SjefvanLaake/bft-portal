@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BFT — Projectoverzicht</title>
+  <link rel="stylesheet" href="../library/css/bofram-style.css">
+  <script src="../library/js/bft-projects.js"></script>
+  <style>
+    /* ── Split-view layout ── */
+    .po-shell {
+      display: flex;
+      height: calc(100vh - 64px);
+      overflow: hidden;
+    }
+
+    /* ── Linker kolom: projectenlijst ── */
+    .po-list {
+      width: 320px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .po-list-head {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .po-search {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1.5px solid var(--border);
+      border-radius: 5px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text);
+      background: #fff;
+      outline: none;
+    }
+    .po-search:focus { border-color: var(--accent2); }
+    .po-filter-row {
+      display: flex;
+      gap: 6px;
+    }
+    .po-filter {
+      flex: 1;
+      padding: 6px 8px;
+      border: 1.5px solid var(--border);
+      border-radius: 5px;
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text);
+      background: #fff;
+      cursor: pointer;
+    }
+    .po-list-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    /* ── Projectkaart (compact, lijstformaat) ── */
+    .po-card {
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 6px;
+      margin-bottom: 6px;
+      cursor: pointer;
+      background: #fff;
+      transition: all 0.12s;
+    }
+    .po-card:hover { box-shadow: var(--shadow); border-left-color: var(--accent-dk); }
+    .po-card.active {
+      background: rgba(232,160,0,0.07);
+      border-left-color: var(--accent-dk);
+      border-color: var(--accent);
+    }
+    .po-card.s-klaar { border-left-color: var(--success); }
+    .po-card.s-klaar.active { background: rgba(30,158,94,0.06); border-color: var(--success); }
+    .po-card.s-wacht { border-left-color: var(--muted); }
+    .po-card-nr {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+    .po-card-naam {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.3;
+      margin-bottom: 3px;
+    }
+    .po-card-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .po-card-klant {
+      font-size: 10px;
+      font-family: var(--mono);
+      color: var(--muted);
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .po-status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .po-status-dot.actief { background: var(--accent); }
+    .po-status-dot.klaar  { background: var(--success); }
+    .po-status-dot.wacht  { background: var(--muted); }
+    .po-card-pct {
+      font-size: 10px;
+      font-family: var(--mono);
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    /* ── Rechter kolom: detail panel ── */
+    .po-detail {
+      flex: 1;
+      overflow-y: auto;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+    }
+    .po-empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      gap: 12px;
+    }
+    .po-empty-icon { font-size: 40px; opacity: 0.3; }
+
+    /* ── Detail header ── */
+    .po-det-head {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 24px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .po-det-nr {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    .po-det-naam {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .po-det-meta-row {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .po-det-meta-item {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .po-det-meta-item strong {
+      color: var(--text2);
+      font-weight: 600;
+    }
+    .po-det-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .po-det-badge.actief { background: rgba(232,160,0,0.12); color: var(--accent-dk); }
+    .po-det-badge.klaar  { background: rgba(30,158,94,0.10); color: var(--success); }
+    .po-det-badge.wacht  { background: var(--bg2); color: var(--muted); }
+
+    /* ── Totaal voortgangsbalk ── */
+    .po-det-prog {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .po-det-prog-bar {
+      flex: 1;
+      height: 8px;
+      background: var(--bg2);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .po-det-prog-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: var(--accent);
+      transition: width 0.5s ease;
+    }
+    .po-det-prog-fill.done { background: var(--success); }
+    .po-det-prog-pct {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent-dk);
+      min-width: 36px;
+    }
+    .po-det-prog-pct.done { color: var(--success); }
+
+    /* ── Tool-secties ── */
+    .po-det-body { padding: 16px 24px; display: flex; flex-direction: column; gap: 10px; }
+
+    .po-tool-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .po-tool-head {
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.12s;
+    }
+    .po-tool-head:hover { background: var(--surface2); }
+    .po-tool-icon {
+      width: 28px; height: 28px;
+      border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px;
+      flex-shrink: 0;
+      background: var(--bg2);
+    }
+    .po-tool-label {
+      flex: 1;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text2);
+      font-family: var(--mono);
+    }
+    .po-tool-pct-bar {
+      width: 80px;
+      height: 5px;
+      background: var(--bg2);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .po-tool-pct-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.4s;
+    }
+    .po-tool-badge {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .po-tool-badge.open  { background: var(--bg2); color: var(--muted); }
+    .po-tool-badge.bezig { background: rgba(232,160,0,0.12); color: var(--accent-dk); }
+    .po-tool-badge.klaar { background: rgba(30,158,94,0.10); color: var(--success); }
+    .po-tool-chev { font-size: 10px; color: var(--muted); transition: transform 0.2s; }
+    .po-tool-card.collapsed .po-tool-chev { transform: rotate(-90deg); }
+    .po-tool-card.collapsed .po-tool-body { display: none; }
+
+    .po-tool-body {
+      border-top: 1px solid var(--border);
+      padding: 14px 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .po-kv { display: flex; flex-direction: column; gap: 2px; }
+    .po-kv-label {
+      font-family: var(--mono);
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+    }
+    .po-kv-val {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .po-kv-val.muted { color: var(--muted); font-weight: 400; font-style: italic; }
+
+    /* ── MOCK-banner ── */
+    .mock-banner {
+      background: rgba(26,110,199,0.08);
+      border: 1px solid rgba(26,110,199,0.25);
+      border-radius: 5px;
+      padding: 8px 14px;
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--accent2);
+      margin: 12px 24px 0;
+    }
+
+    /* ── Lege lijst ── */
+    .po-list-empty {
+      padding: 24px 16px;
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 700px) {
+      .po-shell { flex-direction: column; height: auto; }
+      .po-list { width: 100%; height: 260px; border-right: none; border-bottom: 1px solid var(--border); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="bf-header">
+  <div class="bf-header-left">
+    <a href="../index.html" title="Terug naar portaal"
+       style="color:rgba(255,255,255,0.55);font-family:var(--mono);font-size:11px;text-decoration:none;display:flex;align-items:center;gap:4px;flex-shrink:0">
+      ← Portaal
+    </a>
+    <div class="bf-logo"></div>
+    <div class="bf-header-div"></div>
+    <div class="bf-header-title">
+      <h1>Projectoverzicht</h1>
+      <p>BFT Dashboard · alle projecten</p>
+    </div>
+  </div>
+  <span class="bf-badge" id="hdrBadge">—</span>
+</div>
+
+<!-- Split-view shell -->
+<div class="po-shell">
+
+  <!-- Linker kolom -->
+  <div class="po-list">
+    <div class="po-list-head">
+      <input class="po-search" id="zoek" type="text" placeholder="Zoek project, klant, nummer…" oninput="renderLijst()">
+      <div class="po-filter-row">
+        <select class="po-filter" id="filtStatus" onchange="renderLijst()">
+          <option value="">Alle statussen</option>
+          <option value="actief">Actief</option>
+          <option value="klaar">Klaar</option>
+          <option value="wacht">In wacht</option>
+        </select>
+        <select class="po-filter" id="filtSort" onchange="renderLijst()">
+          <option value="nieuw">Nieuwste eerst</option>
+          <option value="naam">Op naam</option>
+          <option value="oplevering">Op oplevering</option>
+        </select>
+      </div>
+    </div>
+    <div class="po-list-scroll" id="lijstContainer"></div>
+  </div>
+
+  <!-- Rechter kolom -->
+  <div class="po-detail" id="detailPanel">
+    <div class="po-empty" id="emptyState">
+      <div class="po-empty-icon">📋</div>
+      <div>Selecteer een project</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ================================================================
+   PROJECTEN — uit bft-projects.js, tools uit localStorage-snapshots
+   ================================================================ */
+
+/* Leest tool-voortgang uit snapshots geschreven door MBCL en IBN */
+function getToolSnapshot(projectId) {
+  const proj = BFT_PROJECTEN.find(p => p.id === projectId) || {};
+  const def = {
+    mbcl:        { pct: 0, status: 'open', openItems: '—', oplevering: proj.oplevering || null },
+    ibn:         { pct: 0, status: 'open', droog: 0, nat: 0 },
+    storingslog: { count: 0, openCount: 0, lastDate: null },
+    bouwvolgorde:{ pct: 0, status: 'open', fase: '—' },
+    planning:    { startWeek: null, eindWeek: null, jaar: new Date().getFullYear() },
+    resource:    { uren: 0, disciplines: [] },
+    evaluatie:   { score: null, status: 'open' }
+  };
+  try {
+    const snap = JSON.parse(localStorage.getItem('bft_v2_snap_mbcl_' + projectId));
+    if (snap) def.mbcl = {
+      pct: snap.pct || 0,
+      status: snap.pct >= 100 ? 'klaar' : snap.pct > 0 ? 'bezig' : 'open',
+      openItems: snap.openItems ?? '—',
+      oplevering: proj.oplevering || null
+    };
+  } catch(e) {}
+  try {
+    const snap = JSON.parse(localStorage.getItem('bft_v2_snap_ibn_' + projectId));
+    if (snap) def.ibn = {
+      pct: snap.pct || 0,
+      status: snap.pct >= 100 ? 'klaar' : snap.pct > 0 ? 'bezig' : 'open',
+      droog: 0, nat: 0
+    };
+  } catch(e) {}
+  return def;
+}
+
+/* Bouw werkarray met live tool-data */
+const PROJECTEN = BFT_PROJECTEN.map(p => ({ ...p, tools: getToolSnapshot(p.id) }));
+
+/* ================================================================
+   STATE
+   ================================================================ */
+let actief = null;
+
+/* ================================================================
+   HULPFUNCTIES
+   ================================================================ */
+function totaalPct(tools) {
+  const waarden = [tools.mbcl?.pct, tools.ibn?.pct, tools.bouwvolgorde?.pct]
+    .filter(v => v !== undefined && v !== null);
+  if (!waarden.length) return 0;
+  return Math.round(waarden.reduce((a, b) => a + b, 0) / waarden.length);
+}
+
+function fmtDatum(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function fmtOplevering(iso) {
+  if (!iso) return { label: '—', cls: '' };
+  const d = new Date(iso);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const dagen = Math.round((d - today) / 86400000);
+  const label = fmtDatum(iso);
+  if (dagen < 0)  return { label: label + ` (${Math.abs(dagen)}d te laat)`, cls: 'color:var(--danger);font-weight:600' };
+  if (dagen <= 14) return { label: label + ` (${dagen}d)`, cls: 'color:var(--warn);font-weight:600' };
+  return { label, cls: '' };
+}
+
+function toolKleur(pct) {
+  if (pct >= 100) return 'var(--success)';
+  if (pct > 0)    return 'var(--accent)';
+  return 'var(--border2)';
+}
+
+/* ================================================================
+   LIJST RENDEREN
+   ================================================================ */
+function renderLijst() {
+  const q      = document.getElementById('zoek').value.toLowerCase();
+  const status = document.getElementById('filtStatus').value;
+  const sort   = document.getElementById('filtSort').value;
+
+  let lijst = PROJECTEN.filter(p => {
+    if (status && p.status !== status) return false;
+    if (q && !`${p.projectnr} ${p.naam} ${p.klant}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  if (sort === 'naam') lijst.sort((a,b) => a.naam.localeCompare(b.naam));
+  else if (sort === 'oplevering') lijst.sort((a,b) => (a.oplevering||'').localeCompare(b.oplevering||''));
+  else lijst.sort((a,b) => b.aangemaakt.localeCompare(a.aangemaakt));
+
+  const el = document.getElementById('lijstContainer');
+
+  if (!lijst.length) {
+    el.innerHTML = '<div class="po-list-empty">Geen projecten gevonden</div>';
+    document.getElementById('hdrBadge').textContent = '0 projecten';
+    return;
+  }
+
+  document.getElementById('hdrBadge').textContent = `${lijst.length} project${lijst.length !== 1 ? 'en' : ''}`;
+
+  el.innerHTML = lijst.map(p => {
+    const pct = totaalPct(p.tools);
+    const isActief = actief?.id === p.id;
+    return `
+      <div class="po-card s-${p.status} ${isActief ? 'active' : ''}" onclick="selecteer('${p.id}')">
+        <div class="po-card-nr">${p.projectnr} · ${p.machineType}</div>
+        <div class="po-card-naam">${p.naam}</div>
+        <div class="po-card-meta">
+          <span class="po-status-dot ${p.status}"></span>
+          <span class="po-card-klant">${p.klant}</span>
+          <span class="po-card-pct">${pct}%</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ================================================================
+   PROJECT SELECTEREN → DETAIL PANEL
+   ================================================================ */
+function selecteer(id) {
+  const proj = PROJECTEN.find(p => p.id === id);
+  if (!proj) return;
+  /* Ververs tool-snapshots op het moment van klikken */
+  proj.tools = getToolSnapshot(id);
+  actief = proj;
+  renderLijst();
+  renderDetail();
+}
+
+function renderDetail() {
+  const panel = document.getElementById('detailPanel');
+  if (!actief) {
+    panel.innerHTML = `<div class="po-empty" id="emptyState"><div class="po-empty-icon">📋</div><div>Selecteer een project</div></div>`;
+    return;
+  }
+  const p   = actief;
+  const pct = totaalPct(p.tools);
+  const opl = fmtOplevering(p.oplevering);
+
+  panel.innerHTML = `
+    <div class="mock-banner">⚠ Mock-data — wordt vervangen door SharePoint Graph API na IT App Registration</div>
+
+    <div class="po-det-head">
+      <div class="po-det-nr">${p.projectnr} · ${p.machineType}</div>
+      <div class="po-det-naam">${p.naam}</div>
+      <div class="po-det-meta-row">
+        <span class="po-det-badge ${p.status}">${p.status}</span>
+        <span class="po-det-meta-item"><strong>Klant:</strong> ${p.klant}</span>
+        <span class="po-det-meta-item" style="${opl.cls}"><strong>Oplevering:</strong> ${opl.label}</span>
+        <span class="po-det-meta-item"><strong>Aangemaakt:</strong> ${fmtDatum(p.aangemaakt)}</span>
+      </div>
+      <div class="po-det-prog">
+        <div class="po-det-prog-bar">
+          <div class="po-det-prog-fill ${pct >= 100 ? 'done' : ''}" style="width:${pct}%"></div>
+        </div>
+        <div class="po-det-prog-pct ${pct >= 100 ? 'done' : ''}">${pct}%</div>
+      </div>
+    </div>
+
+    <div class="po-det-body">
+      ${toolMBCL(p.tools.mbcl)}
+      ${toolIBN(p.tools.ibn)}
+      ${toolBouwvolgorde(p.tools.bouwvolgorde)}
+      ${toolStoringslog(p.tools.storingslog)}
+      ${toolPlanning(p.tools.planning)}
+      ${toolResource(p.tools.resource)}
+      ${toolEvaluatie(p.tools.evaluatie)}
+    </div>
+  `;
+}
+
+/* ================================================================
+   TOOL-SECTIES
+   ================================================================ */
+function toolCard(id, icon, label, pct, badgeStatus, bodyHTML) {
+  const kleur = toolKleur(pct);
+  return `
+    <div class="po-tool-card" id="tc-${id}">
+      <div class="po-tool-head" onclick="toggleTool('${id}')">
+        <div class="po-tool-icon">${icon}</div>
+        <div class="po-tool-label">${label}</div>
+        <div class="po-tool-pct-bar">
+          <div class="po-tool-pct-fill" style="width:${pct}%;background:${kleur}"></div>
+        </div>
+        <span class="po-tool-badge ${badgeStatus}">${badgeStatus === 'open' ? 'Niet gestart' : badgeStatus === 'bezig' ? `${pct}%` : 'Klaar'}</span>
+        <span class="po-tool-chev">▾</span>
+      </div>
+      <div class="po-tool-body">${bodyHTML}</div>
+    </div>
+  `;
+}
+
+function kv(label, val, muted = false) {
+  return `<div class="po-kv"><div class="po-kv-label">${label}</div><div class="po-kv-val ${muted ? 'muted' : ''}">${val}</div></div>`;
+}
+
+function toolMBCL(d) {
+  const opl = fmtOplevering(d.oplevering);
+  return toolCard('mbcl', '✅', 'MachinebouwChecklist', d.pct, d.status, `
+    ${kv('Voortgang', `${d.pct}%`)}
+    ${kv('Open items', d.openItems > 0 ? `${d.openItems} items` : 'Geen', d.openItems === 0)}
+    ${kv('Opleverdatum', `<span style="${opl.cls}">${opl.label}</span>`)}
+    ${kv('Status', d.status)}
+  `);
+}
+
+function toolIBN(d) {
+  return toolCard('ibn', '🔧', 'IBN Testprotocol', d.pct, d.status, `
+    ${kv('Totaal', `${d.pct}%`)}
+    ${kv('Droog', `${d.droog}%`)}
+    ${kv('Nat', `${d.nat}%`)}
+    ${kv('Status', d.status)}
+  `);
+}
+
+function toolBouwvolgorde(d) {
+  return toolCard('bouwvolgorde', '🏗', 'Bouwvolgordelijst', d.pct, d.status, `
+    ${kv('Voortgang', `${d.pct}%`)}
+    ${kv('Huidige fase', d.fase, !d.fase)}
+    ${kv('Status', d.status)}
+    <div></div>
+  `);
+}
+
+function toolStoringslog(d) {
+  const badge = d.openCount > 0 ? 'bezig' : d.count > 0 ? 'klaar' : 'open';
+  const pct   = d.count > 0 ? (d.openCount === 0 ? 100 : Math.round((1 - d.openCount / d.count) * 100)) : 0;
+  return toolCard('storingslog', '⚠️', 'Storingslog', pct, badge, `
+    ${kv('Totaal meldingen', d.count || '—', !d.count)}
+    ${kv('Open meldingen', d.openCount > 0 ? `${d.openCount}` : '—', !d.openCount)}
+    ${kv('Laatste melding', fmtDatum(d.lastDate), !d.lastDate)}
+    <div></div>
+  `);
+}
+
+function toolPlanning(d) {
+  const badge = d.startWeek ? 'bezig' : 'open';
+  const pct   = d.startWeek ? 50 : 0;
+  return toolCard('planning', '📅', 'Overall Planning', pct, badge, `
+    ${kv('Start', d.startWeek ? `Week ${d.startWeek} · ${d.jaar}` : '—', !d.startWeek)}
+    ${kv('Einde', d.eindWeek ? `Week ${d.eindWeek} · ${d.jaar}` : '—', !d.eindWeek)}
+    <div></div><div></div>
+  `);
+}
+
+function toolResource(d) {
+  const badge = d.uren > 0 ? 'bezig' : 'open';
+  const pct   = d.uren > 0 ? 50 : 0;
+  return toolCard('resource', '👷', 'Resource Planning', pct, badge, `
+    ${kv('Ingepland', d.uren > 0 ? `${d.uren} uur` : '—', !d.uren)}
+    ${kv('Disciplines', d.disciplines?.length ? d.disciplines.join(', ') : '—', !d.disciplines?.length)}
+    <div></div><div></div>
+  `);
+}
+
+function toolEvaluatie(d) {
+  const badge = d.status === 'klaar' ? 'klaar' : 'open';
+  const pct   = d.status === 'klaar' ? 100 : 0;
+  return toolCard('evaluatie', '📊', 'Projectevaluatie', pct, badge, `
+    ${kv('Gemiddelde score', d.score !== null ? `${d.score} / 5` : '—', d.score === null)}
+    ${kv('Status', d.status === 'klaar' ? 'Afgerond' : 'Nog niet ingevuld', d.status !== 'klaar')}
+    <div></div><div></div>
+  `);
+}
+
+/* ================================================================
+   TOOL-SECTIE INKLAPPEN
+   ================================================================ */
+function toggleTool(id) {
+  const card = document.getElementById(`tc-${id}`);
+  if (card) card.classList.toggle('collapsed');
+}
+
+/* ================================================================
+   INIT
+   ================================================================ */
+renderLijst();
+</script>
+
+</body>
+</html>

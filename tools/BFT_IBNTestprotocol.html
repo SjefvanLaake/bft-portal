@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IBN Testprotocol — BFT</title>
+  <link rel="stylesheet" href="../library/css/bofram-style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.min.js"></script>
+  <style>
+    /* ── Fase-navigatie (horizontale tabs) ── */
+    .ibn-phase-nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      overflow-x: auto;
+      scrollbar-width: none;
+      padding: 0 16px;
+      position: sticky;
+      top: 64px;
+      z-index: 50;
+    }
+    .ibn-phase-nav::-webkit-scrollbar { display: none; }
+    .ibn-tab {
+      display: flex; align-items: center; gap: 8px;
+      padding: 13px 16px;
+      border: none; background: none; cursor: pointer;
+      font-family: var(--sans); font-size: 12px; color: var(--muted);
+      border-bottom: 2px solid transparent;
+      white-space: nowrap; transition: all 0.15s;
+    }
+    .ibn-tab:hover { color: var(--text2); }
+    .ibn-tab.actief { color: var(--accent-dk); border-bottom-color: var(--accent); font-weight: 600; }
+    .ibn-tab.klaar  { color: var(--success); }
+    .ibn-tab.klaar.actief { color: var(--success); border-bottom-color: var(--success); }
+    .ibn-tab-dot {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--bg2); border: 1.5px solid var(--border2);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono); font-size: 10px; font-weight: 700;
+      color: var(--muted); flex-shrink: 0; transition: all 0.15s;
+    }
+    .ibn-tab.actief .ibn-tab-dot { background: var(--accent); border-color: var(--accent); color: #000; }
+    .ibn-tab.klaar  .ibn-tab-dot { background: var(--success); border-color: var(--success); color: #fff; font-size: 11px; }
+
+    /* ── Shell ── */
+    .ibn-shell {
+      display: flex;
+      min-height: calc(100vh - 128px);
+    }
+
+    /* ── Sidebar ── */
+    .ibn-sidebar {
+      width: 240px; flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 12px 0;
+      position: sticky;
+      top: 128px;
+      height: calc(100vh - 128px);
+      overflow-y: auto;
+    }
+    .ibn-sb-label {
+      font-family: var(--mono); font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px; color: var(--muted);
+      padding: 6px 16px 4px;
+    }
+    .ibn-sb-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 16px; cursor: pointer;
+      border-left: 2px solid transparent;
+      transition: all 0.1s; font-size: 12px; color: var(--text2);
+    }
+    .ibn-sb-item:hover { background: var(--bg2); }
+    .ibn-sb-item.actief { border-left-color: var(--accent); background: rgba(232,160,0,0.06); color: var(--text); font-weight: 600; }
+    .ibn-sb-item.klaar  { color: var(--success); }
+    .ibn-sb-icon {
+      width: 18px; height: 18px; border-radius: 3px;
+      border: 1.5px solid var(--border2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; color: var(--muted); flex-shrink: 0;
+    }
+    .ibn-sb-item.klaar .ibn-sb-icon { background: var(--success); border-color: var(--success); color: #fff; }
+    .ibn-sb-count { margin-left: auto; font-family: var(--mono); font-size: 10px; color: var(--muted); }
+
+    /* ── Hoofd-content ── */
+    .ibn-main { flex: 1; padding: 24px; max-width: 960px; }
+
+    /* ── Mock-banner ── */
+    .mock-banner {
+      background: rgba(26,110,199,0.08); border: 1px solid rgba(26,110,199,0.2);
+      border-radius: 6px; padding: 8px 14px; margin-bottom: 16px;
+      font-family: var(--mono); font-size: 10px; color: var(--accent2);
+    }
+
+    /* ── Machine-info kaart ── */
+    .ibn-info {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 20px; margin-bottom: 20px;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr));
+      gap: 16px; box-shadow: var(--shadow);
+    }
+    .ibn-info-title {
+      grid-column: 1/-1; font-size: 14px; font-weight: 700; color: var(--text);
+      padding-bottom: 12px; border-bottom: 1px solid var(--border); margin-bottom: 4px;
+    }
+
+    /* ── Sectie-header ── */
+    .ibn-sec { margin-bottom: 24px; scroll-margin-top: 140px; }
+    .ibn-sec-head {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+    }
+    .ibn-sec-id {
+      width: 36px; height: 26px; border-radius: 4px;
+      background: var(--accent); color: #000;
+      font-family: var(--mono); font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .ibn-sec-id.klaar { background: var(--success); color: #fff; }
+    .ibn-sec-titel { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; }
+    .ibn-sec-prog { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+    .ibn-sec-prog.klaar { color: var(--success); font-weight: 700; }
+
+    /* ── Check-tabel (identiek aan MBCL) ── */
+    .ibn-tbl {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; overflow: hidden; box-shadow: var(--shadow);
+    }
+    .ibn-tbl-head {
+      display: grid; grid-template-columns: 1fr 36px 56px 56px;
+      padding: 5px 16px; background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+    }
+    .ibn-tbl-head span {
+      font-family: var(--mono); font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted);
+      text-align: center;
+    }
+    .ibn-tbl-head span:first-child { text-align: left; }
+    .ibn-row {
+      display: grid; grid-template-columns: 1fr 36px 56px 56px;
+      align-items: center; border-bottom: 1px solid var(--border);
+      transition: background 0.1s; min-height: 44px;
+    }
+    .ibn-row:last-child { border-bottom: none; }
+    .ibn-row.is-ok  { background: rgba(30,158,94,0.05); }
+    .ibn-row.is-nvt { background: rgba(122,132,154,0.06); }
+    .ibn-row-content { padding: 9px 8px 9px 16px; min-width: 0; }
+    .ibn-desc { font-size: 12px; color: var(--text); line-height: 1.5; }
+    .ibn-row.is-ok  .ibn-desc { text-decoration: line-through; color: var(--muted); }
+    .ibn-row.is-nvt .ibn-desc { color: var(--muted); font-style: italic; }
+    .ibn-sub  { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 2px; }
+    .ibn-stempel { font-family: var(--mono); font-size: 9px; color: var(--success); margin-top: 3px; display: none; }
+    .ibn-row.is-ok .ibn-stempel { display: block; }
+    .ibn-note-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 36px; height: 100%; min-height: 44px;
+      border: none; background: transparent; cursor: pointer;
+      font-size: 13px; color: var(--muted); transition: all 0.12s;
+    }
+    .ibn-note-btn:hover { color: var(--accent-dk); background: rgba(232,160,0,0.07); }
+    .ibn-note-btn.heeft-note { color: var(--accent-dk); }
+    .ibn-chk-col {
+      display: flex; align-items: center; justify-content: center;
+      height: 100%; min-height: 44px; border-left: 1px solid var(--border);
+    }
+    .ibn-chk {
+      width: 28px; height: 28px; border-radius: 5px;
+      border: 1.5px solid var(--border); background: #fff;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 14px; transition: all 0.12s; user-select: none; color: transparent;
+    }
+    .ibn-chk-ok:hover  { border-color: var(--success); color: var(--success); }
+    .ibn-chk-nvt:hover { border-color: var(--muted); }
+    .ibn-chk-ok.actief  { background: var(--success); border-color: var(--success); color: #fff; }
+    .ibn-chk-nvt.actief { background: var(--muted); border-color: var(--muted); color: #fff; font-size: 14px; font-weight: 700; }
+    .ibn-note-row {
+      max-height: 0; overflow: hidden; transition: max-height 0.2s;
+      padding: 0 16px; background: var(--surface);
+    }
+    .ibn-note-row.open { max-height: 100px; padding: 7px 16px; }
+    .ibn-note-ta {
+      width: 100%; padding: 6px 10px; border: 1.5px solid var(--border);
+      border-radius: 5px; font-family: var(--mono); font-size: 11px;
+      color: var(--text); background: #fff; resize: none; height: 56px; outline: none;
+    }
+    .ibn-note-ta:focus { border-color: var(--accent2); }
+
+    /* ── Gate GO/NOGO ── */
+    .ibn-gate {
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 3px solid var(--accent2); border-radius: 8px;
+      padding: 16px 20px; margin: 20px 0;
+      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    }
+    .ibn-gate.go-gate   { border-left-color: var(--success); background: rgba(30,158,94,0.04); }
+    .ibn-gate.nogo-gate { border-left-color: var(--danger);  background: rgba(214,48,48,0.04); }
+    .ibn-gate-tekst { flex: 1; min-width: 0; }
+    .ibn-gate-label { font-size: 13px; font-weight: 600; color: var(--text); }
+    .ibn-gate-sub   { font-size: 11px; color: var(--muted); margin-top: 2px; font-family: var(--mono); }
+    .ibn-gate-status {
+      font-family: var(--mono); font-size: 12px; font-weight: 700;
+      padding: 4px 12px; border-radius: 4px;
+    }
+    .ibn-gate-status.go   { background: rgba(30,158,94,0.12); color: var(--success); }
+    .ibn-gate-status.nogo { background: rgba(214,48,48,0.10); color: var(--danger); }
+    .btn-go, .btn-nogo {
+      padding: 8px 18px; border-radius: 5px; border: none;
+      font-family: var(--mono); font-size: 11px; font-weight: 700;
+      cursor: pointer; transition: all 0.15s; letter-spacing: 0.4px;
+    }
+    .btn-go   { background: var(--success); color: #fff; }
+    .btn-go:hover   { background: #177a48; }
+    .btn-nogo { background: rgba(214,48,48,0.10); color: var(--danger); border: 1.5px solid rgba(214,48,48,0.3); }
+    .btn-nogo:hover { background: rgba(214,48,48,0.20); }
+
+    /* ── Fase-navigatie onderaan ── */
+    .ibn-fase-nav {
+      display: flex; justify-content: space-between;
+      padding: 16px 0 8px; border-top: 1px solid var(--border); margin-top: 8px;
+    }
+    .btn-fase {
+      display: flex; align-items: center; gap: 8px;
+      padding: 9px 18px; border-radius: 5px;
+      border: 1.5px solid var(--border); background: var(--surface);
+      font-family: var(--mono); font-size: 11px; font-weight: 600;
+      color: var(--text2); cursor: pointer; transition: all 0.15s;
+    }
+    .btn-fase:hover { border-color: var(--accent); color: var(--text); }
+    .btn-fase.primary { background: var(--accent); border-color: var(--accent); color: #000; }
+    .btn-fase.primary:hover { background: var(--accent-dk); border-color: var(--accent-dk); }
+    .btn-fase:disabled { opacity: 0.4; cursor: default; }
+
+    /* ── Fase-header ── */
+    .ibn-fase-hdr {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+    }
+    .ibn-fase-icon {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: rgba(232,160,0,0.1); border: 1px solid rgba(232,160,0,0.25);
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+      flex-shrink: 0;
+    }
+    .ibn-fase-naam { font-size: 16px; font-weight: 700; color: var(--text); }
+    .ibn-fase-sub  { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
+
+    /* ── Progress ring ── */
+    .prog-ring { position: relative; flex-shrink: 0; }
+    .prog-ring svg { display: block; }
+    .prog-pct {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono); font-size: 9px; font-weight: 700; color: #fff;
+    }
+
+    /* ── Footer ── */
+    .ibn-footer {
+      position: fixed; bottom: 0; left: 240px; right: 0;
+      background: var(--surface); border-top: 1px solid var(--border);
+      padding: 10px 24px; display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.06); z-index: 20;
+    }
+    .ibn-footer-status { flex: 1; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+    .save-ind { font-family: var(--mono); font-size: 10px; color: var(--success); opacity: 0; transition: opacity 0.3s; }
+    .save-ind.zichtbaar { opacity: 1; }
+
+    /* ── Samenvatting (Vrijgave-fase) ── */
+    .ibn-summary-grid {
+      display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px;
+    }
+    .ibn-summary-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 14px 16px; text-align: center; box-shadow: var(--shadow);
+    }
+    .ibn-sum-num { font-family: var(--mono); font-size: 28px; font-weight: 700; line-height: 1; }
+    .ibn-sum-lbl { font-size: 11px; color: var(--muted); margin-top: 4px; font-family: var(--mono); }
+    .ibn-sum-tot { color: var(--text); }
+    .ibn-sum-ok  { color: var(--success); }
+    .ibn-sum-nvt { color: var(--muted); }
+    .ibn-sum-open{ color: var(--danger); }
+
+    .ibn-gates-overzicht {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; overflow: hidden; box-shadow: var(--shadow); margin-bottom: 20px;
+    }
+    .ibn-gates-head {
+      background: var(--surface2); padding: 10px 16px; font-family: var(--mono);
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--muted); border-bottom: 1px solid var(--border);
+    }
+    .ibn-gate-rij {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 16px; border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+    .ibn-gate-rij:last-child { border-bottom: none; }
+    .ibn-gate-fase { font-family: var(--mono); font-weight: 700; color: var(--muted); min-width: 70px; }
+    .ibn-gate-naam { flex: 1; color: var(--text2); }
+    .ibn-gate-pill {
+      font-family: var(--mono); font-size: 10px; font-weight: 700;
+      padding: 3px 10px; border-radius: 4px; text-transform: uppercase;
+    }
+    .ibn-gate-pill.go   { background: rgba(30,158,94,0.12); color: var(--success); }
+    .ibn-gate-pill.nogo { background: rgba(214,48,48,0.10); color: var(--danger); }
+    .ibn-gate-pill.open { background: var(--bg2); color: var(--muted); }
+
+    @media (max-width: 700px) {
+      .ibn-sidebar { display: none; }
+      .ibn-footer { left: 0; }
+      .ibn-summary-grid { grid-template-columns: repeat(2,1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="bf-header">
+  <div class="bf-header-left">
+    <a href="../index.html" title="Terug naar portaal"
+       style="color:rgba(255,255,255,0.55);font-family:var(--mono);font-size:11px;text-decoration:none;display:flex;align-items:center;gap:4px;flex-shrink:0">
+      ← Portaal
+    </a>
+    <div class="bf-logo"></div>
+    <div class="bf-header-div"></div>
+    <div class="bf-header-title">
+      <h1>IBN Testprotocol</h1>
+      <p id="hdrSub">Machine testen — in bedrijf nemen</p>
+    </div>
+  </div>
+  <span class="save-ind" id="saveInd">✓ Opgeslagen</span>
+  <div class="prog-ring" title="Totale voortgang">
+    <svg width="42" height="42">
+      <circle cx="21" cy="21" r="17" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="3"/>
+      <circle id="progCircle" cx="21" cy="21" r="17" fill="none" stroke="#e8a000"
+        stroke-width="3" stroke-dasharray="106.8" stroke-dashoffset="106.8"
+        stroke-linecap="round" transform="rotate(-90 21 21)"/>
+    </svg>
+    <div class="prog-pct" id="progPct">0%</div>
+  </div>
+</header>
+
+<!-- Fase-tabs -->
+<nav class="ibn-phase-nav" id="faseNav"></nav>
+
+<!-- Shell -->
+<div class="ibn-shell">
+  <aside class="ibn-sidebar" id="sidebar">
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border);background:var(--surface2)">
+      <div class="ibn-sb-label" style="margin-bottom:8px">Project</div>
+      <select id="projSelect" onchange="laadProject()"
+        style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:5px;font-family:var(--mono);font-size:11px;color:var(--text);background:#fff;cursor:pointer">
+      </select>
+    </div>
+    <div id="sidebarSections"></div>
+  </aside>
+  <main class="ibn-main" id="mainContent">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;color:var(--muted);font-family:var(--mono);font-size:12px;gap:12px">
+      <div style="font-size:40px;opacity:0.3">🔧</div>
+      <div>Kies een project in de sidebar links</div>
+    </div>
+  </main>
+</div>
+
+<!-- Footer -->
+<div class="ibn-footer" id="ibnFooter">
+  <div class="ibn-footer-status" id="footerStatus">— kies een project —</div>
+  <button class="bf-btn bf-btn-ghost" onclick="resetProtocol()">↺ Wissen</button>
+  <button class="bf-btn bf-btn-primary" id="pdfBtn" onclick="exportPDF()">↓ PDF</button>
+</div>
+
+<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+<script src="../library/js/bft-projects.js"></script>
+<script src="../library/js/bft-pdf-logo.js"></script>
+<script src="../library/js/bft-auth.js" defer></script>
+<script src="../library/js/bft-dialog.js" defer></script>
+
+<script>
+/* ================================================================
+   FASE-DATA
+   ================================================================ */
+const FASEN = [
+  {
+    id: 0, titel: 'Machine-identificatie', icon: '📋',
+    sub: 'Algemene gegevens vastleggen vóór teststart',
+    type: 'info', sections: []
+  },
+  {
+    id: 1, titel: 'Pre-Power Check', icon: '⚡',
+    sub: 'Veiligheidscheck vóór eerste inschakeling — PSSR Gate 1',
+    gate: { label: 'Gate 1 — Akkoord om spanning op te zetten?', sub: 'Alle items afgevinkt, punch list leeg of geaccepteerd' },
+    sections: [
+      { id:'1A', titel:'Mechanische inspectie', items:[
+        {id:'1A-01',desc:'Machine vrij van transportschade — visuele inspectie behuizing, aansluitingen, leidingen'},
+        {id:'1A-02',desc:'Alle bevestigingen en bouten vast en correct aangedraaid'},
+        {id:'1A-03',desc:'Veiligheidskappen en beschermplaten aangebracht'},
+        {id:'1A-04',desc:'Werkruimte rondom machine vrij en veilig'},
+        {id:'1A-05',desc:'Vloeistofniveaus gecontroleerd: hydrauliekolie, smeerolie, koelvloeistof',sub:'Noteer niveaus bij opmerking'},
+        {id:'1A-06',desc:'Leidingverbindingen drukloos en lekkagevrij voor inschakeling'},
+        {id:'1A-07',desc:'Motorkoppelingen / aandrijfassen vrij van obstakels — hand-ronddraaitest'}
+      ]},
+      { id:'1B', titel:'Elektrische pre-check', items:[
+        {id:'1B-01',desc:'Voedingsspanning op kast gecontroleerd (3-fase aanwezig, volgorde juist)',sub:'Noteer gemeten spanning L1–L2–L3'},
+        {id:'1B-02',desc:'Noodstop-knoppen aanwezig en mechanisch vrij',sub:'Controleer alle E-stop locaties'},
+        {id:'1B-03',desc:'Aardlekschakelaar / isolatiemeting uitgevoerd (> 1 MΩ)',sub:'Noteer gemeten waarde'},
+        {id:'1B-04',desc:'Zekeringen / motorbeveiligers uitgeschakeld / correct geplaatst',sub:'Zie zekeringsschema'},
+        {id:'1B-05',desc:'Alle LOGO-modules en uitbreidingen correct gestoken / bekabeld'},
+        {id:'1B-06',desc:'PE-aansluitingen gecontroleerd (behuizing, motoren)'},
+        {id:'1B-07',desc:'Aansluitschema beschikbaar en overeenkomstig uitgevoerd',sub:'P&ID + E-schema'}
+      ]}
+    ]
+  },
+  {
+    id: 2, titel: 'Besturingskast', icon: '🗄',
+    sub: 'Spanning op kast, controller boot, parameters laden',
+    gate: { label: 'Gate 2 — Besturingskast functioneel akkoord?', sub: 'Controller OK, communicatie OK, parameters geladen' },
+    sections: [
+      { id:'2A', titel:'Spanningopbouw', items:[
+        {id:'2A-01',desc:'Hoofdzekering F7 (2A) ingeschakeld — 24VDC voeding OK'},
+        {id:'2A-02',desc:'Fase-zekeringen F8 (7,5A) en F30 (0,5A) ingeschakeld',sub:'F30 = softstarter controlecircuit'},
+        {id:'2A-03',desc:'Spanning gemeten op kast: IL1 / IL2 / IL3 (voedingssteker)',sub:'Noteer 3x spanning'},
+        {id:'2A-04',desc:'Faserelais K16 check — alle 3 fasen aanwezig'},
+        {id:'2A-05',desc:'Controleer fasevolgorde — bij generatorbedrijf: 400VAC op alle fasen'}
+      ]},
+      { id:'2B', titel:'Controller & software', items:[
+        {id:'2B-01',desc:'LOGO! / PLC opgestart zonder foutmelding',sub:'Controleer LED-status controller'},
+        {id:'2B-02',desc:'Softwareversie geladen en geverifieerd',sub:'Noteer versienummer'},
+        {id:'2B-03',desc:'IP-adres ingesteld, ping succesvol via cmd-prompt'},
+        {id:'2B-04',desc:'TDE / HMI: LOGO1 als target ingesteld en verbonden'},
+        {id:'2B-05',desc:'Klok / datum ingesteld op Logo1'},
+        {id:'2B-06',desc:'HMI-schermen: tellers, meters en homescherm correct geladen'}
+      ]},
+      { id:'2C', titel:'Netwerk & communicatie', items:[
+        {id:'2C-01',desc:'Netwerkcommunicatie tussen LOGO-modules onderling OK',sub:'Logo 1.0 ↔ Logo 1.1 ↔ Logo 1.2'},
+        {id:'2C-02',desc:'DM16-uitbreidingsmodules herkend en gecommuniceerd'},
+        {id:'2C-03',desc:'TeleRadio / remote bediening verbonden en herkend',sub:'Spare-kanalen genoteerd'},
+        {id:'2C-04',desc:'Motorbeveiligers Q21/Q22/Q23 ingesteld op typeplaat-ampère',sub:'Noteer ingestelde waarden'}
+      ]}
+    ]
+  },
+  {
+    id: 3, titel: 'Droog — I/O Test', icon: '🔌',
+    sub: 'Alle ingangen en uitgangen getest zonder vloeistof',
+    gate: { label: 'Gate 3 — I/O test droog volledig akkoord?', sub: 'Alle inputs/outputs geverifieerd, geen verwisselfouten' },
+    sections: [
+      { id:'3A', titel:'Digitale ingangen Logo 1', items:[
+        {id:'3A-I1', desc:'I1 — Start transferpomp mud',sub:'LOGO 1.0 Main/power supply'},
+        {id:'3A-I2', desc:'I2 — Stop transferpomp mud'},
+        {id:'3A-I3', desc:'I3 — Start transferpomp wtr>>mix'},
+        {id:'3A-I4', desc:'I4 — Stop transferpomp wtr>>mix'},
+        {id:'3A-I5', desc:'I5 — Start vulpomp'},
+        {id:'3A-I6', desc:'I6 — Stop vulpomp'},
+        {id:'3A-I7', desc:'I7/AI1 — Start hydroforpomp'},
+        {id:'3A-I8', desc:'I8/AI2 — Stop hydroforpomp'},
+        {id:'3A-I9', desc:'I9 — Alarm freq transferpomp',sub:'Logo 1.1 DM16'},
+        {id:'3A-I10',desc:'I10 — Fasebewakingsalarm (NO=normale staat)'},
+        {id:'3A-I11',desc:'I11 — RESET'},
+        {id:'3A-I12',desc:'I12 — Transferpomp MBS OK'},
+        {id:'3A-I13',desc:'I13 — Hoofdrelais OK'},
+        {id:'3A-I14',desc:'I14 — Perslucht p>5Bar'},
+        {id:'3A-I15',desc:'I15 — Open water inlet'},
+        {id:'3A-I16',desc:'I16 — Close water inlet'},
+        {id:'3A-I17',desc:'I17 — Open transferklep water',sub:'Logo 1.2 DM16 feedback'},
+        {id:'3A-I18',desc:'I18 — Close transferklep water'},
+        {id:'3A-I19',desc:'I19 — Open transferklep mud'},
+        {id:'3A-I20',desc:'I20 — Close transferklep mud'},
+        {id:'3A-I21',desc:'I21 — Open mud inlaat 4"'},
+        {id:'3A-I22',desc:'I22 — Close mud inlaat 4"'},
+        {id:'3A-I23',desc:'I23 — Open mud inlaat 6"'},
+        {id:'3A-I24',desc:'I24 — Close mud inlaat 6"'},
+        {id:'3A-AI1',desc:'AI1/AI2 — Tank level water',sub:'Logo 2.3 AI — tankniveaus TDE'},
+        {id:'3A-AI2',desc:'AI2/AI3 — Tank level mud'}
+      ]},
+      { id:'3B', titel:'Digitale uitgangen Logo 1', items:[
+        {id:'3B-Q1', desc:'Q1 — Start transferpomp mud (M1)',sub:'Logo 1.0 Main power supply'},
+        {id:'3B-Q2', desc:'Q2 — Start transferpomp wtr>mix (M2)'},
+        {id:'3B-Q3', desc:'Q3 — Start vulpomp (M3)'},
+        {id:'3B-Q4', desc:'Q4 — Start hydroforpomp (M4)'},
+        {id:'3B-Q5', desc:'Q5 — Lamp groen',sub:'Logo 1.1 DM16 power supply'},
+        {id:'3B-Q6', desc:'Q6 — Lamp geel'},
+        {id:'3B-Q7', desc:'Q7 — Lamp oranje'},
+        {id:'3B-Q8', desc:'Q8 — Lamp rood'},
+        {id:'3B-Q9', desc:'Q9 — Vrijgave freq (VFD)'},
+        {id:'3B-Q10',desc:'Q10 — Fase fout'},
+        {id:'3B-Q11',desc:'Q11 — Algemeen alarm'},
+        {id:'3B-Q12',desc:'Q12 — Open water inlet'},
+        {id:'3B-Q13',desc:'Q13 — Open transferklep water',sub:'Logo 1.2 DM16 feedback signals'},
+        {id:'3B-Q15',desc:'Q15 — Open transferklep mud'},
+        {id:'3B-Q17',desc:'Q17 — Open mud inlaat 4"'},
+        {id:'3B-Q19',desc:'Q19 — Open mud inlaat 6"'}
+      ]},
+      { id:'3C', titel:'Logo 2 I/O', items:[
+        {id:'3C-I1',desc:'I1 — Vulwater hand/auto',sub:'LOGO 2.0 Main pumps/shakers'},
+        {id:'3C-I2',desc:'I2 — Vul mud hand/auto'},
+        {id:'3C-I3',desc:'I3 — AB uit / geen bereik (TeleRadio)'},
+        {id:'3C-I4',desc:'I4 — AB bediening aan (HB uit) = 0',sub:'Check polariteit signaal'},
+        {id:'3C-I5',desc:'I5 — AB kraan actief'},
+        {id:'3C-I6',desc:'I6 — Pwrpack kraan softstarter OK'},
+        {id:'3C-I7',desc:'I7/AI1 — Dompelpomp MBS OK'},
+        {id:'3C-I8',desc:'I8/AI2 — Hydrofoorpomp MBS OK'},
+        {id:'3C-Q1',desc:'Q1 — Reset alarm'},
+        {id:'3C-Q2',desc:'Q2 — PTO kraan'},
+        {id:'3C-Q3',desc:'Q3 — Start kraan'},
+        {id:'3C-Q4',desc:'Q4 — Spare'}
+      ]}
+    ]
+  },
+  {
+    id: 4, titel: 'Droog — Functioneel', icon: '🔧',
+    sub: 'Kleppen, motoren en software droog testen — bump-test roterend materieel',
+    gate: { label: 'Gate 4 — Droge functionele test akkoord?', sub: 'Alle kleppen werken, draairichtingen OK, software-storingen getest' },
+    sections: [
+      { id:'4A', titel:'Noodstop & veiligheidscircuit', items:[
+        {id:'4A-01',desc:'Noodstop S3 — circuit testen: schakel Q3 in, voeding 24VDC'},
+        {id:'4A-02',desc:'Relais K3 valt af bij activeren E-stop — controleer alle E-stop locaties'},
+        {id:'4A-03',desc:'Reset E-stop: relais K3 trekt terug aan na reset-commando'},
+        {id:'4A-04',desc:'Extern noodstop-circuit (indien aanwezig) getest'}
+      ]},
+      { id:'4B', titel:'Kleppen — functioneel droog', items:[
+        {id:'4B-V1',desc:'Compressor / perslucht — klep schakelt, druk zichtbaar op HMI',sub:'Stel schakelpunt in op 5 bar'},
+        {id:'4B-V2',desc:'V2 Water inlet — open/close via HMI'},
+        {id:'4B-V3',desc:'V3 Hopper hose (mp) — open/close',sub:'Mix pomp moet draaien (mp)'},
+        {id:'4B-V4',desc:'V4 Transfer — open/close'},
+        {id:'4B-V5',desc:'V5 Venturi (mp) — open/close',sub:'V5 Venturi moet open (v)'},
+        {id:'4B-V6',desc:'V6 Recirculation — open/close'},
+        {id:'4B-V7',desc:'V7 Pit pump inlet — open/close + auto-ctrl S22'},
+        {id:'4B-V8',desc:'V8 Water inlet — open/close + auto-ctrl S23'}
+      ]},
+      { id:'4C', titel:'Bump-test roterend materieel', items:[
+        {id:'4C-01',desc:'M1 — Transferpomp mud: bump-test draairichting (1–2 sec)',sub:'Controleer draairichting = rechts'},
+        {id:'4C-02',desc:'M2 — Transferpomp wtr>mix: bump-test draairichting'},
+        {id:'4C-03',desc:'M3 — Vulpomp / dompelpomp: bump-test'},
+        {id:'4C-04',desc:'M4 — Hydrofoorpomp: bump-test'},
+        {id:'4C-05',desc:'Compressor: bump-test draairichting',sub:'w/ 4 neutraal seconden voor LED-check'},
+        {id:'4C-06',desc:'Kraan Atlas (PTO): bump-test + koeler draairichting'},
+        {id:'4C-07',desc:'Shakers: draairichting controleren (rechts + symbool)'}
+      ]},
+      { id:'4D', titel:'Software storingen / meldingen', items:[
+        {id:'4D-B039',desc:'B039 — VFD TransPmp (Q21)',sub:'Alarm forceren en bevestigen'},
+        {id:'4D-B040',desc:'B040 — MRS TransPmp (K16)'},
+        {id:'4D-B041',desc:'B041 — PhaseOrdErr: Fase volgorde fout',sub:'NOK: 43 blink th — OK bevestigen'},
+        {id:'4D-B042',desc:'B042 — PneuP_TooLow: Persluchtdruk te laag'},
+        {id:'4D-B043',desc:'B043 — RemoteNA: Teleradio afst.bed. niet beschikbaar'},
+        {id:'4D-B044',desc:'B044 — MainRelayErr: check E-stop circuit'},
+        {id:'4D-B045',desc:'B045 — CraneSSt: Softstarter PwrPack Crane NOK (K16)'},
+        {id:'4D-B046',desc:'B046 — MPS_DipPump: MPS Dompelpomp NOK (Q22)'},
+        {id:'4D-B097',desc:'B097 — MPS_HydrPump: MPS Hydrofoorpomp NOK (Q23)'}
+      ]},
+      { id:'4E', titel:'Softstarters & VFD', items:[
+        {id:'4E-01',desc:'K16 softstarter — parameters instellen per handleiding softstarter'},
+        {id:'4E-02',desc:'D18 VFD — frequentieregelaar parameters laden en testen'},
+        {id:'4E-03',desc:'Ext. Connection +L3-T3 gecontroleerd'}
+      ]}
+    ]
+  },
+  {
+    id: 5, titel: 'Nat — Functioneel', icon: '💧',
+    sub: 'Testen met vloeistof — pompen draaien, kleppen in bedrijf',
+    gate: { label: 'Gate 5 — Natte functionele test akkoord?', sub: 'Geen lekkages, alle pompen functioneel, kleppen auto-bedrijf OK' },
+    sections: [
+      { id:'5A', titel:'Pre-nat check', items:[
+        {id:'5A-01',desc:'Alle vloeistofaansluitingen gecontroleerd — geen losse koppelingen'},
+        {id:'5A-02',desc:'Tankniveaus OK — water- en mudtank gevuld conform procedure'},
+        {id:'5A-03',desc:'Inlaatfilters / strainers schoon en geplaatst'},
+        {id:'5A-04',desc:'Ontluchting pompen uitgevoerd (indien vereist)'}
+      ]},
+      { id:'5B', titel:'Pompen — nat test', items:[
+        {id:'5B-M1',desc:'M1 Transferpomp mud — stroom, druk, flow op HMI',sub:'Noteer gemeten stroom (A)'},
+        {id:'5B-M2',desc:'M2 Transferpomp wtr>mix Calpeda — stroom, druk, flow'},
+        {id:'5B-M3',desc:'M3 Tsurumi dompelpomp — stroom, flow'},
+        {id:'5B-M4',desc:'M4 Hydrofoorpomp — stroom, druk, flow'},
+        {id:'5B-05',desc:'Kraan Atlas — functioneel testen, PTO in/uit, bewegingen'},
+        {id:'5B-06',desc:'Vibratiebaseline meten: alle lagerpunten motoren tijdens eerste run',sub:'Noteer meetwaarden per motor'}
+      ]},
+      { id:'5C', titel:'Kleppen — nat auto-bedrijf', items:[
+        {id:'5C-01',desc:'V7 auto-bedrijf — auto-ctrl via S22 on (Logo 1.2)'},
+        {id:'5C-02',desc:'V8 auto-bedrijf — auto-ctrl via S23 on'},
+        {id:'5C-03',desc:'Tank level water (AI1/AI2) reageert correct op HMI'},
+        {id:'5C-04',desc:'Tank level mud (AI2/AI3) reageert correct op HMI'},
+        {id:'5C-05',desc:'Recirculatiepad functioneel — V6 open, flow aantoonbaar'}
+      ]},
+      { id:'5D', titel:'Lekkagecheck na natte test', items:[
+        {id:'5D-01',desc:'Volledige visuele ronde na 15 min draaien — geen lekkages'},
+        {id:'5D-02',desc:'Afdichtingen pompen droog en intact'},
+        {id:'5D-03',desc:'Hydraulische verbindingen lekkagevrij'},
+        {id:'5D-04',desc:'Motortemperaturen normaal na 15 min',sub:'Noteer temperaturen'}
+      ]}
+    ]
+  },
+  {
+    id: 6, titel: 'Duur- & Warmtetest', icon: '🌡',
+    sub: 'Minimaal 4 uur continu op productiebelasting — FLIR + vibratie',
+    gate: { label: 'Gate 6 — Duurtest geslaagd?', sub: 'Minimaal 4u continu zonder onverwachte stop, FLIR-fotos gemaakt' },
+    sections: [
+      { id:'6A', titel:'Duurtest uitvoering', items:[
+        {id:'6A-01',desc:'Startmoment duurtest genoteerd',sub:'Noteer datum + tijd start'},
+        {id:'6A-02',desc:'Alle pompen en shakers in bedrijf bij generatorbelasting'},
+        {id:'6A-03',desc:'Duur: minimaal 4 uur continu — reset bij onverwachte stop'},
+        {id:'6A-04',desc:'Tussentijdse motorstromen gelogd (om het uur)',sub:'Noteer waarden'},
+        {id:'6A-05',desc:'Olietemperatuur hydrauliek gecontroleerd'},
+        {id:'6A-06',desc:'Eindmoment duurtest genoteerd — totale draaiduur',sub:'Noteer datum + tijd einde'}
+      ]},
+      { id:'6B', titel:'FLIR thermografie', items:[
+        {id:'6B-01',desc:'FLIR-fotos genomen van alle motoren en schakelkasten na duurtest'},
+        {id:'6B-02',desc:'FLIR-fotos opgeslagen op server — bestanden verwijderd van camera'},
+        {id:'6B-03',desc:'Hotspots boven 80°C genoteerd en beoordeeld'},
+        {id:'6B-04',desc:'Vibratiebaseline definitief vastgelegd per lagerpunt'}
+      ]}
+    ]
+  },
+  {
+    id: 7, titel: 'Vrijgave & verzendgereed', icon: '📦',
+    sub: 'Documentatie afronden, machine gereed voor uitlevering',
+    type: 'vrijgave',
+    sections: [
+      { id:'7A', titel:'Documentatie', items:[
+        {id:'7A-01',desc:"Schema's retour naar bureau engineering / as-built bijgewerkt"},
+        {id:'7A-03',desc:'Testprotocol volledig ingevuld en ondertekend'},
+        {id:'7A-04',desc:'Open punch-list items afgehandeld of intern goedgekeurd'},
+        {id:'7A-05',desc:'DG14 motordisplay ingesteld (Item 20 procedure)',sub:'John Deere gauge — 2x 4-up schermen'}
+      ]},
+      { id:'7B', titel:'Verzendgereed', items:[
+        {id:'7B-01',desc:'Pompbehuizingen geleegd voor transport (bij vorst)',sub:'Alleen bij verwacht transport onder 0°C'},
+        {id:'7B-02',desc:'Identificatiestickers / typeplaten aangebracht en zichtbaar'},
+        {id:'7B-03',desc:'Transportbeveiliging vastgesnoerd / losse onderdelen vastgezet'},
+        {id:'7B-04',desc:'Certificaten en documenten in transportpakket',sub:'CE, conformiteit, handleidingen'}
+      ]}
+    ]
+  }
+];
+
+/* Projectdata uit gedeeld bft-projects.js */
+
+/* ================================================================
+   STATE
+   checks    : { [itemId]: { status:'ok'|'nvt', monteur, ts } }
+   notes     : { [itemId]: string }
+   gates     : { [faseId]: 'go'|'nogo'|null }
+   machineInfo: { chassis, tester, locatie, datum }
+   actieveFase: 0
+   ================================================================ */
+let huidigProject = null;
+let monteurNaam   = '';
+let actieveFase   = 0;
+let state = { checks:{}, notes:{}, gates:{}, machineInfo:{ chassis:'', tester:'', locatie:'', datum:'' } };
+
+/* ================================================================
+   PROJECT LADEN
+   ================================================================ */
+function laadProject() {
+  const id = document.getElementById('projSelect').value;
+  if (!id) return;
+  huidigProject = id;
+  state = { checks:{}, notes:{}, gates:{}, machineInfo:{ chassis:'', tester:'', locatie:'', datum:'' } };
+  try { const r = localStorage.getItem('bft_v2_ibn_' + id); if (r) state = JSON.parse(r); } catch(e){}
+  if (!state.machineInfo) state.machineInfo = { chassis:'', tester:'', locatie:'', datum:'' };
+  if (!state.gates) state.gates = {};
+  const proj = BFT_PROJECTEN.find(p => p.id === id);
+  document.getElementById('hdrSub').textContent = proj ? proj.naam : id;
+  if (window.BFTAuth && BFTAuth.isReady()) monteurNaam = BFTAuth.getUser()?.naam || '';
+  renderFaseNav();
+  switchFase(actieveFase);
+}
+
+window.addEventListener('load', function() {
+  const param = new URLSearchParams(window.location.search).get('project');
+  document.getElementById('projSelect').innerHTML = bftProjectOptions(param || '');
+  if (param) laadProject();
+  if (window.BFTAuth && BFTAuth.isConfigured()) BFTAuth.init().then(() => {
+    if (BFTAuth.isReady()) monteurNaam = BFTAuth.getUser()?.naam || monteurNaam;
+  });
+});
+
+/* ================================================================
+   FASE-NAV
+   ================================================================ */
+function renderFaseNav() {
+  document.getElementById('faseNav').innerHTML = FASEN.map((f, i) => {
+    const klaar = faseKlaar(f);
+    return `<button class="ibn-tab ${f.id === actieveFase ? 'actief' : ''} ${klaar ? 'klaar' : ''}"
+      onclick="switchFase(${f.id})">
+      <span class="ibn-tab-dot">${klaar ? '✓' : i}</span>
+      ${f.icon} ${f.titel}
+    </button>`;
+  }).join('');
+}
+
+function faseKlaar(f) {
+  if (f.type === 'info') return infoCompleet();
+  return f.sections.every(s => s.items.every(it => state.checks[it.id]?.status));
+}
+
+function infoCompleet() {
+  const m = state.machineInfo;
+  return ['chassis','tester','datum'].every(k => String(m[k]||'').trim());
+}
+
+/* ================================================================
+   FASE WISSELEN
+   ================================================================ */
+function switchFase(id) {
+  if (!huidigProject) return;
+  if (id !== 0 && !infoCompleet()) {
+    if (window.BFTDialog) BFTDialog.alert('Vul eerst de machine-identificatie in (Chassis, Tester, Datum).');
+    id = 0;
+  }
+  actieveFase = id;
+  renderFaseNav();
+  renderSidebar();
+  renderContent();
+  updateVoortgang();
+}
+
+/* ================================================================
+   SIDEBAR
+   ================================================================ */
+function renderSidebar() {
+  const fase = FASEN.find(f => f.id === actieveFase);
+  const sb = document.getElementById('sidebarSections');
+  if (!fase || !fase.sections.length) { sb.innerHTML = ''; return; }
+  sb.innerHTML = '<div class="ibn-sb-label" style="margin-top:8px">Secties</div>' +
+    fase.sections.map(s => {
+      const t = telSec(s);
+      const klaar = t.done + t.nvt === t.totaal;
+      return `<div class="ibn-sb-item ${klaar ? 'klaar' : ''}" onclick="scrollNaarSec('${s.id}')">
+        <div class="ibn-sb-icon">${klaar ? '✓' : ''}</div>
+        <span>${s.id} ${s.titel}</span>
+        <span class="ibn-sb-count">${t.done + t.nvt}/${t.totaal}</span>
+      </div>`;
+    }).join('');
+}
+
+function scrollNaarSec(id) {
+  document.getElementById('sec-' + id)?.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function telSec(s) {
+  let done = 0, nvt = 0;
+  s.items.forEach(it => {
+    const st = state.checks[it.id]?.status;
+    if (st === 'ok') done++;
+    if (st === 'nvt') nvt++;
+  });
+  return { totaal: s.items.length, done, nvt };
+}
+
+/* ================================================================
+   HOOFD-CONTENT
+   ================================================================ */
+function renderContent() {
+  const fase = FASEN.find(f => f.id === actieveFase);
+  const mc = document.getElementById('mainContent');
+  if (!fase) { mc.innerHTML = ''; return; }
+  if (fase.type === 'info') { mc.innerHTML = renderMachineInfo(); return; }
+  if (fase.type === 'vrijgave') { mc.innerHTML = renderVrijgave(fase); return; }
+  mc.innerHTML = renderFase(fase);
+}
+
+function renderMachineInfo() {
+  const m = state.machineInfo;
+  const proj = BFT_PROJECTEN.find(p => p.id === huidigProject) || {};
+  return `
+    <div class="mock-banner">⚠ Mock-modus — data opgeslagen in browser tot SharePoint live is</div>
+    <div class="ibn-fase-hdr">
+      <div class="ibn-fase-icon">📋</div>
+      <div><div class="ibn-fase-naam">Machine-identificatie</div>
+      <div class="ibn-fase-sub">Vul alle velden in voor je begint</div></div>
+    </div>
+    <div class="ibn-info">
+      <div class="ibn-info-title">Machine- en testgegevens</div>
+      <div class="bf-field"><label>Project</label>
+        <input type="text" class="bf-input" value="${huidigProject}" readonly style="background:var(--bg2)"></div>
+      <div class="bf-field"><label>Machine / Chassis-nr <span style="color:var(--danger)">*</span></label>
+        <input type="text" class="bf-input" id="inf-chassis" value="${m.chassis||''}"
+          placeholder="bijv. BFMR2000EK-001" oninput="slaInfoOp()"></div>
+      <div class="bf-field"><label>Klant</label>
+        <input type="text" class="bf-input" value="${proj.klant||''}" readonly style="background:var(--bg2)"></div>
+      <div class="bf-field"><label>Tester / Monteur <span style="color:var(--danger)">*</span></label>
+        <input type="text" class="bf-input" id="inf-tester" value="${m.tester || monteurNaam || ''}"
+          placeholder="Naam tester" oninput="slaInfoOp()"></div>
+      <div class="bf-field"><label>Testdatum <span style="color:var(--danger)">*</span></label>
+        <input type="date" class="bf-input" id="inf-datum" value="${m.datum||''}"
+          oninput="slaInfoOp()"></div>
+      <div class="bf-field"><label>Eindbestemming / locatie</label>
+        <input type="text" class="bf-input" id="inf-locatie" value="${m.locatie||''}"
+          placeholder="Klantlocatie of intern" oninput="slaInfoOp()"></div>
+    </div>
+    <div class="ibn-fase-nav">
+      <div></div>
+      <button class="btn-fase primary" onclick="switchFase(1)">Fase 1 → Pre-Power Check</button>
+    </div>
+  `;
+}
+
+function slaInfoOp() {
+  state.machineInfo = {
+    chassis: document.getElementById('inf-chassis')?.value || '',
+    tester:  document.getElementById('inf-tester')?.value  || '',
+    datum:   document.getElementById('inf-datum')?.value   || '',
+    locatie: document.getElementById('inf-locatie')?.value || ''
+  };
+  if (state.machineInfo.tester) monteurNaam = state.machineInfo.tester;
+  slaOp();
+  renderFaseNav();
+}
+
+function renderFase(fase) {
+  const fIdx = FASEN.indexOf(fase);
+  const prev = fIdx > 0 ? FASEN[fIdx - 1] : null;
+  const next = fIdx < FASEN.length - 1 ? FASEN[fIdx + 1] : null;
+  const gate = fase.gate;
+  const gs = state.gates[fase.id] || null;
+
+  return `
+    <div class="mock-banner">⚠ Mock-modus — data opgeslagen in browser</div>
+    <div class="ibn-fase-hdr">
+      <div class="ibn-fase-icon">${fase.icon}</div>
+      <div><div class="ibn-fase-naam">Fase ${fase.id} — ${fase.titel}</div>
+      <div class="ibn-fase-sub">${fase.sub || ''}</div></div>
+    </div>
+    ${fase.sections.map(s => renderSectie(s)).join('')}
+    ${gate ? renderGate(fase.id, gate, gs) : ''}
+    <div class="ibn-fase-nav">
+      <button class="btn-fase" onclick="switchFase(${prev?.id ?? 0})" ${!prev ? 'disabled' : ''}>
+        ← ${prev ? prev.titel : ''}
+      </button>
+      <button class="btn-fase primary" onclick="switchFase(${next?.id ?? 7})" ${!next ? 'disabled' : ''}>
+        ${next ? next.titel : ''} →
+      </button>
+    </div>
+  `;
+}
+
+function renderVrijgave(fase) {
+  let totaal = 0, gedaan = 0, nvt = 0;
+  FASEN.filter(f => f.type !== 'info').forEach(f =>
+    f.sections.forEach(s => s.items.forEach(it => {
+      totaal++;
+      const st = state.checks[it.id]?.status;
+      if (st === 'ok') gedaan++;
+      if (st === 'nvt') nvt++;
+    }))
+  );
+  const open = totaal - gedaan - nvt;
+
+  const gatesFasen = FASEN.filter(f => f.gate);
+  return `
+    <div class="mock-banner">⚠ Mock-modus</div>
+    <div class="ibn-fase-hdr">
+      <div class="ibn-fase-icon">📦</div>
+      <div><div class="ibn-fase-naam">Vrijgave & verzendgereed</div>
+      <div class="ibn-fase-sub">Samenvatting + documentatie afronden</div></div>
+    </div>
+
+    <div class="ibn-summary-grid">
+      <div class="ibn-summary-card"><div class="ibn-sum-num ibn-sum-tot">${totaal}</div><div class="ibn-sum-lbl">Totaal items</div></div>
+      <div class="ibn-summary-card"><div class="ibn-sum-num ibn-sum-ok">${gedaan}</div><div class="ibn-sum-lbl">Afgevinkt</div></div>
+      <div class="ibn-summary-card"><div class="ibn-sum-num ibn-sum-nvt">${nvt}</div><div class="ibn-sum-lbl">N.v.t.</div></div>
+      <div class="ibn-summary-card"><div class="ibn-sum-num ibn-sum-open">${open}</div><div class="ibn-sum-lbl">Open</div></div>
+    </div>
+
+    <div class="ibn-gates-overzicht">
+      <div class="ibn-gates-head">Gate-overzicht</div>
+      ${gatesFasen.map(f => {
+        const gs = state.gates[f.id];
+        const pill = gs === 'go' ? 'go' : gs === 'nogo' ? 'nogo' : 'open';
+        const txt  = gs === 'go' ? 'GO' : gs === 'nogo' ? 'NOGO' : 'Open';
+        return `<div class="ibn-gate-rij">
+          <span class="ibn-gate-fase">Gate ${f.id}</span>
+          <span class="ibn-gate-naam">${f.gate.label}</span>
+          <span class="ibn-gate-pill ${pill}">${txt}</span>
+        </div>`;
+      }).join('')}
+    </div>
+
+    ${fase.sections.map(s => renderSectie(s)).join('')}
+
+    <div class="ibn-fase-nav">
+      <button class="btn-fase" onclick="switchFase(6)">← Fase 6</button>
+      <button class="btn-fase primary" id="pdfBtn2" onclick="exportPDF()">↓ Download PDF</button>
+    </div>
+  `;
+}
+
+function renderSectie(s) {
+  const t = telSec(s);
+  const klaar = t.done + t.nvt === t.totaal;
+  return `
+    <div class="ibn-sec" id="sec-${s.id}">
+      <div class="ibn-sec-head">
+        <div class="ibn-sec-id ${klaar ? 'klaar' : ''}">${s.id}</div>
+        <div class="ibn-sec-titel">${s.titel}</div>
+        <div class="ibn-sec-prog ${klaar ? 'klaar' : ''}">${t.done + t.nvt} / ${t.totaal}</div>
+      </div>
+      <div class="ibn-tbl">
+        <div class="ibn-tbl-head">
+          <span>Item</span><span></span><span>OK</span><span>N.v.t.</span>
+        </div>
+        ${s.items.map(it => renderRij(it)).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderRij(it) {
+  const check  = state.checks[it.id];
+  const status = check?.status || '';
+  const mont   = check?.monteur || '';
+  const ts     = check?.ts ? new Date(check.ts).toLocaleString('nl-NL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+  const note   = state.notes[it.id] || '';
+  const rijCls = status === 'ok' ? 'is-ok' : status === 'nvt' ? 'is-nvt' : '';
+  return `
+    <div class="ibn-row ${rijCls}" id="row-${it.id}">
+      <div class="ibn-row-content">
+        <div class="ibn-desc">${it.desc}</div>
+        ${it.sub ? `<div class="ibn-sub">${it.sub}</div>` : ''}
+        <div class="ibn-stempel">${mont ? `✓ ${mont} · ${ts}` : ''}</div>
+      </div>
+      <button class="ibn-note-btn ${note ? 'heeft-note' : ''}" title="Opmerking"
+              onclick="toggleNote('${it.id}')">✎</button>
+      <div class="ibn-chk-col">
+        <div class="ibn-chk ibn-chk-ok ${status === 'ok' ? 'actief' : ''}"
+             title="Akkoord" onclick="vink('${it.id}','ok')">✓</div>
+      </div>
+      <div class="ibn-chk-col">
+        <div class="ibn-chk ibn-chk-nvt ${status === 'nvt' ? 'actief' : ''}"
+             title="Niet van toepassing" onclick="vink('${it.id}','nvt')">—</div>
+      </div>
+    </div>
+    <div class="ibn-note-row ${note ? 'open' : ''}" id="note-${it.id}">
+      <textarea class="ibn-note-ta" id="ta-${it.id}"
+        placeholder="Opmerking bij dit item…"
+        oninput="slaNotaOp('${it.id}', this.value)">${note}</textarea>
+    </div>
+  `;
+}
+
+function renderGate(faseId, gate, gs) {
+  const cls = gs === 'go' ? 'go-gate' : gs === 'nogo' ? 'nogo-gate' : '';
+  return `
+    <div class="ibn-gate ${cls}" id="gate-${faseId}">
+      <div class="ibn-gate-tekst">
+        <div class="ibn-gate-label">${gate.label}</div>
+        <div class="ibn-gate-sub">${gate.sub}</div>
+      </div>
+      ${gs
+        ? `<span class="ibn-gate-status ${gs}">${gs.toUpperCase()}</span>
+           <button class="btn-nogo" onclick="setGate(${faseId}, null)" style="font-size:10px;padding:5px 10px">Wijzigen</button>`
+        : `<button class="btn-go"   onclick="setGate(${faseId},'go')">GO</button>
+           <button class="btn-nogo" onclick="setGate(${faseId},'nogo')">NOGO</button>`
+      }
+    </div>
+  `;
+}
+
+/* ================================================================
+   ACTIES
+   ================================================================ */
+function vink(id, modus) {
+  if (!monteurNaam) {
+    if (window.BFTDialog) BFTDialog.alert('Vul eerst de tester-naam in bij Machine-identificatie.');
+    else alert('Vul eerst de tester-naam in.');
+    return;
+  }
+  const huidig = state.checks[id]?.status;
+  if (huidig === modus) delete state.checks[id];
+  else state.checks[id] = { status: modus, monteur: monteurNaam, ts: new Date().toISOString() };
+  slaOp();
+  updateRij(id);
+  updateVoortgang();
+  renderSidebar();
+  renderFaseNav();
+}
+
+function toggleNote(id) {
+  document.getElementById('note-' + id)?.classList.toggle('open');
+}
+
+function slaNotaOp(id, tekst) {
+  if (tekst.trim()) state.notes[id] = tekst;
+  else delete state.notes[id];
+  slaOp();
+  const btn = document.querySelector(`#row-${id} .ibn-note-btn`);
+  if (btn) btn.classList.toggle('heeft-note', !!tekst.trim());
+}
+
+function setGate(faseId, besluit) {
+  state.gates[faseId] = besluit;
+  slaOp();
+  const gate = FASEN.find(f => f.id === faseId)?.gate;
+  const el = document.getElementById('gate-' + faseId);
+  if (el && gate) el.outerHTML = renderGate(faseId, gate, besluit);
+  renderFaseNav();
+}
+
+function updateRij(id) {
+  const oudeRij = document.getElementById('row-' + id);
+  if (!oudeRij) return;
+  const fase = FASEN.find(f => f.sections.some(s => s.items.some(it => it.id === id)));
+  const item = fase?.sections.flatMap(s => s.items).find(it => it.id === id);
+  if (!item) return;
+  const div = document.createElement('div');
+  div.innerHTML = renderRij(item);
+  oudeRij.replaceWith(div.firstElementChild);
+}
+
+function resetProtocol() {
+  const fn = () => { state = { checks:{}, notes:{}, gates:{}, machineInfo:{chassis:'',tester:'',locatie:'',datum:''} }; slaOp(); switchFase(0); renderFaseNav(); };
+  if (window.BFTDialog) BFTDialog.confirm('Protocol leegmaken?','Alle vinkjes, gates en notities worden gewist.', {labelOk:'Leegmaken'}).then(ok => { if (ok) fn(); });
+  else { if (confirm('Protocol leegmaken?')) fn(); }
+}
+
+/* ================================================================
+   OPSLAAN
+   ================================================================ */
+function slaOp() {
+  if (!huidigProject) return;
+  try { localStorage.setItem('bft_v2_ibn_' + huidigProject, JSON.stringify(state)); } catch(e){}
+  try {
+    let totaal = 0, gedaan = 0;
+    FASEN.filter(f => f.type !== 'info').forEach(f =>
+      f.sections.forEach(s => s.items.forEach(it => {
+        totaal++;
+        const st = state.checks[it.id]?.status;
+        if (st === 'ok' || st === 'nvt') gedaan++;
+      }))
+    );
+    const pct = totaal > 0 ? Math.round(gedaan / totaal * 100) : 0;
+    localStorage.setItem('bft_v2_snap_ibn_' + huidigProject,
+      JSON.stringify({ pct, openItems: totaal - gedaan, updated: new Date().toISOString() }));
+  } catch(e) {}
+  const ind = document.getElementById('saveInd');
+  ind.classList.add('zichtbaar');
+  clearTimeout(ind._t);
+  ind._t = setTimeout(() => ind.classList.remove('zichtbaar'), 1800);
+}
+
+/* ================================================================
+   VOORTGANG
+   ================================================================ */
+function updateVoortgang() {
+  let totaal = 0, gedaan = 0;
+  FASEN.filter(f => f.type !== 'info').forEach(f =>
+    f.sections.forEach(s => s.items.forEach(it => {
+      totaal++;
+      const st = state.checks[it.id]?.status;
+      if (st === 'ok' || st === 'nvt') gedaan++;
+    }))
+  );
+  const open = totaal - gedaan;
+  const pct  = totaal > 0 ? Math.round(gedaan / totaal * 100) : 0;
+  const omtrek = 106.8;
+  document.getElementById('progCircle').style.strokeDashoffset = omtrek - (omtrek * pct / 100);
+  document.getElementById('progPct').textContent = pct + '%';
+  const btn = document.getElementById('pdfBtn');
+  if (open > 0) {
+    document.getElementById('footerStatus').innerHTML =
+      `${gedaan} / ${totaal} items · <span style="color:var(--danger);font-weight:600">${open} open</span>`;
+    if (btn) { btn.style.opacity = '0.5'; btn.title = `Nog ${open} open items`; }
+  } else {
+    document.getElementById('footerStatus').textContent = `${gedaan} / ${totaal} — klaar voor export`;
+    if (btn) { btn.style.opacity = '1'; btn.title = ''; }
+  }
+}
+
+/* ================================================================
+   PDF EXPORT
+   ================================================================ */
+const PDF_LOGO = (typeof BFT_PDF_LOGO !== 'undefined') ? BFT_PDF_LOGO : null;
+
+function exportPDF() {
+  if (!huidigProject) return;
+  const m     = state.machineInfo;
+  const proj  = BFT_PROJECTEN.find(p => p.id === huidigProject) || {};
+  const datum = new Date().toISOString().slice(0,10);
+  const titel = `IBN Testprotocol — ${huidigProject}`;
+
+  const content = [];
+  const infoRijen = [
+    ['Project',       huidigProject],
+    ['Machine',       proj.naam    || '—'],
+    ['Chassis-nr',    m.chassis    || '—'],
+    ['Klant',         proj.klant   || '—'],
+    ['Tester',        m.tester     || '—'],
+    ['Testdatum',     m.datum      || '—'],
+    ['Locatie',       m.locatie    || '—'],
+    ['Afgedrukt op',  datum]
+  ];
+  content.push({
+    table: { widths:[130,'*'], body: infoRijen.map(r => [
+      { text:r[0], fontSize:9, color:'#7a849a', bold:true, margin:[0,3,0,3] },
+      { text:r[1], fontSize:10, color:'#1a1f2e', margin:[0,3,0,3] }
+    ])}, layout:'noBorders', margin:[0,0,0,14]
+  });
+
+  // Gate-overzicht
+  const gatesFasen = FASEN.filter(f => f.gate);
+  content.push({ text:'Gate-overzicht', fontSize:11, bold:true, margin:[0,0,0,4] });
+  content.push({ canvas:[{type:'rect',x:0,y:0,w:515,h:2,color:'#e8a000'}], margin:[0,0,0,6] });
+  content.push({
+    table: { widths:[50,'*',50], body:[
+      [{text:'Gate',fontSize:8,color:'#7a849a',bold:true,fillColor:'#f8f9fa'},
+       {text:'Omschrijving',fontSize:8,color:'#7a849a',bold:true,fillColor:'#f8f9fa'},
+       {text:'Status',fontSize:8,color:'#7a849a',bold:true,fillColor:'#f8f9fa',alignment:'center'}],
+      ...gatesFasen.map(f => {
+        const gs = state.gates[f.id];
+        const txt = gs === 'go' ? 'GO' : gs === 'nogo' ? 'NOGO' : '-';
+        const kleur = gs === 'go' ? '#1e9e5e' : gs === 'nogo' ? '#d63030' : '#7a849a';
+        return [
+          {text:`Gate ${f.id}`, fontSize:8, color:'#7a849a'},
+          {text:f.gate.label, fontSize:8, color:'#1a1f2e'},
+          {text:txt, fontSize:8, bold:true, color:kleur, alignment:'center'}
+        ];
+      })
+    ]}, layout:'lightHorizontalLines', margin:[0,0,0,16]
+  });
+
+  // Fasen
+  FASEN.filter(f => f.type !== 'info').forEach((fase, idx) => {
+    content.push({
+      text:`${fase.id === 7 ? '' : 'Fase '+fase.id+' — '}${fase.titel}`,
+      fontSize:11, bold:true, color:'#1a1f2e',
+      margin:[0, idx === 0 ? 0 : 10, 0, 3],
+      pageBreak: idx > 0 && idx % 3 === 0 ? 'before' : undefined
+    });
+    content.push({ canvas:[{type:'rect',x:0,y:0,w:515,h:2,color:'#e8a000'}], margin:[0,0,0,4] });
+
+    fase.sections.forEach(s => {
+      content.push({ text:`${s.id} — ${s.titel}`, fontSize:9, bold:true, color:'#3d4558', margin:[0,6,0,3] });
+      const body = [[
+        {text:'Item',fontSize:8,color:'#7a849a',bold:true,fillColor:'#f8f9fa'},
+        {text:'Omschrijving',fontSize:8,color:'#7a849a',bold:true,fillColor:'#f8f9fa'},
+        {text:'Monteur',fontSize:8,color:'#7a849a',bold:true,fillColor:'#f8f9fa',alignment:'center'},
+        {text:'Status',fontSize:8,color:'#7a849a',bold:true,fillColor:'#f8f9fa',alignment:'center'}
+      ]];
+      s.items.forEach(it => {
+        const c = state.checks[it.id];
+        const stt = c?.status || '';
+        const txt = stt === 'ok' ? 'OK' : stt === 'nvt' ? 'N.v.t.' : '-';
+        const klr = stt === 'ok' ? '#1e9e5e' : stt === 'nvt' ? '#7a849a' : '#d63030';
+        const note = state.notes[it.id] ? `\n${state.notes[it.id]}` : '';
+        body.push([
+          {text:it.id, fontSize:8, color:'#7a849a'},
+          {text:[{text:it.desc,fontSize:8,color:'#1a1f2e'}, it.sub?{text:'\n'+it.sub,fontSize:7,color:'#7a849a'}:'', note?{text:note,fontSize:7,color:'#7a5a00',italics:true}:'']},
+          {text:c?.monteur||'',fontSize:8,color:'#3d4558',alignment:'center'},
+          {text:txt,fontSize:8,bold:true,color:klr,alignment:'center'}
+        ]);
+      });
+      content.push({ table:{widths:[44,'*',60,36],body}, layout:'lightHorizontalLines', margin:[0,0,0,4] });
+    });
+  });
+
+  // Handtekening
+  content.push({ text:'Akkoord oplevering', fontSize:11, bold:true, margin:[0,18,0,4] });
+  content.push({ canvas:[{type:'rect',x:0,y:0,w:515,h:2,color:'#e8a000'}], margin:[0,0,0,10] });
+  content.push({ table:{ widths:['*','*'], body:[
+    [{text:'Tester',fontSize:9,color:'#7a849a',bold:true,border:[false,false,false,false]},
+     {text:'Datum',fontSize:9,color:'#7a849a',bold:true,border:[false,false,false,false]}],
+    [{text:m.tester||'________________________',fontSize:10,color:'#1a1f2e',margin:[0,2,0,20],border:[false,false,false,true]},
+     {text:m.datum ||'________________________',fontSize:10,color:'#1a1f2e',margin:[0,2,0,20],border:[false,false,false,true]}]
+  ]}, layout:{defaultBorder:false}});
+
+  const btn = document.getElementById('pdfBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Bezig…'; }
+  try {
+    pdfMake.createPdf({
+      pageMargins:[40,88,40,40],
+      defaultStyle:{fontSize:10,lineHeight:1.3,color:'#3d4558'},
+      header:(page,pages) => ({ stack:[
+        { table:{ widths:[90,'*',90], body:[[
+          {image:PDF_LOGO,width:58,margin:[12,7,0,0],border:[false,false,false,false],fillColor:'#000000'},
+          {text:titel,fontSize:11,bold:true,color:'#fff',alignment:'center',margin:[0,16,0,0],border:[false,false,false,false],fillColor:'#000000'},
+          {text:`${page} / ${pages}`,fontSize:9,color:'rgba(255,255,255,0.5)',alignment:'right',margin:[0,20,15,0],border:[false,false,false,false],fillColor:'#000000'}
+        ]]}, layout:{defaultBorder:false}},
+        {canvas:[{type:'rect',x:0,y:0,w:595,h:3,color:'#e8a000'}]}
+      ]}),
+      footer:(page,pages) => ({columns:[
+        {text:titel,fontSize:8,color:'#aaa',margin:[40,8,0,0]},
+        {text:`Pagina ${page} / ${pages}`,fontSize:8,color:'#aaa',alignment:'right',margin:[0,8,40,0]}
+      ]}),
+      content
+    }).download(`BFT_IBN_${huidigProject}_${datum}.pdf`, () => {
+      if (btn) { btn.disabled = false; btn.textContent = '↓ PDF'; }
+    });
+  } catch(err) {
+    console.error('PDF fout:', err);
+    if (btn) { btn.disabled = false; btn.textContent = '↓ PDF'; }
+  }
+}
+</script>
+</body>
+</html>

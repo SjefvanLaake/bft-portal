@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MachinebouwChecklist — BFT</title>
+  <link rel="stylesheet" href="../library/css/bofram-style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.min.js"></script>
+  <script src="../library/js/bft-projects.js"></script>
+  <script src="../library/js/bft-pdf-logo.js"></script>
+  <style>
+    /* ── Layout ── */
+    .mbcl-shell {
+      display: flex;
+      height: calc(100vh - 64px);
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ── */
+    .mbcl-sidebar {
+      width: 240px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .mbcl-sb-head {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+    .mbcl-sb-label {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .mbcl-proj-select {
+      width: 100%;
+      padding: 7px 10px;
+      border: 1.5px solid var(--border);
+      border-radius: 5px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text);
+      background: #fff;
+      cursor: pointer;
+    }
+    .mbcl-proj-select:focus { border-color: var(--accent2); outline: none; }
+
+    .mbcl-sb-fasen { flex: 1; overflow-y: auto; padding: 8px; }
+    .mbcl-fase-btn {
+      width: 100%;
+      text-align: left;
+      padding: 9px 12px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      cursor: pointer;
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.12s;
+    }
+    .mbcl-fase-btn:hover { background: var(--bg2); }
+    .mbcl-fase-btn.active { background: rgba(232,160,0,0.10); }
+    .mbcl-fase-num {
+      width: 22px; height: 22px;
+      border-radius: 4px;
+      background: var(--bg2);
+      border: 1.5px solid var(--border);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      color: var(--muted);
+    }
+    .mbcl-fase-btn.done .mbcl-fase-num  { background: var(--success); border-color: var(--success); color: #fff; }
+    .mbcl-fase-btn.active .mbcl-fase-num { background: var(--accent); border-color: var(--accent-dk); color: #fff; }
+    .mbcl-fase-titel {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text2);
+      line-height: 1.3;
+      flex: 1;
+    }
+    .mbcl-fase-pct {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+    .mbcl-fase-btn.done .mbcl-fase-pct { color: var(--success); }
+
+    /* ── Hoofd-paneel ── */
+    .mbcl-main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px 100px;
+      background: var(--bg);
+    }
+
+    /* ── Machine-info kaart ── */
+    .mbcl-info {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px;
+      margin-bottom: 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 14px;
+      box-shadow: var(--shadow);
+    }
+    @media (max-width: 700px) { .mbcl-info { grid-template-columns: 1fr; } }
+
+    /* ── Monteur-balk ── */
+    .mbcl-monteur {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: var(--shadow);
+    }
+    .mbcl-mont-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .mbcl-mont-avatar.leeg { background: var(--border2); color: var(--muted); }
+    .mbcl-mont-info { flex: 1; }
+    .mbcl-mont-naam { font-size: 13px; font-weight: 600; color: var(--text); }
+    .mbcl-mont-sub  { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+    .mbcl-mont-input {
+      flex: 1;
+      padding: 8px 10px;
+      border: 1.5px solid var(--accent);
+      border-radius: 5px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text);
+      background: #fff;
+      outline: none;
+    }
+
+    /* ── Waarschuwingsbanner ── */
+    .mbcl-warn {
+      background: rgba(232,160,0,0.08);
+      border: 1px solid rgba(232,160,0,0.3);
+      border-radius: 6px;
+      padding: 10px 16px;
+      margin-bottom: 16px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--accent-dk);
+      display: none;
+    }
+    .mbcl-warn.zichtbaar { display: block; }
+
+    /* ── Fase-sectie ── */
+    .mbcl-fase {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .mbcl-fase-head {
+      padding: 14px 18px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .mbcl-fase-head:hover { background: var(--bg2); }
+    .mbcl-fnum {
+      width: 26px; height: 26px;
+      border-radius: 5px;
+      background: var(--accent);
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .mbcl-fnum.klaar { background: var(--success); }
+    .mbcl-ftitel { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; }
+    .mbcl-fprog {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .mbcl-fprog.klaar { color: var(--success); font-weight: 700; }
+    .mbcl-fchev { font-size: 11px; color: var(--muted); transition: transform 0.2s; }
+    .mbcl-fase.inklap .mbcl-fchev { transform: rotate(-90deg); }
+    .mbcl-fase.inklap .mbcl-fase-body { display: none; }
+
+    /* ── Check-tabel: grid met vaste kolommen (zoals origineel) ── */
+    .mbcl-fase-body { padding: 0; }
+
+    /* Kolomkoppen boven elke fase */
+    .mbcl-tbl-head {
+      display: grid;
+      grid-template-columns: 1fr 36px 56px 56px;
+      padding: 5px 18px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+    }
+    .mbcl-tbl-head span {
+      font-family: var(--mono); font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted);
+      text-align: center;
+    }
+    .mbcl-tbl-head span:first-child { text-align: left; }
+
+    /* Rij = zelfde grid */
+    .mbcl-row {
+      display: grid;
+      grid-template-columns: 1fr 36px 56px 56px;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.12s;
+      min-height: 46px;
+    }
+    .mbcl-row:last-child { border-bottom: none; }
+    .mbcl-row.is-ok  { background: rgba(30,158,94,0.05); }
+    .mbcl-row.is-nvt { background: rgba(122,132,154,0.06); }
+
+    /* Item-tekst */
+    .mbcl-row-content { padding: 10px 8px 10px 18px; min-width: 0; }
+    .mbcl-desc { font-size: 12px; color: var(--text); line-height: 1.5; }
+    .mbcl-row.is-ok  .mbcl-desc { text-decoration: line-through; color: var(--muted); }
+    .mbcl-row.is-nvt .mbcl-desc { color: var(--muted); font-style: italic; }
+    .mbcl-sub  { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+    /* Auditlabel */
+    .mbcl-stempel {
+      font-family: var(--mono); font-size: 9px; color: var(--success);
+      margin-top: 3px; display: none;
+    }
+    .mbcl-row.is-ok .mbcl-stempel { display: block; }
+
+    /* Notitieknop */
+    .mbcl-note-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 36px; height: 100%; min-height: 46px;
+      border: none; background: transparent;
+      cursor: pointer; font-size: 14px; color: var(--muted);
+      transition: all 0.12s;
+    }
+    .mbcl-note-btn:hover { color: var(--accent-dk); background: rgba(232,160,0,0.07); }
+    .mbcl-note-btn.heeft-note { color: var(--accent-dk); }
+
+    /* Checkboxkolom */
+    .mbcl-chk-col {
+      display: flex; align-items: center; justify-content: center;
+      height: 100%; min-height: 46px;
+      border-left: 1px solid var(--border);
+    }
+
+    /* De checkbox zelf */
+    .mbcl-chk {
+      width: 28px; height: 28px;
+      border-radius: 5px;
+      border: 1.5px solid var(--border);
+      background: #fff;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      transition: all 0.12s;
+      user-select: none;
+      color: transparent;
+      flex-shrink: 0;
+    }
+    .mbcl-chk-ok:hover  { border-color: var(--success); color: var(--success); }
+    .mbcl-chk-nvt:hover { border-color: var(--muted); }
+    .mbcl-chk-ok.actief  {
+      background: var(--success); border-color: var(--success); color: #fff;
+    }
+    .mbcl-chk-nvt.actief {
+      background: var(--muted); border-color: var(--muted); color: #fff;
+      font-size: 14px; font-weight: 700;
+    }
+
+    /* Notitieveld */
+    .mbcl-note-row {
+      max-height: 0; overflow: hidden; transition: max-height 0.2s;
+      padding: 0 18px;
+    }
+    .mbcl-note-row.open { max-height: 120px; padding: 8px 18px; }
+    .mbcl-note-ta {
+      width: 100%; padding: 7px 10px;
+      border: 1.5px solid var(--border); border-radius: 5px;
+      font-family: var(--mono); font-size: 11px; color: var(--text);
+      background: #fff; resize: none; height: 60px; outline: none;
+    }
+    .mbcl-note-ta:focus { border-color: var(--accent2); }
+
+    /* ── Progress ring in header ── */
+    .prog-ring { position: relative; flex-shrink: 0; }
+    .prog-ring svg { display: block; }
+    .prog-pct {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono); font-size: 9px; font-weight: 700; color: #fff;
+    }
+
+    /* ── Footer-balk ── */
+    .mbcl-footer {
+      position: fixed;
+      bottom: 0; left: 240px; right: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
+      z-index: 20;
+    }
+    .mbcl-footer-status {
+      flex: 1;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* ── Mock banner ── */
+    .mock-banner {
+      background: rgba(26,110,199,0.08);
+      border: 1px solid rgba(26,110,199,0.2);
+      border-radius: 6px;
+      padding: 8px 14px;
+      margin-bottom: 16px;
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--accent2);
+    }
+
+    /* ── Auto-save indicator ── */
+    .save-ind {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--success);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .save-ind.zichtbaar { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="bf-header">
+  <div class="bf-header-left">
+    <a href="../index.html" title="Terug naar portaal"
+       style="color:rgba(255,255,255,0.55);font-family:var(--mono);font-size:11px;text-decoration:none;display:flex;align-items:center;gap:4px;flex-shrink:0">
+      ← Portaal
+    </a>
+    <div class="bf-logo"></div>
+    <div class="bf-header-div"></div>
+    <div class="bf-header-title">
+      <h1>MachinebouwChecklist</h1>
+      <p id="hdrSub">Productie — van engineering tot verzending</p>
+    </div>
+  </div>
+  <span class="save-ind" id="saveInd">✓ Opgeslagen</span>
+  <div class="prog-ring" title="Totale voortgang">
+    <svg width="42" height="42">
+      <circle cx="21" cy="21" r="17" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="3"/>
+      <circle id="progCircle" cx="21" cy="21" r="17" fill="none" stroke="#e8a000"
+        stroke-width="3" stroke-dasharray="106.8" stroke-dashoffset="106.8"
+        stroke-linecap="round" transform="rotate(-90 21 21)"/>
+    </svg>
+    <div class="prog-pct" id="progPct">0%</div>
+  </div>
+</header>
+
+<!-- Shell -->
+<div class="mbcl-shell">
+
+  <!-- Sidebar -->
+  <aside class="mbcl-sidebar">
+    <div class="mbcl-sb-head">
+      <div class="mbcl-sb-label">Project</div>
+      <select class="mbcl-proj-select" id="projSelect" onchange="laadProject()"></select>
+    </div>
+    <div class="mbcl-sb-fasen" id="sidebarFasen"></div>
+  </aside>
+
+  <!-- Hoofd-paneel -->
+  <main class="mbcl-main" id="hoofdPaneel">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--muted);font-family:var(--mono);font-size:12px;gap:12px">
+      <div style="font-size:40px;opacity:0.3">🏭</div>
+      <div>Kies een project in de sidebar</div>
+    </div>
+  </main>
+
+</div>
+
+<!-- Footer -->
+<div class="mbcl-footer" id="mbclFooter" style="display:none">
+  <div class="mbcl-footer-status" id="footerStatus">0 / 0 items afgevinkt</div>
+  <button class="bf-btn bf-btn-ghost" onclick="resetChecklist()">↺ Leegmaken</button>
+  <button class="bf-btn bf-btn-primary" id="pdfBtn" onclick="exportPDF()">↓ Download PDF</button>
+</div>
+
+<!-- Scripts -->
+<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+<script src="../library/js/bft-auth.js" defer></script>
+<script src="../library/js/bft-graph.js" defer></script>
+<script src="../library/js/bft-dialog.js" defer></script>
+
+<script>
+/* ================================================================
+   FASE-DATA — identiek aan bestaande tool
+   MOCK: vervangen door BFTGraph.query('BFT_Checklists', ...) na App Registration
+   ================================================================ */
+const FASEN = [
+  {id:1, titel:'Engineering vrijgave', items:[
+    {id:'1-01', desc:'Mechanische tekeningen goedgekeurd en vrijgegeven'},
+    {id:'1-02', desc:'Elektrisch schema goedgekeurd en vrijgegeven'},
+    {id:'1-03', desc:'Stuklijst compleet en vrijgegeven door engineering'},
+    {id:'1-04', desc:'Machine-specifieke aanpassingen gedocumenteerd'},
+    {id:'1-05', desc:'CE-documentatie vereisten vastgesteld'}
+  ]},
+  {id:2, titel:'Inkoop & levering', items:[
+    {id:'2-01', desc:'Staalconstructie materiaal besteld'},
+    {id:'2-02', desc:'Pompen besteld', sub:'Controleer levertijd'},
+    {id:'2-03', desc:'Motoren besteld', sub:'Controleer levertijd'},
+    {id:'2-04', desc:'Besturingskast componenten besteld', sub:'Conform elektrisch schema'},
+    {id:'2-05', desc:'Elektrische componenten besteld', sub:'Kabels, zekeringen, relais, LOGO/PLC modules'},
+    {id:'2-06', desc:'Kleppen & fittingen besteld'},
+    {id:'2-07', desc:'Overige inkoopdelen besteld conform stuklijst'},
+    {id:'2-08', desc:'Alle leveringen ontvangen', sub:'Gecheckt tegen stuklijst'}
+  ]},
+  {id:3, titel:'Staalconstructie', items:[
+    {id:'3-01', desc:'Frame gelast conform mechanische tekening'},
+    {id:'3-02', desc:'Maatcontrole uitgevoerd conform toleranties'},
+    {id:'3-03', desc:'Lasnaad inspectie afgerond'},
+    {id:'3-04', desc:'Constructie gereedgemeld voor coating (extern)'}
+  ]},
+  {id:4, titel:'Stralen & coaten (extern)', items:[
+    {id:'4-01', desc:'Constructie afgeleverd bij coatingbedrijf'},
+    {id:'4-02', desc:'Coating uitgevoerd en retour ontvangen'},
+    {id:'4-03', desc:'Laagdikte en kwaliteit visueel gecontroleerd bij ontvangst'},
+    {id:'4-04', desc:'Transportschade gecontroleerd en gereedgemeld'}
+  ]},
+  {id:5, titel:'Mechanische montage', items:[
+    {id:'5-01', desc:'Pompen gemonteerd conform mechanische tekening'},
+    {id:'5-02', desc:'Motoren gemonteerd en uitgelijnd'},
+    {id:'5-03', desc:'Koppelingen en aandrijfassen gemonteerd'},
+    {id:'5-04', desc:'Leidingen aangelegd en bevestigd'},
+    {id:'5-05', desc:'Kleppen & fittingen geplaatst'},
+    {id:'5-06', desc:'Mechanische maatcontrole uitgevoerd'},
+    {id:'5-07', desc:'Alle bouten aangedraaid op torque conform spec'}
+  ]},
+  {id:6, titel:'Elektrische montage', items:[
+    {id:'6-01', desc:'Elektrisch schema aanwezig op werkvloer', sub:'Actuele revisie'},
+    {id:'6-02', desc:'Tekeningen aanwezig: kabelplan, layout, componentenlijst', sub:'Actuele revisie'},
+    {id:'6-03', desc:'Alle besturingskast componenten geplaatst conform layout'},
+    {id:'6-04', desc:'Bekabeling uitgevoerd conform elektrisch schema'},
+    {id:'6-05', desc:'Sensoren en eindschakelaars aangesloten'},
+    {id:'6-06', desc:'Aardverbindingen gecontroleerd — PE op behuizing en motoren'},
+    {id:'6-07', desc:'Kabelinvoer en wartelmoeren correct afgedicht'},
+    {id:'6-08', desc:'Isolatiemeting uitgevoerd (> 1 MOhm)'}
+  ]},
+  {id:7, titel:'Besturing & software', items:[
+    {id:'7-01', desc:'LOGO/PLC geplaatst en bekabeld'},
+    {id:'7-02', desc:'Software geladen', sub:'Versienummer genoteerd'},
+    {id:'7-03', desc:'Parameters ingesteld conform parameterlijst'},
+    {id:'7-04', desc:'IP-adres geconfigureerd'},
+    {id:'7-05', desc:'HMI/TDE gekoppeld en homescherm getest'},
+    {id:'7-06', desc:'Klok en datum ingesteld'}
+  ]},
+  {id:8, titel:'Intern testen (IBN)', items:[
+    {id:'8-01', desc:'Pre-power check conform IBN testprotocol — Gate 1 GO'},
+    {id:'8-02', desc:'Besturingskast test conform IBN testprotocol — Gate 2 GO'},
+    {id:'8-03', desc:'Droog I/O test conform IBN testprotocol — Gate 3 GO'},
+    {id:'8-04', desc:'Droog functioneel test conform IBN testprotocol — Gate 4 GO'},
+    {id:'8-05', desc:'Nat functioneel test conform IBN testprotocol — Gate 5 GO'},
+    {id:'8-06', desc:'Duurtest minimaal 4 uur — Gate 6 GO'},
+    {id:'8-07', desc:'FLIR thermografie uitgevoerd en opgeslagen'},
+    {id:'8-08', desc:'IBN punch list leeg of formeel geaccepteerd'}
+  ]},
+  {id:9, titel:'CE & documentatie', items:[
+    {id:'9-01', desc:'Risicobeoordeling compleet en goedgekeurd'},
+    {id:'9-02', desc:'Technisch dossier samengesteld'},
+    {id:'9-03', desc:'CE-keuring uitgevoerd of aangevraagd bij notified body'},
+    {id:'9-04', desc:'CE-verklaring van overeenstemming opgesteld'},
+    {id:'9-05', desc:'Handleiding opgesteld, goedgekeurd en beschikbaar'},
+    {id:'9-06', desc:'As-built tekeningen bijgewerkt en gearchiveerd'},
+    {id:'9-07', desc:'Foto-documentatie gemaakt van machine'}
+  ]},
+  {id:10, titel:'Oplevering & verzending', items:[
+    {id:'10-01', desc:'Machine intern gereinigd'},
+    {id:'10-02', desc:'Conservering uitgevoerd (vloeistoffen, open verbindingen)'},
+    {id:'10-03', desc:'Verpakking en sjorring gereed voor transport'},
+    {id:'10-04', desc:'Vrachtdocumenten en paklijst gereed'},
+    {id:'10-05', desc:'Klantdossier compleet', sub:'Schema, handleiding, CE-verklaring, IBN rapport'},
+    {id:'10-06', desc:'Interne oplevering goedgekeurd door projectleider'}
+  ]}
+];
+
+/* Projectdata uit gedeeld bft-projects.js */
+
+/* ================================================================
+   STATE
+   checks  : { [itemId]: { status: 'ok'|'nvt', monteur, ts } }
+   notes   : { [itemId]: string }
+   ================================================================ */
+let huidigProject = null;
+let state = { checks: {}, notes: {} };
+let monteurNaam   = '';
+let activeFaseId  = 1;
+
+/* ================================================================
+   PROJECT LADEN
+   ================================================================ */
+function laadProject() {
+  const id = document.getElementById('projSelect').value;
+  if (!id) return;
+
+  huidigProject = id;
+  state = { checks: {}, notes: {} };
+
+  /* MOCK: laad state uit localStorage (wordt straks BFTGraph.query) */
+  try {
+    const raw = localStorage.getItem('bft_v2_mbcl_' + id);
+    if (raw) state = JSON.parse(raw);
+  } catch(e) {}
+
+  const proj = BFT_PROJECTEN.find(p => p.id === id);
+  document.getElementById('hdrSub').textContent = proj ? proj.naam : id;
+  document.getElementById('mbclFooter').style.display = '';
+
+  /* Monteur: uit BFTAuth als beschikbaar, anders uit localStorage */
+  if (window.BFTAuth && BFTAuth.isReady()) {
+    monteurNaam = BFTAuth.getUser()?.naam || '';
+  } else {
+    monteurNaam = localStorage.getItem('bft_v2_monteur') || '';
+  }
+
+  renderSidebar();
+  renderHoofd();
+  updateVoortgang();
+}
+
+/* ================================================================
+   URL-PARAMETER — ?project=201267_BFMR2000EK
+   ================================================================ */
+window.addEventListener('load', function () {
+  const sel = document.getElementById('projSelect');
+  const param = new URLSearchParams(window.location.search).get('project');
+  sel.innerHTML = bftProjectOptions(param || '');
+  if (param) laadProject();
+
+  /* Auth init indien geconfigureerd */
+  if (window.BFTAuth && BFTAuth.isConfigured()) {
+    BFTAuth.init().then(() => {
+      if (BFTAuth.isReady()) {
+        monteurNaam = BFTAuth.getUser()?.naam || monteurNaam;
+        renderMonteurBalk();
+      }
+    });
+  }
+});
+
+/* ================================================================
+   SIDEBAR RENDEREN
+   ================================================================ */
+function renderSidebar() {
+  const el = document.getElementById('sidebarFasen');
+  el.innerHTML = FASEN.map(f => {
+    const t = telFase(f);
+    const klaar = t.done + t.nvt === t.totaal;
+    const isAct = f.id === activeFaseId;
+    return `
+      <button class="mbcl-fase-btn ${klaar ? 'done' : ''} ${isAct ? 'active' : ''}"
+              onclick="scrollNaarFase(${f.id})">
+        <div class="mbcl-fase-num">${f.id}</div>
+        <div class="mbcl-fase-titel">${f.titel}</div>
+        <div class="mbcl-fase-pct">${t.done + t.nvt}/${t.totaal}</div>
+      </button>
+    `;
+  }).join('');
+}
+
+/* ================================================================
+   HOOFD-PANEEL RENDEREN
+   ================================================================ */
+function renderHoofd() {
+  const proj = BFT_PROJECTEN.find(p => p.id === huidigProject) || {};
+  const el   = document.getElementById('hoofdPaneel');
+
+  el.innerHTML = `
+    <div class="mock-banner">
+      ⚠ Mock-modus — wijzigingen opgeslagen in browser. Na IT App Registration → automatisch naar SharePoint.
+    </div>
+
+    <div class="mbcl-info">
+      <div class="bf-field"><label>Project</label>
+        <input type="text" class="bf-input" value="${huidigProject}" readonly style="background:var(--bg2);cursor:default">
+      </div>
+      <div class="bf-field"><label>Machine</label>
+        <input type="text" class="bf-input" value="${proj.naam || ''}" readonly style="background:var(--bg2);cursor:default">
+      </div>
+      <div class="bf-field"><label>Klant</label>
+        <input type="text" class="bf-input" value="${proj.klant || ''}" readonly style="background:var(--bg2);cursor:default">
+      </div>
+      <div class="bf-field"><label>Projectleider</label>
+        <input type="text" class="bf-input" value="${proj.pl || ''}" readonly style="background:var(--bg2);cursor:default">
+      </div>
+      <div class="bf-field"><label>Geplande oplevering</label>
+        <input type="date" class="bf-input" value="${proj.oplevering || ''}" readonly style="background:var(--bg2);cursor:default">
+      </div>
+    </div>
+
+    ${renderMonteurBalk()}
+
+    <div class="mbcl-warn ${!monteurNaam ? 'zichtbaar' : ''}" id="monteurWarn">
+      ⚠ Geen monteur actief — vul naam in voor je begint met afvinken.
+    </div>
+
+    ${FASEN.map(f => renderFase(f)).join('')}
+  `;
+}
+
+function renderMonteurBalk() {
+  if (monteurNaam) {
+    const ini = monteurNaam.trim().split(/\s+/).map(w => w[0] || '').join('').toUpperCase().slice(0,2);
+    return `
+      <div class="mbcl-monteur">
+        <div class="mbcl-mont-avatar">${ini}</div>
+        <div class="mbcl-mont-info">
+          <div class="mbcl-mont-naam">${monteurNaam}</div>
+          <div class="mbcl-mont-sub">Actieve monteur — stempel wordt gezet bij afvinken</div>
+        </div>
+        <button class="bf-btn bf-btn-ghost" style="font-size:11px" onclick="wisselMonteur()">Wissel</button>
+      </div>
+    `;
+  }
+  return `
+    <div class="mbcl-monteur">
+      <div class="mbcl-mont-avatar leeg">?</div>
+      <input class="mbcl-mont-input" id="monteurInput" type="text"
+        placeholder="Vul naam monteur in voor je begint..."
+        value="${monteurNaam}"
+        onkeydown="if(event.key==='Enter')stelMonteurIn()">
+      <button class="bf-btn bf-btn-primary" style="font-size:11px" onclick="stelMonteurIn()">Bevestigen</button>
+    </div>
+  `;
+}
+
+function stelMonteurIn() {
+  const inp = document.getElementById('monteurInput');
+  if (!inp) return;
+  const naam = inp.value.trim();
+  if (!naam) { inp.focus(); return; }
+  monteurNaam = naam;
+  localStorage.setItem('bft_v2_monteur', naam);
+  renderHoofd();
+  updateVoortgang();
+}
+
+function wisselMonteur() {
+  monteurNaam = '';
+  renderHoofd();
+}
+
+/* ================================================================
+   FASE RENDEREN
+   ================================================================ */
+function renderFase(f) {
+  const t = telFase(f);
+  const klaar = t.done + t.nvt === t.totaal;
+  return `
+    <div class="mbcl-fase" id="fase-${f.id}">
+      <div class="mbcl-fase-head" onclick="toggleFase(${f.id})">
+        <div class="mbcl-fnum ${klaar ? 'klaar' : ''}">${f.id}</div>
+        <div class="mbcl-ftitel">${f.titel}</div>
+        <div class="mbcl-fprog ${klaar ? 'klaar' : ''}">${t.done + t.nvt} / ${t.totaal}</div>
+        <span class="mbcl-fchev">▾</span>
+      </div>
+      <div class="mbcl-fase-body">
+        <div class="mbcl-tbl-head">
+          <span>Item</span><span></span><span>OK</span><span>N.v.t.</span>
+        </div>
+        ${f.items.map(it => renderRij(it)).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderRij(it) {
+  const check  = state.checks[it.id];
+  const status = check?.status || '';
+  const mont   = check?.monteur || '';
+  const ts     = check?.ts ? new Date(check.ts).toLocaleString('nl-NL', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+  const note   = state.notes[it.id] || '';
+  const rijCls = status === 'ok' ? 'is-ok' : status === 'nvt' ? 'is-nvt' : '';
+
+  return `
+    <div class="mbcl-row ${rijCls}" id="row-${it.id}">
+      <div class="mbcl-row-content">
+        <div class="mbcl-desc">${it.desc}</div>
+        ${it.sub ? `<div class="mbcl-sub">${it.sub}</div>` : ''}
+        <div class="mbcl-stempel">${mont ? `✓ ${mont} · ${ts}` : ''}</div>
+      </div>
+      <button class="mbcl-note-btn ${note ? 'heeft-note' : ''}" title="Opmerking toevoegen"
+              onclick="toggleNote('${it.id}')">✎</button>
+      <div class="mbcl-chk-col">
+        <div class="mbcl-chk mbcl-chk-ok ${status === 'ok' ? 'actief' : ''}"
+             title="Gedaan" onclick="vink('${it.id}','ok')">✓</div>
+      </div>
+      <div class="mbcl-chk-col">
+        <div class="mbcl-chk mbcl-chk-nvt ${status === 'nvt' ? 'actief' : ''}"
+             title="Niet van toepassing" onclick="vink('${it.id}','nvt')">—</div>
+      </div>
+    </div>
+    <div class="mbcl-note-row ${note ? 'open' : ''}" id="note-${it.id}">
+      <textarea class="mbcl-note-ta" id="ta-${it.id}"
+        placeholder="Opmerking bij dit item..."
+        oninput="slaNotaOp('${it.id}', this.value)">${note}</textarea>
+    </div>
+  `;
+}
+
+/* ================================================================
+   ACTIES
+   ================================================================ */
+function vink(id, modus) {
+  if (!monteurNaam) {
+    const inp = document.getElementById('monteurInput');
+    if (inp) { inp.focus(); inp.style.borderColor = 'var(--danger)'; setTimeout(() => { inp.style.borderColor = ''; }, 1500); }
+    document.getElementById('monteurWarn')?.classList.add('zichtbaar');
+    return;
+  }
+  const huidig = state.checks[id]?.status;
+  if (huidig === modus) {
+    delete state.checks[id];
+  } else {
+    state.checks[id] = { status: modus, monteur: monteurNaam, ts: new Date().toISOString() };
+  }
+  slaOp();
+  updateRij(id);
+  updateVoortgang();
+  renderSidebar();
+}
+
+function toggleFase(id) {
+  document.getElementById('fase-' + id)?.classList.toggle('inklap');
+  activeFaseId = id;
+}
+
+function scrollNaarFase(id) {
+  activeFaseId = id;
+  const el = document.getElementById('fase-' + id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  renderSidebar();
+}
+
+function toggleNote(id) {
+  document.getElementById('note-' + id)?.classList.toggle('open');
+}
+
+function slaNotaOp(id, tekst) {
+  if (tekst.trim()) state.notes[id] = tekst;
+  else delete state.notes[id];
+  slaOp();
+  const btn = document.querySelector(`#row-${id} .mbcl-note-btn`);
+  if (btn) btn.classList.toggle('heeft-note', !!tekst.trim());
+}
+
+function resetChecklist() {
+  if (!window.BFTDialog) { if (!confirm('Alle vinkjes wissen?')) return; }
+  else BFTDialog.confirm('Checklist leegmaken?', 'Alle vinkjes en opmerkingen worden gewist. Niet ongedaan te maken.', {
+    labelOk: 'Leegmaken', labelCancel: 'Annuleren'
+  }).then(ok => { if (ok) { state = { checks:{}, notes:{} }; slaOp(); renderHoofd(); updateVoortgang(); renderSidebar(); }});
+}
+
+/* ================================================================
+   OPSLAAN — MOCK via localStorage
+   Wordt straks: BFTGraph.update('BFT_Checklists', itemId, fields)
+   ================================================================ */
+function slaOp() {
+  if (!huidigProject) return;
+  try { localStorage.setItem('bft_v2_mbcl_' + huidigProject, JSON.stringify(state)); } catch(e) {}
+  try {
+    let totaal = 0, gedaan = 0;
+    FASEN.forEach(f => f.items.forEach(it => {
+      totaal++;
+      const s = state.checks[it.id]?.status;
+      if (s === 'ok' || s === 'nvt') gedaan++;
+    }));
+    const pct = totaal > 0 ? Math.round(gedaan / totaal * 100) : 0;
+    localStorage.setItem('bft_v2_snap_mbcl_' + huidigProject,
+      JSON.stringify({ pct, openItems: totaal - gedaan, updated: new Date().toISOString() }));
+  } catch(e) {}
+  const ind = document.getElementById('saveInd');
+  ind.classList.add('zichtbaar');
+  clearTimeout(ind._t);
+  ind._t = setTimeout(() => ind.classList.remove('zichtbaar'), 1800);
+}
+
+/* ================================================================
+   VOORTGANG
+   ================================================================ */
+function telFase(f) {
+  let done = 0, nvt = 0;
+  f.items.forEach(it => {
+    const s = state.checks[it.id]?.status;
+    if (s === 'ok') done++;
+    if (s === 'nvt') nvt++;
+  });
+  return { totaal: f.items.length, done, nvt };
+}
+
+function updateVoortgang() {
+  let totaal = 0, gedaan = 0;
+  FASEN.forEach(f => { const t = telFase(f); totaal += t.totaal; gedaan += t.done + t.nvt; });
+  const open = totaal - gedaan;
+  const pct  = totaal > 0 ? Math.round(gedaan / totaal * 100) : 0;
+  const omtrek = 106.8;
+  document.getElementById('progCircle').style.strokeDashoffset = omtrek - (omtrek * pct / 100);
+  document.getElementById('progPct').textContent = pct + '%';
+
+  const btn = document.getElementById('pdfBtn');
+  if (open > 0) {
+    document.getElementById('footerStatus').innerHTML =
+      `${gedaan} / ${totaal} items afgevinkt &nbsp;·&nbsp; <span style="color:var(--danger);font-weight:600">${open} open — PDF geblokkeerd</span>`;
+    btn.disabled = true;
+    btn.style.opacity = '0.4';
+    btn.title = `Nog ${open} item${open !== 1 ? 's' : ''} open — voltooi de checklist eerst`;
+  } else {
+    document.getElementById('footerStatus').textContent = `${gedaan} / ${totaal} items afgevinkt — klaar voor export`;
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.title = '';
+  }
+}
+
+function updateRij(id) {
+  const oudeRij = document.getElementById('row-' + id);
+  if (!oudeRij) return;
+  const fase = FASEN.find(f => f.items.some(it => it.id === id));
+  const item = fase?.items.find(it => it.id === id);
+  if (!item) return;
+  const nieuw = document.createElement('div');
+  nieuw.innerHTML = renderRij(item);
+  oudeRij.replaceWith(nieuw.firstElementChild);
+}
+
+/* ================================================================
+   PDF EXPORT — pdfMake
+   Later: BFTGraph.upload() naar SharePoint na lokale download
+   ================================================================ */
+function exportPDF() {
+  if (!huidigProject) return;
+
+  /* Blokkering */
+  let totaal = 0, gedaan = 0;
+  FASEN.forEach(f => { const t = telFase(f); totaal += t.totaal; gedaan += t.done + t.nvt; });
+  if (gedaan < totaal) return; /* Knop is al disabled, dit is een veiligheidsnet */
+
+  const proj    = BFT_PROJECTEN.find(p => p.id === huidigProject) || {};
+  const datumNu = new Date();
+  const datumStr = datumNu.toLocaleDateString('nl-NL', { day:'2-digit', month:'2-digit', year:'numeric' });
+  const datumPad = datumNu.toISOString().slice(0,10);
+  const titelDoc = `MachinebouwChecklist — ${huidigProject}`;
+
+
+  /* ── Info-tabel ── */
+  const infoRijen = [
+    ['Project',           huidigProject],
+    ['Machine',           proj.naam    || '—'],
+    ['Klant',             proj.klant   || '—'],
+    ['Projectleider',     proj.pl      || '—'],
+    ['Geplande oplevering', proj.oplevering || '—'],
+    ['Afgedrukt op',      datumStr],
+    ['Afgedrukt door',    monteurNaam  || '—']
+  ];
+
+  const content = [];
+
+  content.push({
+    table: {
+      widths: [140, '*'],
+      body: infoRijen.map(r => [
+        { text: r[0], fontSize: 9, color: '#7a849a', bold: true, margin: [0,3,0,3] },
+        { text: r[1], fontSize: 10, color: '#1a1f2e', margin: [0,3,0,3] }
+      ])
+    },
+    layout: 'noBorders',
+    margin: [0, 0, 0, 12]
+  });
+
+  /* Voortgang-samenvatting */
+  const okTel  = Object.values(state.checks).filter(c => c.status === 'ok').length;
+  const nvtTel = Object.values(state.checks).filter(c => c.status === 'nvt').length;
+  content.push({
+    text: `Voortgang: ${okTel} afgevinkt · ${nvtTel} n.v.t. · ${totaal} items totaal`,
+    fontSize: 9, color: '#3d4558', italics: true, margin: [0, 0, 0, 16]
+  });
+
+  /* ── Fase-tabellen ── */
+  FASEN.forEach((f, idx) => {
+    const t      = telFase(f);
+    const klaar  = t.done + t.nvt === t.totaal;
+
+    content.push({
+      text: `Fase ${f.id} — ${f.titel}  (${t.done + t.nvt}/${t.totaal})`,
+      fontSize: 11, bold: true,
+      color: klaar ? '#1e9e5e' : '#1a1f2e',
+      margin: [0, idx === 0 ? 0 : 10, 0, 3],
+      pageBreak: idx > 0 && idx % 4 === 0 ? 'before' : undefined
+    });
+
+    /* Gele lijn onder fasekop */
+    content.push({ canvas: [{ type:'rect', x:0, y:0, w:515, h:2, color:'#e8a000' }], margin:[0,0,0,4] });
+
+    const tblBody = [[
+      { text:'Nr.',         fontSize:8, color:'#7a849a', bold:true, fillColor:'#f8f9fa' },
+      { text:'Omschrijving',fontSize:8, color:'#7a849a', bold:true, fillColor:'#f8f9fa' },
+      { text:'Monteur',     fontSize:8, color:'#7a849a', bold:true, fillColor:'#f8f9fa', alignment:'center' },
+      { text:'Status',      fontSize:8, color:'#7a849a', bold:true, fillColor:'#f8f9fa', alignment:'center' }
+    ]];
+
+    f.items.forEach(it => {
+      const check  = state.checks[it.id];
+      const stt    = check?.status || '';
+      const icoon  = stt === 'ok' ? 'OK' : stt === 'nvt' ? 'N.v.t.' : '-';
+      const kleur  = stt === 'ok' ? '#1e9e5e' : stt === 'nvt' ? '#7a849a' : '#d63030';
+      const note   = state.notes[it.id] ? `\nOpmerking: ${state.notes[it.id]}` : '';
+      const descParts = [
+        { text: it.desc, fontSize: 9, color: '#1a1f2e' }
+      ];
+      if (it.sub) descParts.push({ text: `\n${it.sub}`, fontSize: 8, color: '#7a849a' });
+      if (note)   descParts.push({ text: note, fontSize: 8, color: '#7a5a00', italics: true });
+
+      tblBody.push([
+        { text: it.id,   fontSize: 8, color: '#7a849a' },
+        { text: descParts },
+        { text: check?.monteur || '', fontSize: 8, color: '#3d4558', alignment: 'center' },
+        { text: icoon, fontSize: 8, color: kleur, bold: true, alignment: 'center' }
+      ]);
+    });
+
+    content.push({
+      table: { widths: [38, '*', 70, 36], body: tblBody },
+      layout: 'lightHorizontalLines',
+      margin: [0, 0, 0, 4]
+    });
+  });
+
+  /* ── Handtekeningvak ── */
+  content.push({ text: 'Akkoord oplevering', fontSize: 11, bold: true, margin: [0, 20, 0, 4] });
+  content.push({ canvas: [{ type:'rect', x:0, y:0, w:515, h:2, color:'#e8a000' }], margin:[0,0,0,10] });
+  content.push({
+    table: {
+      widths: ['*', '*', '*'],
+      body: [
+        [
+          { text:'Projectleider',  fontSize:9, color:'#7a849a', bold:true, border:[false,false,false,false] },
+          { text:'Datum',          fontSize:9, color:'#7a849a', bold:true, border:[false,false,false,false] },
+          { text:'Handtekening',   fontSize:9, color:'#7a849a', bold:true, border:[false,false,false,false] }
+        ],
+        [
+          { text: proj.pl || '________________________', fontSize:10, color:'#1a1f2e', margin:[0,2,0,20], border:[false,false,false,true] },
+          { text: '________________________', fontSize:10, color:'#c8cdd8', margin:[0,2,0,20], border:[false,false,false,true] },
+          { text: '________________________', fontSize:10, color:'#c8cdd8', margin:[0,2,0,20], border:[false,false,false,true] }
+        ]
+      ]
+    },
+    layout: { defaultBorder: false }
+  });
+
+  /* ── pdfMake definitie ── */
+  const PDF_LOGO = (typeof BFT_PDF_LOGO !== 'undefined') ? BFT_PDF_LOGO : null;
+
+  const docDef = {
+    pageMargins: [40, 88, 40, 40],
+    defaultStyle: { fontSize: 10, lineHeight: 1.3, color: '#3d4558' },
+    header: (page, pages) => ({
+      stack: [
+        {
+          table: {
+            widths: [90, '*', 90],
+            body: [[
+              { image: PDF_LOGO, width: 58, margin:[12,7,0,0],
+                border:[false,false,false,false], fillColor:'#000000' },
+              { text: titelDoc, fontSize:11, bold:true, color:'#fff',
+                alignment:'center', margin:[0,16,0,0],
+                border:[false,false,false,false], fillColor:'#000000' },
+              { text: `${page} / ${pages}`, fontSize:9, color:'rgba(255,255,255,0.5)',
+                alignment:'right', margin:[0,20,15,0],
+                border:[false,false,false,false], fillColor:'#000000' }
+            ]]
+          },
+          layout: { defaultBorder:false }
+        },
+        { canvas:[{ type:'rect', x:0, y:0, w:595, h:3, color:'#e8a000' }] }
+      ]
+    }),
+    footer: (page, pages) => ({
+      columns: [
+        { text: titelDoc,          fontSize:8, color:'#aaa', margin:[40,8,0,0] },
+        { text: `Pagina ${page} / ${pages}`, fontSize:8, color:'#aaa', alignment:'right', margin:[0,8,40,0] }
+      ]
+    }),
+    content
+  };
+
+  const btn = document.getElementById('pdfBtn');
+  btn.disabled = true;
+  btn.textContent = 'Bezig…';
+
+  try {
+    const bestand = `BFT_MBCL_${huidigProject}_${datumPad}.pdf`;
+    pdfMake.createPdf(docDef).download(bestand, () => {
+      btn.disabled = false;
+      btn.textContent = '↓ Download PDF';
+    });
+  } catch(err) {
+    console.error('PDF fout:', err);
+    btn.disabled = false;
+    btn.textContent = '↓ Download PDF';
+  }
+}
+</script>
+
+</body>
+</html>
