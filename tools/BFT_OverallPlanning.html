@@ -87,6 +87,22 @@
     }
     .og-det-btn:hover { background:var(--accent2); color:#fff; border-color:var(--accent2); }
 
+    /* Resource-knop per rij */
+    .og-res-btn {
+      border: 1px solid rgba(124,58,237,0.35);
+      background: rgba(124,58,237,0.06);
+      border-radius: 4px; padding: 2px 7px;
+      cursor: pointer; font-family: var(--mono); font-size: 10px;
+      font-weight: 600; color: #7c3aed; white-space: nowrap;
+      transition: all 0.12s; margin-left: 4px;
+    }
+    .og-res-btn:hover { background: #7c3aed; color: #fff; border-color: #7c3aed; }
+
+    /* Capaciteitsrijen */
+    tr.cap-sep td { background: var(--bg2); border-top: 2px solid var(--border2); padding: 3px 16px; font-family: var(--mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+    tr.cap-rij td { font-family: var(--mono); font-size: 10px; font-weight: 700; text-align: center; min-height: 30px; }
+    tr.cap-rij .cap-naam { text-align: left; padding: 4px 8px; color: var(--muted); font-size: 10px; }
+
     /* Sync-badge */
     .sync-badge {
       font-family:var(--mono); font-size:10px; color:var(--muted); padding:3px 8px;
@@ -131,6 +147,7 @@
     <button class="bf-btn bf-btn-sec"     id="btnSync" title="Importeer actieve projecten uit BFT_PROJECTEN">⟳ Sync projecten</button>
     <button class="bf-btn bf-btn-ghost"   id="btnDisc">⚙ Disciplines</button>
     <button class="bf-btn bf-btn-ghost"   id="btnRes">↔ Week/Maand</button>
+    <button class="bf-btn bf-btn-ghost"   id="btnCap" title="Toon/verberg capaciteitslaag vanuit ResourcePlanning">⊷ Capaciteit</button>
     <span class="sync-badge" id="syncBadge">BFT_PROJECTEN: ${BFT_PROJECTEN?.length ?? 0} beschikbaar</span>
     <div class="spacer"></div>
     <button class="bf-btn bf-btn-ghost" id="btnExport">⤓ JSON</button>
@@ -165,6 +182,7 @@ var grid = BFTOverallGrid.register({
     updateBadge();
     injectDetailKnoppen();
     schrijfPlanningSnapshots();
+    setTimeout(injectCapaciteitsRijen, 200);
   }
 });
 
@@ -180,30 +198,159 @@ function updateBadge() {
    DETAILS-KNOPPEN INJECTEREN PER PROJECTRIJ
    Observeert de DOM na elke render en voegt "Details →" toe
    ================================================================ */
+/* ── Optie A: Details + Resource knoppen per rij ── */
 function injectDetailKnoppen() {
   setTimeout(function () {
     document.querySelectorAll('tr.og-row-project').forEach(function (tr) {
-      if (tr.querySelector('.og-det-btn')) return; /* al toegevoegd */
-      var projectId = tr.dataset.pid;
-      /* Zoek overeenkomst in BFT_PROJECTEN via omschrijving of WO-nr */
+      if (tr.querySelector('.og-det-btn')) return;
       var actieCell = tr.querySelector('.og-td-act');
       if (!actieCell) return;
-      var btn = document.createElement('button');
-      btn.className = 'og-det-btn';
-      btn.textContent = 'Details →';
-      btn.title = 'Open Projectoverzicht';
-      btn.onclick = function (e) {
+
+      var bftId = vindBftId(tr);
+
+      /* Details → knop */
+      var btnDet = document.createElement('button');
+      btnDet.className = 'og-det-btn';
+      btnDet.textContent = 'Details →';
+      btnDet.title = 'Open Projectoverzicht';
+      btnDet.onclick = function (e) {
         e.stopPropagation();
-        var bftId = vindBftId(tr);
-        if (bftId) {
-          window.open('BFT_Projectoverzicht.html?project=' + encodeURIComponent(bftId), '_blank');
-        } else {
-          showToast('Geen BFT-project gekoppeld — gebruik Sync of voeg projectId toe', 'var(--warn)');
-        }
+        if (bftId) window.open('BFT_Projectoverzicht.html?project=' + encodeURIComponent(bftId), '_blank');
+        else showToast('Geen BFT-project gekoppeld — gebruik Sync', 'var(--warn)');
       };
-      actieCell.insertBefore(btn, actieCell.firstChild);
+
+      /* Resource → knop */
+      var btnRes = document.createElement('button');
+      btnRes.className = 'og-res-btn';
+      btnRes.textContent = 'Resource →';
+      btnRes.title = 'Open ResourcePlanning voor dit project';
+      btnRes.onclick = function (e) {
+        e.stopPropagation();
+        if (bftId) window.open('BFT_ResourcePlanning.html?project=' + encodeURIComponent(bftId), '_blank');
+        else showToast('Geen BFT-project gekoppeld — gebruik Sync', 'var(--warn)');
+      };
+
+      actieCell.insertBefore(btnRes, actieCell.firstChild);
+      actieCell.insertBefore(btnDet, actieCell.firstChild);
     });
   }, 100);
+}
+
+/* ── Optie B: Capaciteitslaag ── */
+var capaciteitAan = false;
+
+function maandVanWeekLocaal(jaar, week) {
+  var jan4 = new Date(Date.UTC(jaar, 0, 4));
+  var day = jan4.getUTCDay() || 7;
+  var mon = new Date(jan4);
+  mon.setUTCDate(jan4.getUTCDate() - day + 1 + (week - 1) * 7 + 3);
+  return mon.getUTCMonth();
+}
+
+function injectCapaciteitsRijen() {
+  var tabel = document.querySelector('table.og-tbl');
+  if (!tabel) return;
+  tabel.querySelectorAll('tr.cap-rij, tr.cap-sep').forEach(function(r){ r.remove(); });
+  if (!capaciteitAan) return;
+
+  var doc = grid.getState();
+  var ths = Array.prototype.slice.call(tabel.querySelectorAll('thead th'));
+  var tijdThs = ths.filter(function(th){ return th.classList.contains('og-th-week') || th.classList.contains('og-th-maand'); });
+  if (!tijdThs.length) return;
+
+  /* Lees resource-uren per week voor alle gekende BFT-projecten */
+  var weekTotalen = {};
+  doc.projecten.forEach(function(proj) {
+    var bftId = vindBftIdVanProj(proj);
+    if (!bftId) return;
+    try {
+      var resState = JSON.parse(localStorage.getItem('bft_v2_res_' + bftId));
+      if (!resState || !resState.uren) return;
+      Object.values(resState.uren).forEach(function(mdwUren) {
+        Object.keys(mdwUren).forEach(function(key) {
+          weekTotalen[key] = (weekTotalen[key] || 0) + (mdwUren[key] || 0);
+        });
+      });
+    } catch(e) {}
+  });
+
+  /* Scheidingsrij */
+  var sep = document.createElement('tr');
+  sep.className = 'cap-sep';
+  var sepTd = document.createElement('td');
+  sepTd.colSpan = ths.length;
+  sepTd.textContent = 'Capaciteit — ResourcePlanning (totaal uren alle projecten)';
+  sep.appendChild(sepTd);
+
+  /* Capaciteitsrij */
+  var tr = document.createElement('tr');
+  tr.className = 'cap-rij';
+
+  /* Sticky actiecel */
+  var tdAct = document.createElement('td');
+  tdAct.style.cssText = 'position:sticky;left:0;z-index:2;background:var(--surface2);min-width:52px';
+  tr.appendChild(tdAct);
+
+  /* Sticky naam-cel */
+  var STICKY_META = [110,160,72,80,44,44,44];
+  var STICKY_LEFT = [52];
+  STICKY_META.forEach(function(w,i){ STICKY_LEFT.push(STICKY_LEFT[i]+STICKY_META[i]); });
+
+  var tdNaam = document.createElement('td');
+  tdNaam.className = 'cap-naam';
+  tdNaam.style.cssText = 'position:sticky;left:52px;z-index:2;background:var(--surface2);min-width:110px';
+  tdNaam.textContent = 'Ingepland (u)';
+  tr.appendChild(tdNaam);
+
+  for (var i = 1; i < 7; i++) {
+    var tdLeeg = document.createElement('td');
+    tdLeeg.style.cssText = 'position:sticky;left:' + STICKY_LEFT[i] + 'px;z-index:2;background:var(--surface2);min-width:' + STICKY_META[i] + 'px';
+    tr.appendChild(tdLeeg);
+  }
+
+  /* Tijdkolommen */
+  tijdThs.forEach(function(th) {
+    var uren = 0;
+    if (th.classList.contains('og-th-week')) {
+      var weekNr = parseInt(th.textContent.trim().replace('w',''), 10);
+      var key = 'w' + doc.jaar + '_' + weekNr;
+      uren = weekTotalen[key] || 0;
+    } else {
+      var maanden = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+      var label = th.textContent.trim().toLowerCase();
+      var maandIdx = maanden.findIndex(function(m){ return label.startsWith(m); });
+      if (maandIdx >= 0) {
+        /* Som alle weken in deze maand op */
+        var n = isoWeeksInYear ? isoWeeksInYear(doc.jaar) : 52;
+        for (var w = 1; w <= n; w++) {
+          if (maandVanWeekLocaal(doc.jaar, w) === maandIdx) {
+            uren += weekTotalen['w' + doc.jaar + '_' + w] || 0;
+          }
+        }
+      }
+    }
+
+    var td = document.createElement('td');
+    td.className = th.classList.contains('og-th-huidig') ? 'og-td-huidig' : '';
+    if (uren > 0) {
+      var kleur = uren <= 32 ? '#1e9e5e' : uren <= 48 ? '#e8a000' : '#d63030';
+      td.style.cssText = 'color:' + kleur + ';background:' + kleur + '1a';
+      td.textContent = uren;
+    } else {
+      td.style.color = 'var(--border2)';
+      td.textContent = '—';
+    }
+    tr.appendChild(td);
+  });
+
+  var tbody = tabel.querySelector('tbody');
+  tbody.appendChild(sep);
+  tbody.appendChild(tr);
+}
+
+function vindBftIdVanProj(proj) {
+  if (proj.servnr && BFT_PROJECTEN.find(function(p){ return p.id === proj.servnr; })) return proj.servnr;
+  return null;
 }
 
 /* Zoek BFT-project-id — servnr wordt als persistente bftId gebruikt */
@@ -297,6 +444,14 @@ document.getElementById('btnRes').addEventListener('click', function () {
   scrollNaarHuidig();
 });
 
+document.getElementById('btnCap').addEventListener('click', function () {
+  capaciteitAan = !capaciteitAan;
+  this.style.background = capaciteitAan ? 'rgba(124,58,237,0.10)' : '';
+  this.style.color       = capaciteitAan ? '#7c3aed' : '';
+  this.style.borderColor = capaciteitAan ? 'rgba(124,58,237,0.4)' : '';
+  injectCapaciteitsRijen();
+});
+
 document.getElementById('btnExport').addEventListener('click', function () {
   var json = grid.exportJSON();
   var a = document.createElement('a');
@@ -367,7 +522,10 @@ document.getElementById('syncBadge').textContent =
   'BFT_PROJECTEN: ' + (BFT_PROJECTEN ? BFT_PROJECTEN.length : 0) + ' beschikbaar';
 
 /* MutationObserver voor detail-knoppen na grid-renders */
-var obs = new MutationObserver(injectDetailKnoppen);
+var obs = new MutationObserver(function() {
+  injectDetailKnoppen();
+  setTimeout(injectCapaciteitsRijen, 200);
+});
 obs.observe(document.getElementById('og-grid'), { childList: true, subtree: true });
 </script>
 
