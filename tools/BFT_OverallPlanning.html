@@ -20,8 +20,6 @@
     /* Grid wrapper — horizontaal scrollbaar, linker kolommen gefixeerd */
     .og-wrap {
       overflow: auto;
-      width: 100%;
-      isolation: isolate;
       border: 1px solid var(--border);
       border-radius: 6px;
       background: #fff;
@@ -41,7 +39,7 @@
     }
     /* Zorg dat painted cells de huidig-markering overrulen */
     .og-paint-cell.painted.og-td-huidig { background: inherit !important; }
-    table.og-tbl { border-collapse:collapse; font-size:12px; }
+    table.og-tbl { border-collapse:collapse; width:100%; font-size:12px; }
     table.og-tbl th, table.og-tbl td {
       border:1px solid var(--border,#e1e4e8);
       padding:6px 8px; text-align:left; white-space:nowrap;
