@@ -9,14 +9,34 @@
   <script src="../library/js/bft-overallgrid.js"></script>
   <script src="../library/js/bft-dialog.js" defer></script>
   <style>
-    .toolbar { display:flex; gap:8px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
+    /* ── Volle breedte layout ── */
+    body { overflow-x: hidden; }
+    .op-page { padding: 16px 20px 60px; }
+    .toolbar { display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
     .toolbar .spacer { flex:1; }
 
-    /* Grid wrapper */
+    /* Grid wrapper — horizontaal scrollbaar, linker kolommen gefixeerd */
     .og-wrap {
-      overflow:auto; border:1px solid var(--border); border-radius:6px;
-      background:#fff; box-shadow:var(--shadow-md);
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+      box-shadow: var(--shadow-md);
+      max-height: calc(100vh - 160px);
     }
+
+    /* Huidig week/maand markering */
+    .og-th-huidig {
+      background: rgba(232,160,0,0.25) !important;
+      color: #000 !important;
+      font-weight: 700 !important;
+      border-bottom: 2px solid var(--accent) !important;
+    }
+    .og-td-huidig {
+      background: rgba(232,160,0,0.07) !important;
+    }
+    /* Zorg dat painted cells de huidig-markering overrulen */
+    .og-paint-cell.painted.og-td-huidig { background: inherit !important; }
     table.og-tbl { border-collapse:collapse; width:100%; font-size:12px; }
     table.og-tbl th, table.og-tbl td {
       border:1px solid var(--border,#e1e4e8);
@@ -104,7 +124,7 @@
   <span class="bf-badge" id="hdrBadge">0 projecten</span>
 </header>
 
-<div class="bf-container-wide" style="padding-top:20px">
+<div class="op-page">
 
   <div class="toolbar">
     <button class="bf-btn bf-btn-primary" id="btnAdd">+ Project</button>
@@ -145,6 +165,7 @@ var grid = BFTOverallGrid.register({
     updateBadge();
     injectDetailKnoppen();
     schrijfPlanningSnapshots();
+    scrollNaarHuidig();
   }
 });
 
@@ -273,12 +294,12 @@ document.getElementById('btnAdd').addEventListener('click', function () {
 });
 
 document.getElementById('btnDisc').addEventListener('click', function () {
-  if (grid.promptDisciplines) grid.promptDisciplines();
-  else showToast('Disciplines-beheer: klik ⚙ in de grid-header', 'var(--muted)');
+  grid.openDisciplineManager();
 });
 
 document.getElementById('btnRes').addEventListener('click', function () {
-  if (grid.toggleResolutie) grid.toggleResolutie();
+  grid.toggleResolutie();
+  scrollNaarHuidig();
 });
 
 document.getElementById('btnExport').addEventListener('click', function () {
@@ -323,10 +344,28 @@ function showToast(msg, bg) {
 }
 
 /* ================================================================
+   SCROLL NAAR HUIDIG WEEK / MAAND
+   ================================================================ */
+function scrollNaarHuidig() {
+  setTimeout(function () {
+    var wrap = document.querySelector('.og-wrap');
+    if (!wrap) return;
+    /* Zoek de gemarkeerde kolom */
+    var huidig = wrap.querySelector('.og-th-huidig');
+    if (!huidig) return;
+    /* Scroll zodat de huidige kolom zichtbaar is, met wat ruimte links */
+    var stickyBreedte = 608; /* totale breedte vaste kolommen */
+    var kolomLinks = huidig.offsetLeft;
+    wrap.scrollLeft = Math.max(0, kolomLinks - stickyBreedte - 20);
+  }, 150);
+}
+
+/* ================================================================
    INIT
    ================================================================ */
 updateBadge();
 injectDetailKnoppen();
+scrollNaarHuidig();
 
 /* Sync-badge initial */
 document.getElementById('syncBadge').textContent =

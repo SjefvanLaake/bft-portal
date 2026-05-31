@@ -57,9 +57,9 @@
     { veld: 'omschrijving', label: 'Omschrijving' },
     { veld: 'wo',           label: 'WO-nr' },
     { veld: 'servnr',       label: 'Service-nr' },
-    { veld: 'pl',           label: 'Projectleider' },
-    { veld: 'eng',          label: 'Engineer' },
-    { veld: 'wvb',          label: 'Werkvoorbereiding' }
+    { veld: 'pl',           label: 'PL' },
+    { veld: 'eng',          label: 'EN' },
+    { veld: 'wvb',          label: 'WVB' }
   ];
 
   var DEFAULT_OPTS = {
@@ -130,6 +130,15 @@
       del: function (key) { try { localStorage.removeItem(prefix + key); } catch (e) {} }
     };
   }
+
+  // ── sticky kolom-configuratie ────────────────────────────────────────────
+  var STICKY_ACT  = 52;
+  var STICKY_META = [110, 160, 72, 80, 44, 44, 44]; // breedte per meta-kolom
+  var STICKY_LEFT = [STICKY_ACT];                     // cumulatieve left-offset per meta-kolom
+  STICKY_META.forEach(function (w, i) { STICKY_LEFT.push(STICKY_LEFT[i] + STICKY_META[i]); });
+  var BG_HEAD  = 'var(--accent-dk,#00509e)';
+  var BG_ROW   = '#fff';
+  var BG_DISC  = 'var(--surface,#fbfcfe)';
 
   // ── datamodel ────────────────────────────────────────────────────────────
   function emptyDoc(jaar) {
@@ -410,13 +419,33 @@
       if (samen.length) p.weken[key] = samen; else delete p.weken[key];
     }
 
+    function isoWeekNummer(d) {
+      var jan4 = new Date(Date.UTC(d.getFullYear(), 0, 4));
+      var day  = jan4.getUTCDay() || 7;
+      var mon  = new Date(jan4); mon.setUTCDate(jan4.getUTCDate() - day + 1);
+      return Math.ceil(((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - mon) / 86400000 + 1) / 7);
+    }
+
     function render() {
       var kol = tijdKoppen();
       var totColspanMeta = META_KOLOMMEN.length;
+      var huidigWeek = isoWeekNummer(new Date());
+      var huidigMaand = new Date().getMonth();
+
+      function stickyTh(cls, left, minW, bg, label) {
+        return '<th class="' + cls + '" style="position:sticky;left:' + left + 'px;min-width:' + minW + 'px;z-index:3;background:' + bg + '">' + (label || '') + '</th>';
+      }
+      function stickyTd(cls, left, minW, bg, content, extra) {
+        return '<td class="' + cls + '" style="position:sticky;left:' + left + 'px;min-width:' + minW + 'px;z-index:2;background:' + bg + '"' + (extra || '') + '>' + (content || '') + '</td>';
+      }
+
       var html = '<table class="og-tbl og-res-' + ui.resolutie + '"><thead><tr>';
-      html += '<th class="og-th-act"></th>';
-      META_KOLOMMEN.forEach(function (k) { html += '<th class="og-th-meta">' + esc(k.label) + '</th>'; });
-      kol.forEach(function (c) { html += '<th class="og-th-tijd og-th-' + c.type + '">' + esc(c.label) + '</th>'; });
+      html += stickyTh('og-th-act', 0, STICKY_ACT, BG_HEAD, '');
+      META_KOLOMMEN.forEach(function (k, i) { html += stickyTh('og-th-meta', STICKY_LEFT[i], STICKY_META[i], BG_HEAD, esc(k.label)); });
+      kol.forEach(function (c) {
+        var isHuidig = (c.type === 'week' && c.week === huidigWeek) || (c.type === 'maand' && c.maand === huidigMaand);
+        html += '<th class="og-th-tijd og-th-' + c.type + (isHuidig ? ' og-th-huidig' : '') + '">' + esc(c.label) + '</th>';
+      });
       html += '</tr></thead><tbody>';
 
       if (!doc.projecten.length) {
@@ -426,32 +455,37 @@
       } else {
         doc.projecten.forEach(function (p) {
           var open = !!ui.expanded[p.id];
-          html += '<tr class="og-row-project' + (open ? ' open' : '') + '" data-id="' + esc(p.id) + '">';
-          html += '<td class="og-td-act">'
-            + '<button class="og-caret" data-id="' + esc(p.id) + '" title="Uit-/inklappen">' + (open ? '▼' : '▶') + '</button>'
-            + '<button class="og-del" data-id="' + esc(p.id) + '" title="Verwijder project">×</button>'
-            + '</td>';
-          META_KOLOMMEN.forEach(function (k) { html += '<td class="og-td-meta">' + esc(p[k.veld]) + '</td>'; });
-          kol.forEach(function () { html += '<td class="og-td-tijd"></td>'; });
+          html += '<tr class="og-row-project' + (open ? ' open' : '') + '" data-id="' + esc(p.id) + '" data-pid="' + esc(p.id) + '">';
+          html += stickyTd('og-td-act', 0, STICKY_ACT, BG_ROW,
+            '<button class="og-caret" data-id="' + esc(p.id) + '" title="Uit-/inklappen">' + (open ? '▼' : '▶') + '</button>'
+            + '<button class="og-del" data-id="' + esc(p.id) + '" title="Verwijder project">×</button>');
+          META_KOLOMMEN.forEach(function (k, i) { html += stickyTd('og-td-meta', STICKY_LEFT[i], STICKY_META[i], BG_ROW, esc(p[k.veld])); });
+          kol.forEach(function (c) {
+            var isHuidig = (c.type === 'week' && c.week === huidigWeek) || (c.type === 'maand' && c.maand === huidigMaand);
+            html += '<td class="og-td-tijd' + (isHuidig ? ' og-td-huidig' : '') + '"></td>';
+          });
           html += '</tr>';
 
           if (open) {
             doc.disciplines.forEach(function (d) {
               var set = weekSetFor(p, d.key);
               html += '<tr class="og-row-disc" data-id="' + esc(p.id) + '" data-disc="' + esc(d.key) + '">';
-              html += '<td class="og-td-act"></td>';
-              html += '<td class="og-td-disc" colspan="' + totColspanMeta + '">'
-                + '<span class="og-disc-sw" style="background:' + esc(d.color) + '"></span>'
-                + '<span class="og-disc-label">' + esc(d.label) + '</span></td>';
+              html += stickyTd('og-td-act', 0, STICKY_ACT, BG_DISC, '');
+              html += stickyTd('og-td-disc', STICKY_LEFT[0], '', BG_DISC,
+                '<span class="og-disc-sw" style="background:' + esc(d.color) + '"></span>'
+                + '<span class="og-disc-label">' + esc(d.label) + '</span>',
+                ' colspan="' + totColspanMeta + '"');
               kol.forEach(function (c) {
+                var isHuidig = (c.type === 'week' && c.week === huidigWeek) || (c.type === 'maand' && c.maand === huidigMaand);
+                var hCls = isHuidig ? ' og-td-huidig' : '';
                 if (c.type === 'week') {
                   var on = !!set[c.week];
-                  html += '<td class="og-td-tijd og-paint-cell' + (on ? ' painted' : '') + '" data-week="' + c.week + '"'
+                  html += '<td class="og-td-tijd og-paint-cell' + (on ? ' painted' : '') + hCls + '" data-week="' + c.week + '"'
                     + (on ? ' style="background:' + esc(d.color) + '"' : '') + '></td>';
                 } else {
                   var any = false;
                   for (var w in set) { if (set[w] && maandVanWeek(doc.jaar, Number(w)) === c.maand) { any = true; break; } }
-                  html += '<td class="og-td-tijd og-maand-sum' + (any ? ' filled' : '') + '"'
+                  html += '<td class="og-td-tijd og-maand-sum' + (any ? ' filled' : '') + hCls + '"'
                     + (any ? ' style="background:' + esc(d.color) + '"' : '') + '></td>';
                 }
               });
