@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Overall Planning — BFT</title>
+  <link rel="stylesheet" href="../library/css/bofram-style.css">
+  <script src="../library/js/bft-projects.js"></script>
+  <script src="../library/js/bft-overallgrid.js"></script>
+  <script src="../library/js/bft-dialog.js" defer></script>
+  <style>
+    .toolbar { display:flex; gap:8px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
+    .toolbar .spacer { flex:1; }
+
+    /* Grid wrapper */
+    .og-wrap {
+      overflow:auto; border:1px solid var(--border); border-radius:6px;
+      background:#fff; box-shadow:var(--shadow-md);
+    }
+    table.og-tbl { border-collapse:collapse; width:100%; font-size:12px; }
+    table.og-tbl th, table.og-tbl td {
+      border:1px solid var(--border,#e1e4e8);
+      padding:6px 8px; text-align:left; white-space:nowrap;
+    }
+    table.og-tbl thead th {
+      position:sticky; top:0; z-index:2;
+      background:var(--accent-dk,#00509e); color:#fff;
+      font-family:var(--mono,monospace); font-size:11px; font-weight:600;
+    }
+    .og-th-tijd,.og-td-tijd { text-align:center; min-width:46px; }
+    table.og-tbl.og-res-week .og-th-tijd,
+    table.og-tbl.og-res-week .og-td-tijd { min-width:24px; padding:4px 2px; font-size:10px; }
+    table.og-tbl.og-res-week { user-select:none; }
+    .og-th-act,.og-td-act { width:80px; text-align:center; padding:2px; white-space:nowrap; }
+    .og-td-meta { color:var(--text,#1a1f2e); }
+
+    tr.og-row-project { cursor:pointer; }
+    tr.og-row-project td { background:#fff; }
+    tr.og-row-project:hover td { background:rgba(232,160,0,0.10); }
+    tr.og-row-project.open td { background:var(--surface2,#eef1f5); font-weight:600; }
+    tr.og-row-disc td { background:var(--surface,#fbfcfe); }
+    .og-td-disc { padding-left:22px !important; }
+    .og-disc-sw {
+      display:inline-block; width:13px; height:13px; border-radius:3px;
+      border:1px solid rgba(0,0,0,0.2); vertical-align:middle; margin-right:8px;
+    }
+    .og-disc-label { font-family:var(--mono,monospace); font-size:11px; color:var(--text2,#3d4558); }
+    .og-paint-cell { cursor:crosshair; }
+    .og-paint-cell:hover { box-shadow:inset 0 0 0 1px var(--accent,#e8a000); }
+    .og-empty { text-align:center; color:var(--muted,#8a909c); padding:28px !important; font-style:italic; }
+    .og-caret {
+      border:none; background:transparent; color:var(--muted,#8a909c);
+      cursor:pointer; font-size:9px; line-height:1; padding:2px 3px;
+    }
+    .og-del {
+      border:1px solid transparent; background:transparent; color:var(--muted,#8a909c);
+      cursor:pointer; font-size:15px; line-height:1; border-radius:4px; padding:1px 5px;
+    }
+    .og-del:hover { background:#d63030; color:#fff; }
+
+    /* Details knop per rij */
+    .og-det-btn {
+      border:1px solid var(--border); background:#fff; border-radius:4px;
+      padding:2px 8px; cursor:pointer; font-family:var(--mono); font-size:10px;
+      font-weight:600; color:var(--accent2); white-space:nowrap;
+      transition:all 0.12s;
+    }
+    .og-det-btn:hover { background:var(--accent2); color:#fff; border-color:var(--accent2); }
+
+    /* Sync-badge */
+    .sync-badge {
+      font-family:var(--mono); font-size:10px; color:var(--muted); padding:3px 8px;
+      background:var(--bg2); border-radius:4px; border:1px solid var(--border);
+    }
+    .sync-badge.nieuw { color:var(--success); border-color:var(--success); background:rgba(30,158,94,0.08); }
+
+    /* Toast */
+    .toast {
+      position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+      background:var(--success,#2e7d32); color:#fff;
+      padding:12px 24px; border-radius:6px;
+      font-family:var(--mono,monospace); font-size:13px; font-weight:500;
+      box-shadow:var(--shadow-md,0 4px 12px rgba(0,0,0,0.15));
+      opacity:0; pointer-events:none; transition:opacity 0.2s; z-index:1000;
+    }
+    .toast.show { opacity:1; }
+  </style>
+</head>
+<body>
+
+<header class="bf-header">
+  <div class="bf-header-left">
+    <a href="../index.html" title="Terug naar portaal"
+       style="color:rgba(255,255,255,0.55);font-family:var(--mono);font-size:11px;text-decoration:none;display:flex;align-items:center;gap:4px;flex-shrink:0">
+      ← Portaal
+    </a>
+    <div class="bf-logo"></div>
+    <div class="bf-header-div"></div>
+    <div class="bf-header-title">
+      <h1>Overall Planning</h1>
+      <p id="hdrSub">Projecten · disciplines · tijdlijn</p>
+    </div>
+  </div>
+  <span class="bf-badge" id="hdrBadge">0 projecten</span>
+</header>
+
+<div class="bf-container-wide" style="padding-top:20px">
+
+  <div class="toolbar">
+    <button class="bf-btn bf-btn-primary" id="btnAdd">+ Project</button>
+    <button class="bf-btn bf-btn-sec"     id="btnSync" title="Importeer actieve projecten uit BFT_PROJECTEN">⟳ Sync projecten</button>
+    <button class="bf-btn bf-btn-ghost"   id="btnDisc">⚙ Disciplines</button>
+    <button class="bf-btn bf-btn-ghost"   id="btnRes">↔ Week/Maand</button>
+    <span class="sync-badge" id="syncBadge">BFT_PROJECTEN: ${BFT_PROJECTEN?.length ?? 0} beschikbaar</span>
+    <div class="spacer"></div>
+    <button class="bf-btn bf-btn-ghost" id="btnExport">⤓ JSON</button>
+    <button class="bf-btn bf-btn-ghost" id="btnImport">⤒ JSON</button>
+  </div>
+
+  <div class="og-wrap">
+    <div id="og-grid">
+      <p style="padding:32px;text-align:center;color:var(--muted);font-family:var(--mono);font-size:12px">
+        Bezig met laden…
+      </p>
+    </div>
+  </div>
+
+  <p style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:10px">
+    Klik op een projectregel om disciplines uit te klappen · Klik op een maandcel om te schilderen · <strong>Details →</strong> opent Projectoverzicht
+  </p>
+
+</div>
+
+<input type="file" id="fileInput" accept=".json" style="display:none">
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================================================================
+   GRID INITIALISEREN
+   ================================================================ */
+var grid = BFTOverallGrid.register({
+  container: document.getElementById('og-grid'),
+  jaar:       new Date().getFullYear(),
+  onChange: function () {
+    updateBadge();
+    injectDetailKnoppen();
+    schrijfPlanningSnapshots();
+  }
+});
+
+/* ================================================================
+   BADGE
+   ================================================================ */
+function updateBadge() {
+  var n = (grid && grid.getState().projecten.length) || 0;
+  document.getElementById('hdrBadge').textContent = n + ' project' + (n !== 1 ? 'en' : '');
+}
+
+/* ================================================================
+   DETAILS-KNOPPEN INJECTEREN PER PROJECTRIJ
+   Observeert de DOM na elke render en voegt "Details →" toe
+   ================================================================ */
+function injectDetailKnoppen() {
+  setTimeout(function () {
+    document.querySelectorAll('tr.og-row-project').forEach(function (tr) {
+      if (tr.querySelector('.og-det-btn')) return; /* al toegevoegd */
+      var projectId = tr.dataset.pid;
+      /* Zoek overeenkomst in BFT_PROJECTEN via omschrijving of WO-nr */
+      var actieCell = tr.querySelector('.og-td-act');
+      if (!actieCell) return;
+      var btn = document.createElement('button');
+      btn.className = 'og-det-btn';
+      btn.textContent = 'Details →';
+      btn.title = 'Open Projectoverzicht';
+      btn.onclick = function (e) {
+        e.stopPropagation();
+        var bftId = vindBftId(tr);
+        if (bftId) {
+          window.open('BFT_Projectoverzicht.html?project=' + encodeURIComponent(bftId), '_blank');
+        } else {
+          showToast('Geen BFT-project gekoppeld — gebruik Sync of voeg projectId toe', 'var(--warn)');
+        }
+      };
+      actieCell.insertBefore(btn, actieCell.firstChild);
+    });
+  }, 100);
+}
+
+/* Zoek BFT-project-id op basis van projectrij data */
+function vindBftId(tr) {
+  var doc = grid.getState();
+  var projId = tr.dataset.pid;
+  var proj = doc.projecten.find(function (p) { return p.id === projId; });
+  if (!proj) return null;
+  /* bftId wordt opgeslagen in proj._bftId bij sync */
+  if (proj._bftId) return proj._bftId;
+  /* Fallback: zoek op WO-nr */
+  var bftProj = BFT_PROJECTEN.find(function (p) {
+    return p.projectnr === (proj.wo || '').replace(/[^0-9]/g, '') ||
+           p.id === proj.wo;
+  });
+  return bftProj ? bftProj.id : null;
+}
+
+/* ================================================================
+   PLANNING SNAPSHOTS — voor Projectoverzicht
+   ================================================================ */
+function schrijfPlanningSnapshots() {
+  if (!grid) return;
+  var doc = grid.getState();
+  doc.projecten.forEach(function (proj) {
+    var bftId = proj._bftId;
+    if (!bftId) return;
+    /* Bereken startWeek + eindWeek over alle disciplines */
+    var alleWeken = Object.values(proj.weken || {}).flatMap(function (arr) { return arr || []; });
+    if (!alleWeken.length) return;
+    var starts  = alleWeken.map(function (w) { return w.startWeek || 99; });
+    var einden  = alleWeken.map(function (w) { return w.eindWeek  || 0; });
+    var snap = {
+      startWeek: Math.min.apply(null, starts),
+      eindWeek:  Math.max.apply(null, einden),
+      jaar:      doc.jaar,
+      updated:   new Date().toISOString()
+    };
+    try { localStorage.setItem('bft_v2_snap_plan_' + bftId, JSON.stringify(snap)); } catch(e) {}
+  });
+}
+
+/* ================================================================
+   SYNC — importeer projecten uit BFT_PROJECTEN
+   ================================================================ */
+document.getElementById('btnSync').addEventListener('click', function () {
+  var doc = grid.getState();
+  var bestaandeIds = doc.projecten.map(function (p) { return p._bftId; }).filter(Boolean);
+  var nieuw = BFT_PROJECTEN.filter(function (p) {
+    return p.status !== 'gearchiveerd' && bestaandeIds.indexOf(p.id) === -1;
+  });
+
+  if (!nieuw.length) {
+    showToast('Alle projecten zijn al in de planning', 'var(--muted)');
+    return;
+  }
+
+  nieuw.forEach(function (p) {
+    grid.addProject({
+      klant:        p.klant,
+      omschrijving: p.naam,
+      wo:           p.projectnr,
+      servnr:       p.id,
+      pl:           p.pl || '',
+      eng:          '',
+      wvb:          '',
+      _bftId:       p.id
+    });
+  });
+
+  showToast(nieuw.length + ' project' + (nieuw.length !== 1 ? 'en' : '') + ' gesynchroniseerd');
+
+  var badge = document.getElementById('syncBadge');
+  badge.textContent = nieuw.length + ' nieuw toegevoegd';
+  badge.className = 'sync-badge nieuw';
+  setTimeout(function () {
+    badge.textContent = 'BFT_PROJECTEN: ' + BFT_PROJECTEN.length + ' beschikbaar';
+    badge.className = 'sync-badge';
+  }, 3000);
+});
+
+/* ================================================================
+   TOOLBAR KNOPPEN
+   ================================================================ */
+document.getElementById('btnAdd').addEventListener('click', function () {
+  grid.promptAddProject();
+});
+
+document.getElementById('btnDisc').addEventListener('click', function () {
+  if (grid.promptDisciplines) grid.promptDisciplines();
+  else showToast('Disciplines-beheer: klik ⚙ in de grid-header', 'var(--muted)');
+});
+
+document.getElementById('btnRes').addEventListener('click', function () {
+  if (grid.toggleResolutie) grid.toggleResolutie();
+});
+
+document.getElementById('btnExport').addEventListener('click', function () {
+  var json = grid.exportJSON();
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+  a.download = 'BFT_Planning_' + new Date().toISOString().slice(0, 10) + '.json';
+  a.click();
+  showToast('JSON geëxporteerd');
+});
+
+document.getElementById('btnImport').addEventListener('click', function () {
+  document.getElementById('fileInput').click();
+});
+
+document.getElementById('fileInput').addEventListener('change', function (e) {
+  var file = e.target.files[0]; if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function (ev) {
+    try {
+      var obj = JSON.parse(ev.target.result);
+      grid.importJSON(obj);
+      showToast('Planning geladen: ' + (obj.projecten || []).length + ' projecten');
+    } catch(err) {
+      showToast('Ongeldige JSON', 'var(--danger)');
+    }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+});
+
+/* ================================================================
+   TOAST
+   ================================================================ */
+function showToast(msg, bg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = bg || 'var(--success)';
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(function () { t.classList.remove('show'); }, 3000);
+}
+
+/* ================================================================
+   INIT
+   ================================================================ */
+updateBadge();
+injectDetailKnoppen();
+
+/* Sync-badge initial */
+document.getElementById('syncBadge').textContent =
+  'BFT_PROJECTEN: ' + (BFT_PROJECTEN ? BFT_PROJECTEN.length : 0) + ' beschikbaar';
+
+/* MutationObserver voor detail-knoppen na grid-renders */
+var obs = new MutationObserver(injectDetailKnoppen);
+obs.observe(document.getElementById('og-grid'), { childList: true, subtree: true });
+</script>
+
+</body>
+</html>

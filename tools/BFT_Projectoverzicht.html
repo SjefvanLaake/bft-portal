@@ -438,6 +438,14 @@ function getToolSnapshot(projectId) {
       lastDate:  snap.lastDate  || null
     };
   } catch(e) {}
+  try {
+    const snap = JSON.parse(localStorage.getItem('bft_v2_snap_plan_' + projectId));
+    if (snap) def.planning = {
+      startWeek: snap.startWeek || null,
+      eindWeek:  snap.eindWeek  || null,
+      jaar:      snap.jaar      || new Date().getFullYear()
+    };
+  } catch(e) {}
   return def;
 }
 
