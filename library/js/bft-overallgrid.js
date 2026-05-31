@@ -494,10 +494,13 @@
               var set = weekSetFor(p, d.key);
               html += '<tr class="og-row-disc" data-id="' + esc(p.id) + '" data-disc="' + esc(d.key) + '">';
               html += stickyTd('og-td-act', 0, STICKY_ACT, BG_DISC, '');
-              html += stickyTd('og-td-disc', STICKY_LEFT[0], '', BG_DISC,
-                '<span class="og-disc-sw" style="background:' + esc(d.color) + '"></span>'
-                + '<span class="og-disc-label">' + esc(d.label) + '</span>',
-                ' colspan="' + totColspanMeta + '"');
+              META_KOLOMMEN.forEach(function (k, i) {
+                var content = (i === 0)
+                  ? '<span class="og-disc-sw" style="background:' + esc(d.color) + '"></span>'
+                    + '<span class="og-disc-label">' + esc(d.label) + '</span>'
+                  : '';
+                html += stickyTd('og-td-disc', STICKY_LEFT[i], STICKY_META[i], BG_DISC, content);
+              });
               kol.forEach(function (c) {
                 var isHuidig = (c.type === 'week' && c.week === huidigWeek) || (c.type === 'maand' && c.maand === huidigMaand);
                 var hCls = isHuidig ? ' og-td-huidig' : '';
