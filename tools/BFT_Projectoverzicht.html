@@ -440,11 +440,15 @@ function getToolSnapshot(projectId) {
   } catch(e) {}
   try {
     const snap = JSON.parse(localStorage.getItem('bft_v2_snap_plan_' + projectId));
-    if (snap) def.planning = {
-      startWeek: snap.startWeek || null,
-      eindWeek:  snap.eindWeek  || null,
-      jaar:      snap.jaar      || new Date().getFullYear()
-    };
+    if (snap) def.planning = { startWeek: snap.startWeek || null, eindWeek: snap.eindWeek || null, jaar: snap.jaar || new Date().getFullYear() };
+  } catch(e) {}
+  try {
+    const snap = JSON.parse(localStorage.getItem('bft_v2_snap_res_' + projectId));
+    if (snap) def.resource = { uren: snap.uren || 0, disciplines: snap.disciplines || [] };
+  } catch(e) {}
+  try {
+    const snap = JSON.parse(localStorage.getItem('bft_v2_snap_eval_' + projectId));
+    if (snap) def.evaluatie = { score: snap.score || null, status: snap.status || 'open' };
   } catch(e) {}
   return def;
 }
@@ -593,8 +597,24 @@ function renderDetail() {
 /* ================================================================
    TOOL-SECTIES
    ================================================================ */
+const TOOL_URLS = {
+  mbcl:        'BFT_MachinebouwChecklist.html',
+  ibn:         'BFT_IBNTestprotocol.html',
+  storingslog: 'BFT_Storingslog.html',
+  planning:    'BFT_OverallPlanning.html',
+  resource:    'BFT_ResourcePlanning.html',
+  evaluatie:   'BFT_Projectevaluatie.html',
+  bouwvolgorde: null
+};
+
 function toolCard(id, icon, label, pct, badgeStatus, bodyHTML) {
   const kleur = toolKleur(pct);
+  const url   = TOOL_URLS[id];
+  const link  = url && actief?.id
+    ? `<a href="${url}?project=${encodeURIComponent(actief.id)}" target="_blank"
+         style="font-family:var(--mono);font-size:9px;color:var(--accent2);text-decoration:none;margin-left:auto"
+         onclick="event.stopPropagation()">Openen →</a>`
+    : '';
   return `
     <div class="po-tool-card" id="tc-${id}">
       <div class="po-tool-head" onclick="toggleTool('${id}')">
@@ -604,6 +624,7 @@ function toolCard(id, icon, label, pct, badgeStatus, bodyHTML) {
           <div class="po-tool-pct-fill" style="width:${pct}%;background:${kleur}"></div>
         </div>
         <span class="po-tool-badge ${badgeStatus}">${badgeStatus === 'open' ? 'Niet gestart' : badgeStatus === 'bezig' ? `${pct}%` : 'Klaar'}</span>
+        ${link}
         <span class="po-tool-chev">▾</span>
       </div>
       <div class="po-tool-body">${bodyHTML}</div>

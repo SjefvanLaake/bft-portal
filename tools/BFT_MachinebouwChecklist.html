@@ -433,6 +433,7 @@
 <script src="../library/js/bft-auth.js" defer></script>
 <script src="../library/js/bft-graph.js" defer></script>
 <script src="../library/js/bft-dialog.js" defer></script>
+<script src="../library/js/bft-wizard.js" defer></script>
 
 <script>
 /* ================================================================
@@ -578,12 +579,31 @@ window.addEventListener('load', function () {
   sel.innerHTML = bftProjectOptions(param || '');
   if (param) laadProject();
 
-  /* Auth init indien geconfigureerd */
+  /* Auth init */
   if (window.BFTAuth && BFTAuth.isConfigured()) {
     BFTAuth.init().then(() => {
-      if (BFTAuth.isReady()) {
-        monteurNaam = BFTAuth.getUser()?.naam || monteurNaam;
-        renderMonteurBalk();
+      if (BFTAuth.isReady()) { monteurNaam = BFTAuth.getUser()?.naam || monteurNaam; renderMonteurBalk(); }
+    });
+  }
+
+  /* Wizard */
+  if (window.BFTWizard) {
+    BFTWizard.register({
+      name: 'MachinebouwChecklist',
+      getItems: function () {
+        const items = [];
+        FASEN.forEach(f => f.items.forEach(it => {
+          const s = state.checks[it.id]?.status;
+          if (!s) items.push({ id: it.id, label: it.desc, sub: `Fase ${f.id}: ${f.titel}`, currentStatus: 'open', currentNote: state.notes[it.id] || '' });
+        }));
+        return items;
+      },
+      setStatus: function (id, status, note) {
+        if (status === 'gedaan') state.checks[id] = { status:'ok', monteur: monteurNaam || 'Wizard', ts: new Date().toISOString() };
+        else if (status === 'nvt') state.checks[id] = { status:'nvt', monteur: monteurNaam || 'Wizard', ts: new Date().toISOString() };
+        else delete state.checks[id];
+        if (typeof note === 'string') { if (note.trim()) state.notes[id] = note; else delete state.notes[id]; }
+        slaOp(); updateRij(id); updateVoortgang(); renderSidebar();
       }
     });
   }

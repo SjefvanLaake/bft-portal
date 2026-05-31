@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Projectevaluatie — BFT</title>
+  <link rel="stylesheet" href="../library/css/bofram-style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.min.js"></script>
+  <script src="../library/js/bft-projects.js"></script>
+  <script src="../library/js/bft-pdf-logo.js"></script>
+  <script src="../library/js/bft-dialog.js" defer></script>
+  <style>
+    .container { max-width: 820px; margin: 0 auto; padding: 24px 20px 100px; }
+    .mock-banner { background:rgba(26,110,199,0.08);border:1px solid rgba(26,110,199,0.2);border-radius:6px;padding:8px 14px;margin-bottom:16px;font-family:var(--mono);font-size:10px;color:var(--accent2); }
+
+    /* Categorie */
+    .cat { background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow); }
+    .cat-head { padding:13px 18px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none; }
+    .cat-head:hover { background:var(--bg2); }
+    .cat-num { width:24px;height:24px;border-radius:4px;background:var(--accent);color:#000;font-family:var(--mono);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+    .cat-num.done { background:var(--success);color:#fff; }
+    .cat-label { font-size:12px;font-weight:600;text-transform:uppercase;color:var(--text2);letter-spacing:0.5px;flex:1; }
+    .cat-prog { font-family:var(--mono);font-size:10px;color:var(--muted); }
+    .cat-chev { color:var(--muted);font-size:11px;transition:transform 0.2s; }
+    .cat.collapsed .cat-chev { transform:rotate(-90deg); }
+    .cat.collapsed .cat-body { display:none; }
+    .cat-body { padding:0; }
+
+    /* Vraag-rij */
+    .vraag { padding:14px 18px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:10px; }
+    .vraag:last-child { border-bottom:none; }
+    .vraag-tekst { font-size:12px;color:var(--text);line-height:1.5; }
+    .vraag-sub { font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px; }
+
+    /* Schaalvragen */
+    .schaal { display:flex;gap:6px;flex-wrap:wrap; }
+    .schaal-btn {
+      width:40px;height:40px;border-radius:6px;border:1.5px solid var(--border);
+      background:#fff;cursor:pointer;font-family:var(--mono);font-size:13px;font-weight:700;
+      color:var(--muted);transition:all 0.12s;display:flex;align-items:center;justify-content:center;
+    }
+    .schaal-btn:hover { border-color:var(--accent);color:var(--accent-dk); }
+    .schaal-btn.sel-1,.schaal-btn.sel-2 { background:#d63030;border-color:#d63030;color:#fff; }
+    .schaal-btn.sel-3 { background:#e8a000;border-color:#b87a00;color:#000; }
+    .schaal-btn.sel-4,.schaal-btn.sel-5 { background:var(--success);border-color:var(--success);color:#fff; }
+    .schaal-lbl { display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px;width:214px; }
+
+    /* Tekst-input */
+    textarea { width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-family:var(--sans);font-size:12px;color:var(--text);resize:vertical;min-height:70px;outline:none;background:#fff; }
+    textarea:focus { border-color:var(--accent2); }
+
+    /* Gem. score display */
+    .score-display { font-family:var(--mono);font-size:11px;color:var(--muted); }
+    .score-display strong { color:var(--accent-dk);font-size:14px; }
+
+    /* Footer */
+    .ev-footer { position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:10px;box-shadow:0 -2px 8px rgba(0,0,0,0.06);z-index:20; }
+    .ev-footer-info { flex:1;font-family:var(--mono);font-size:11px;color:var(--muted); }
+    .save-ind { font-family:var(--mono);font-size:10px;color:var(--success);opacity:0;transition:opacity 0.3s; }
+    .save-ind.zichtbaar { opacity:1; }
+
+    /* Project selector */
+    .proj-sel { width:100%;max-width:400px;padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-family:var(--mono);font-size:12px;color:var(--text);background:#fff;cursor:pointer;margin-bottom:16px; }
+  </style>
+</head>
+<body>
+
+<header class="bf-header">
+  <div class="bf-header-left">
+    <a href="../index.html" style="color:rgba(255,255,255,0.55);font-family:var(--mono);font-size:11px;text-decoration:none;display:flex;align-items:center;gap:4px;flex-shrink:0">← Portaal</a>
+    <div class="bf-logo"></div>
+    <div class="bf-header-div"></div>
+    <div class="bf-header-title">
+      <h1>Projectevaluatie</h1>
+      <p id="hdrSub">Evaluatie na oplevering</p>
+    </div>
+  </div>
+  <span class="save-ind" id="saveInd">✓ Opgeslagen</span>
+  <div class="bf-badge" id="hdrScore">—</div>
+</header>
+
+<div class="container">
+  <div class="mock-banner">⚠ Mock-modus — opgeslagen in browser tot SharePoint live is</div>
+
+  <select class="proj-sel" id="projSelect" onchange="laadProject()"></select>
+
+  <div id="categorieën"></div>
+</div>
+
+<div class="ev-footer">
+  <div class="ev-footer-info" id="footerInfo">Kies een project</div>
+  <button class="bf-btn bf-btn-ghost" onclick="resetEvaluatie()">↺ Wissen</button>
+  <button class="bf-btn bf-btn-primary" onclick="exportPDF()">↓ PDF</button>
+</div>
+
+<script>
+const VRAGEN = [
+  { cat:'Planning & voorbereiding', vragen:[
+    {id:'p1', tekst:'De projectplanning was realistisch en haalbaar.', type:'schaal'},
+    {id:'p2', tekst:'De engineering-documentatie was compleet bij start van de bouw.', type:'schaal'},
+    {id:'p3', tekst:'Wat kon beter in de voorbereiding?', type:'tekst'}
+  ]},
+  { cat:'Machinebouw & productie', vragen:[
+    {id:'m1', tekst:'De kwaliteit van de staalconstructie was conform verwachting.', type:'schaal'},
+    {id:'m2', tekst:'Elektrische montage verliep probleemloos.', type:'schaal'},
+    {id:'m3', tekst:'Het IBN-protocol werd volledig doorlopen voor verzending.', type:'schaal'},
+    {id:'m4', tekst:'Opvallende punten tijdens de bouw:', type:'tekst'}
+  ]},
+  { cat:'Storingen & kwaliteit', vragen:[
+    {id:'s1', tekst:'Aantal storingen tijdens IBN was acceptabel.', type:'schaal'},
+    {id:'s2', tekst:'Storingen werden snel en adequaat opgelost.', type:'schaal'},
+    {id:'s3', tekst:'De machine werd storingsvrij opgeleverd.', type:'schaal'},
+    {id:'s4', tekst:'Meest kritieke storingsmoment en oorzaak:', type:'tekst'}
+  ]},
+  { cat:'Communicatie & samenwerking', vragen:[
+    {id:'c1', tekst:'De communicatie binnen het projectteam verliep goed.', type:'schaal'},
+    {id:'c2', tekst:'Terugkoppeling naar de klant was tijdig en duidelijk.', type:'schaal'},
+    {id:'c3', tekst:'Verbeterpunten voor samenwerking:', type:'tekst'}
+  ]},
+  { cat:'Oplevering & documentatie', vragen:[
+    {id:'o1', tekst:'De documentatie (CE, handleiding, schema\'s) was compleet bij oplevering.', type:'schaal'},
+    {id:'o2', tekst:'De machine was volledig conform specificatie opgeleverd.', type:'schaal'},
+    {id:'o3', tekst:'Openstaande punten na oplevering:', type:'tekst'}
+  ]},
+  { cat:'Algemeen oordeel', vragen:[
+    {id:'a1', tekst:'Algehele tevredenheid over dit project.', type:'schaal'},
+    {id:'a2', tekst:'Wat gaan we bij het volgende project anders doen?', type:'tekst'},
+    {id:'a3', tekst:'Wat deden we goed en mogen we herhalen?', type:'tekst'}
+  ]}
+];
+
+let huidigProject = null;
+let state = {}; /* { [vraagId]: { score: 1-5, tekst: '' } } */
+
+window.addEventListener('load', function () {
+  const sel = document.getElementById('projSelect');
+  sel.innerHTML = '<option value="">— Kies project —</option>' +
+    BFT_PROJECTEN.map(p => `<option value="${p.id}">${p.projectnr} · ${p.naam}</option>`).join('');
+  const param = new URLSearchParams(window.location.search).get('project');
+  if (param) { sel.value = param; laadProject(); }
+});
+
+function laadProject() {
+  huidigProject = document.getElementById('projSelect').value;
+  if (!huidigProject) return;
+  state = {};
+  try { const r = localStorage.getItem('bft_v2_eval_' + huidigProject); if (r) state = JSON.parse(r); } catch(e) {}
+  const proj = BFT_PROJECTEN.find(p => p.id === huidigProject);
+  document.getElementById('hdrSub').textContent = proj ? proj.naam : huidigProject;
+  renderCategorieën();
+  updateScore();
+}
+
+function renderCategorieën() {
+  document.getElementById('categorieën').innerHTML = VRAGEN.map((cat, ci) => {
+    const gedaan = cat.vragen.filter(v => {
+      const s = state[v.id];
+      return s && (s.score || (v.type === 'tekst' && s.tekst?.trim()));
+    }).length;
+    return `
+      <div class="cat" id="cat-${ci}">
+        <div class="cat-head" onclick="toggleCat(${ci})">
+          <div class="cat-num ${gedaan === cat.vragen.length ? 'done' : ''}">${ci + 1}</div>
+          <div class="cat-label">${cat.cat}</div>
+          <div class="cat-prog">${gedaan}/${cat.vragen.length}</div>
+          <span class="cat-chev">▾</span>
+        </div>
+        <div class="cat-body">
+          ${cat.vragen.map(v => renderVraag(v)).join('')}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderVraag(v) {
+  const s = state[v.id] || {};
+  if (v.type === 'schaal') {
+    const btns = [1,2,3,4,5].map(n =>
+      `<div class="schaal-btn ${s.score === n ? 'sel-' + n : ''}" onclick="setScore('${v.id}', ${n})">${n}</div>`
+    ).join('');
+    return `<div class="vraag" id="v-${v.id}">
+      <div class="vraag-tekst">${v.tekst}</div>
+      <div class="schaal">${btns}</div>
+      <div class="schaal-lbl"><span>Slecht</span><span>Uitstekend</span></div>
+    </div>`;
+  }
+  return `<div class="vraag" id="v-${v.id}">
+    <div class="vraag-tekst">${v.tekst}</div>
+    <textarea placeholder="Voer je antwoord in…" oninput="setTekst('${v.id}', this.value)">${s.tekst || ''}</textarea>
+  </div>`;
+}
+
+function setScore(id, score) {
+  if (!state[id]) state[id] = {};
+  state[id].score = state[id].score === score ? null : score;
+  slaOp();
+  const vraag = document.getElementById('v-' + id);
+  if (vraag) {
+    vraag.querySelectorAll('.schaal-btn').forEach((btn, i) => {
+      btn.className = 'schaal-btn' + (state[id].score === i + 1 ? ' sel-' + (i + 1) : '');
+    });
+  }
+  updateScore();
+  updateCatProgress();
+}
+
+function setTekst(id, tekst) {
+  if (!state[id]) state[id] = {};
+  state[id].tekst = tekst;
+  slaOp();
+  updateCatProgress();
+}
+
+function toggleCat(ci) {
+  document.getElementById('cat-' + ci)?.classList.toggle('collapsed');
+}
+
+function updateScore() {
+  const scores = Object.values(state).map(s => s.score).filter(Boolean);
+  const gem = scores.length ? (scores.reduce((a,b) => a+b, 0) / scores.length).toFixed(1) : null;
+  document.getElementById('hdrScore').textContent = gem ? `${gem} / 5` : '—';
+  document.getElementById('footerInfo').textContent =
+    gem ? `Gemiddelde score: ${gem} / 5 (${scores.length} schaalvragen beantwoord)` : 'Nog geen scores ingevuld';
+  schrijfSnapshot(gem, scores.length);
+}
+
+function updateCatProgress() {
+  VRAGEN.forEach((cat, ci) => {
+    const gedaan = cat.vragen.filter(v => {
+      const s = state[v.id];
+      return s && (s.score || (v.type === 'tekst' && s.tekst?.trim()));
+    }).length;
+    const num = document.querySelector(`#cat-${ci} .cat-num`);
+    const prog = document.querySelector(`#cat-${ci} .cat-prog`);
+    if (num) { num.textContent = gedaan === cat.vragen.length ? '✓' : ci + 1; num.className = 'cat-num' + (gedaan === cat.vragen.length ? ' done' : ''); }
+    if (prog) prog.textContent = `${gedaan}/${cat.vragen.length}`;
+  });
+}
+
+function schrijfSnapshot(gem, count) {
+  if (!huidigProject) return;
+  try {
+    localStorage.setItem('bft_v2_snap_eval_' + huidigProject, JSON.stringify({
+      score: gem ? parseFloat(gem) : null,
+      status: gem ? (count >= 12 ? 'klaar' : 'bezig') : 'open',
+      updated: new Date().toISOString()
+    }));
+  } catch(e) {}
+}
+
+function slaOp() {
+  if (!huidigProject) return;
+  try { localStorage.setItem('bft_v2_eval_' + huidigProject, JSON.stringify(state)); } catch(e) {}
+  const ind = document.getElementById('saveInd');
+  ind.classList.add('zichtbaar');
+  clearTimeout(ind._t);
+  ind._t = setTimeout(() => ind.classList.remove('zichtbaar'), 1800);
+}
+
+function resetEvaluatie() {
+  if (!confirm('Evaluatie wissen?')) return;
+  state = {};
+  slaOp();
+  renderCategorieën();
+  updateScore();
+}
+
+function exportPDF() {
+  const proj = BFT_PROJECTEN.find(p => p.id === huidigProject) || {};
+  const datum = new Date().toISOString().slice(0,10);
+  const scores = Object.values(state).map(s => s.score).filter(Boolean);
+  const gem = scores.length ? (scores.reduce((a,b) => a+b, 0) / scores.length).toFixed(1) : '—';
+  const PDF_LOGO = typeof BFT_PDF_LOGO !== 'undefined' ? BFT_PDF_LOGO : null;
+
+  const content = [];
+  content.push({ table:{ widths:[130,'*'], body:[
+    [{text:'Project',fontSize:9,color:'#7a849a',bold:true,margin:[0,3,0,3]},{text:huidigProject,fontSize:10,color:'#1a1f2e',margin:[0,3,0,3]}],
+    [{text:'Machine',fontSize:9,color:'#7a849a',bold:true,margin:[0,3,0,3]},{text:proj.naam||'—',fontSize:10,color:'#1a1f2e',margin:[0,3,0,3]}],
+    [{text:'Datum',fontSize:9,color:'#7a849a',bold:true,margin:[0,3,0,3]},{text:datum,fontSize:10,color:'#1a1f2e',margin:[0,3,0,3]}],
+    [{text:'Gem. score',fontSize:9,color:'#7a849a',bold:true,margin:[0,3,0,3]},{text:gem + (gem !== '—' ? ' / 5' : ''),fontSize:10,bold:true,color:gem!=='—'?'#1e9e5e':'#7a849a',margin:[0,3,0,3]}]
+  ]}, layout:'noBorders', margin:[0,0,0,14]});
+
+  VRAGEN.forEach((cat, ci) => {
+    content.push({text:`${ci+1}. ${cat.cat}`,fontSize:11,bold:true,margin:[0,10,0,3]});
+    content.push({canvas:[{type:'rect',x:0,y:0,w:515,h:2,color:'#e8a000'}],margin:[0,0,0,6]});
+    cat.vragen.forEach(v => {
+      const s = state[v.id] || {};
+      if (v.type === 'schaal') {
+        const stars = s.score ? ('★'.repeat(s.score) + '☆'.repeat(5-s.score)) : '○ Niet ingevuld';
+        content.push({columns:[
+          {text:v.tekst,fontSize:9,color:'#3d4558',width:'*'},
+          {text:s.score ? `${s.score}/5` : '—',fontSize:9,bold:true,color:s.score>=4?'#1e9e5e':s.score<=2?'#d63030':'#e8a000',width:30,alignment:'right'}
+        ],margin:[0,3,0,3]});
+      } else {
+        content.push({text:v.tekst,fontSize:9,color:'#3d4558',margin:[0,3,0,1]});
+        content.push({text:s.tekst||'—',fontSize:9,color:s.tekst?'#1a1f2e':'#aaa',italics:!s.tekst,margin:[8,0,0,4]});
+      }
+    });
+  });
+
+  const headerImg = PDF_LOGO
+    ? {image:PDF_LOGO,width:58,margin:[12,7,0,0],border:[false,false,false,false],fillColor:'#000000'}
+    : {text:'BOFRAM',fontSize:13,bold:true,color:'#e8a000',margin:[16,15,0,0],border:[false,false,false,false],fillColor:'#000000'};
+  const titel = `Projectevaluatie — ${huidigProject}`;
+
+  pdfMake.createPdf({
+    pageMargins:[40,88,40,40],
+    defaultStyle:{fontSize:10,lineHeight:1.4,color:'#3d4558'},
+    header:(page,pages) => ({stack:[
+      {table:{widths:[90,'*',90],body:[[headerImg,{text:titel,fontSize:11,bold:true,color:'#fff',alignment:'center',margin:[0,16,0,0],border:[false,false,false,false],fillColor:'#000000'},{text:`${page}/${pages}`,fontSize:9,color:'rgba(255,255,255,0.5)',alignment:'right',margin:[0,20,15,0],border:[false,false,false,false],fillColor:'#000000'}]]},layout:{defaultBorder:false}},
+      {canvas:[{type:'rect',x:0,y:0,w:595,h:3,color:'#e8a000'}]}
+    ]}),
+    footer:(page,pages) => ({columns:[{text:titel,fontSize:8,color:'#aaa',margin:[40,8,0,0]},{text:`Pagina ${page}/${pages}`,fontSize:8,color:'#aaa',alignment:'right',margin:[0,8,40,0]}]}),
+    content
+  }).download(`BFT_Evaluatie_${huidigProject}_${datum}.pdf`);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+# Omgevingsvariabelen en configuratie
+*.env
+*.env.local
+*.env.*.local
+.env*
+
+# Editor
+.vscode/
+.idea/
+*.suo
+*.user
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Backups
+*.bak
+*.backup
+*~
+
+# Node (toekomstig gebruik)
+node_modules/
+npm-debug.log*
+
+# Build output (toekomstig gebruik)
+dist/
+build/
+
+# Tijdelijke bestanden
+*.tmp
+*.temp

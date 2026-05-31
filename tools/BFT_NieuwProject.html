@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nieuw Project — BFT</title>
+  <link rel="stylesheet" href="../library/css/bofram-style.css">
+  <script src="../library/js/bft-projects.js"></script>
+  <style>
+    .container { max-width:620px;margin:0 auto;padding:28px 20px 80px; }
+    .card { background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;box-shadow:var(--shadow-md); }
+    .fg { display:grid;gap:14px; }
+    .fg2 { grid-template-columns:1fr 1fr; }
+    @media(max-width:560px){.fg2{grid-template-columns:1fr;}}
+    .field { display:flex;flex-direction:column;gap:5px; }
+    .field label { font-size:10px;font-weight:700;letter-spacing:0.9px;text-transform:uppercase;color:var(--muted);font-family:var(--mono); }
+    .field label .req { color:var(--danger); }
+    input,select { background:#fff;border:1.5px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--sans);font-size:13px;padding:9px 11px;outline:none;transition:border-color 0.15s;width:100%; }
+    input:focus,select:focus { border-color:var(--accent2); }
+
+    /* Resultaatblok */
+    .result-blok { display:none;margin-top:20px; }
+    .result-blok.zichtbaar { display:block; }
+    .code-blok {
+      background:#1a1f2e;color:#e8a000;font-family:var(--mono);font-size:12px;
+      border-radius:6px;padding:16px;white-space:pre-wrap;word-break:break-all;
+      border:1px solid #3d4558;line-height:1.7;
+    }
+    .stap { background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px 18px;margin-bottom:10px; }
+    .stap-nr { font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);letter-spacing:1px;margin-bottom:6px; }
+    .stap-tekst { font-size:13px;color:var(--text);line-height:1.6; }
+    code { background:var(--bg2);padding:2px 6px;border-radius:3px;font-family:var(--mono);font-size:11px;color:var(--accent-dk); }
+
+    .warn { background:rgba(214,48,48,0.07);border:1px solid rgba(214,48,48,0.25);border-radius:6px;padding:10px 14px;font-family:var(--mono);font-size:11px;color:var(--danger);margin-bottom:16px; }
+  </style>
+</head>
+<body>
+
+<header class="bf-header">
+  <div class="bf-header-left">
+    <a href="../index.html" style="color:rgba(255,255,255,0.55);font-family:var(--mono);font-size:11px;text-decoration:none;display:flex;align-items:center;gap:4px;flex-shrink:0">← Portaal</a>
+    <div class="bf-logo"></div>
+    <div class="bf-header-div"></div>
+    <div class="bf-header-title">
+      <h1>Nieuw Project</h1>
+      <p>Project aanmaken en toevoegen aan de toolset</p>
+    </div>
+  </div>
+  <div class="bf-badge">Beheer</div>
+</header>
+
+<div class="container">
+
+  <div class="warn">
+    ℹ Dit scherm genereert de code die handmatig in <code>library/js/bft-projects.js</code> geplakt moet worden. Na een git push is het project beschikbaar in alle tools.
+  </div>
+
+  <div class="card">
+    <div class="fg fg2" style="margin-bottom:14px">
+      <div class="field">
+        <label>Projectnummer <span class="req">*</span></label>
+        <input type="text" id="f_nr" placeholder="bijv. 201270" oninput="updatePreview()">
+      </div>
+      <div class="field">
+        <label>Machine type <span class="req">*</span></label>
+        <input type="text" id="f_type" placeholder="bijv. BFMR2000EK" oninput="updatePreview()">
+      </div>
+    </div>
+    <div class="fg" style="margin-bottom:14px">
+      <div class="field">
+        <label>Machine naam <span class="req">*</span></label>
+        <input type="text" id="f_naam" placeholder="bijv. Mix Recycler BFMR2000EK" oninput="updatePreview()">
+      </div>
+      <div class="field">
+        <label>Klant <span class="req">*</span></label>
+        <input type="text" id="f_klant" placeholder="Naam klant / bedrijf" oninput="updatePreview()">
+      </div>
+    </div>
+    <div class="fg fg2" style="margin-bottom:20px">
+      <div class="field">
+        <label>Projectleider</label>
+        <input type="text" id="f_pl" placeholder="Naam PL" oninput="updatePreview()">
+      </div>
+      <div class="field">
+        <label>Geplande oplevering</label>
+        <input type="date" id="f_oplevering" oninput="updatePreview()">
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="f_status" onchange="updatePreview()">
+          <option value="actief">Actief</option>
+          <option value="wacht">In wacht</option>
+          <option value="klaar">Klaar</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Aangemaakt op</label>
+        <input type="date" id="f_aangemaakt" oninput="updatePreview()">
+      </div>
+    </div>
+    <button class="bf-btn bf-btn-primary" onclick="genereer()" style="width:100%">Genereer code →</button>
+  </div>
+
+  <div class="result-blok" id="resultBlok">
+    <h3 style="font-size:14px;font-weight:700;color:var(--text);margin:20px 0 10px">Instructies voor toevoeging</h3>
+
+    <div class="stap">
+      <div class="stap-nr">Stap 1 — Kopieer deze code</div>
+      <div class="stap-tekst">Voeg onderstaand blok toe aan <code>BFT-V2/library/js/bft-projects.js</code>, vóór de sluitende <code>];</code></div>
+    </div>
+
+    <div class="code-blok" id="codeBlok"></div>
+    <button class="bf-btn bf-btn-sec" style="margin-top:8px;width:100%" onclick="kopieer()">📋 Kopiëren</button>
+
+    <div class="stap" style="margin-top:14px">
+      <div class="stap-nr">Stap 2 — Deployen</div>
+      <div class="stap-tekst">Na het plakken en opslaan, voer in de terminal uit:</div>
+      <div class="code-blok" id="gitCode" style="margin-top:8px"></div>
+    </div>
+
+    <div class="stap">
+      <div class="stap-nr">Stap 3 — Controleren</div>
+      <div class="stap-tekst">Na de push deployt Netlify automatisch (~30 sec). Open daarna het portaal en controleer of het project in de lijst staat.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function gv(id){ return document.getElementById(id)?.value?.trim() || ''; }
+
+function updatePreview(){
+  const nr = gv('f_nr'), type = gv('f_type');
+  if (nr && type) {
+    document.getElementById('f_naam').placeholder = `Mix ${type}`;
+  }
+}
+
+function genereer(){
+  const nr = gv('f_nr'), type = gv('f_type'), naam = gv('f_naam'), klant = gv('f_klant');
+  if (!nr || !type || !naam || !klant) { alert('Vul minimaal projectnummer, type, naam en klant in.'); return; }
+  const id = `${nr}_${type.replace(/[^a-zA-Z0-9]/g,'').toUpperCase()}`;
+  const oplevering = gv('f_oplevering') || '';
+  const pl = gv('f_pl') || '';
+  const status = gv('f_status') || 'actief';
+  const aangemaakt = gv('f_aangemaakt') || new Date().toISOString().slice(0,10);
+
+  /* Check duplikaatcheck */
+  const bestaand = BFT_PROJECTEN.find(p => p.id === id || p.projectnr === nr);
+  if (bestaand) {
+    document.getElementById('codeBlok').textContent = `⚠ WAARSCHUWING: project ${nr} bestaat al (${bestaand.naam}).\nPas het projectnummer aan.`;
+    document.getElementById('resultBlok').classList.add('zichtbaar');
+    return;
+  }
+
+  const code = `  ,{\n    id: '${id}',\n    projectnr: '${nr}',\n    naam: '${naam}',\n    klant: '${klant}',\n    oplevering: '${oplevering}',\n    pl: '${pl}',\n    machineType: '${type}',\n    aangemaakt: '${aangemaakt}',\n    status: '${status}'\n  }`;
+
+  const gitCommands = `git -C "C:\\Users\\sjefv\\OneDrive\\Documenten\\Claude\\Projects\\BFT-V2" add library/js/bft-projects.js\ngit -C "C:\\Users\\sjefv\\OneDrive\\Documenten\\Claude\\Projects\\BFT-V2" commit -m "Nieuw project: ${nr} ${naam}"\ngit -C "C:\\Users\\sjefv\\OneDrive\\Documenten\\Claude\\Projects\\BFT-V2" push`;
+
+  document.getElementById('codeBlok').textContent = code;
+  document.getElementById('gitCode').textContent = gitCommands;
+  document.getElementById('resultBlok').classList.add('zichtbaar');
+  document.getElementById('resultBlok').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function kopieer(){
+  const code = document.getElementById('codeBlok').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = event.target;
+    btn.textContent = '✓ Gekopieerd!';
+    setTimeout(() => btn.textContent = '📋 Kopiëren', 2000);
+  });
+}
+
+/* Datum standaard vandaag */
+document.getElementById('f_aangemaakt').value = new Date().toISOString().slice(0,10);
+</script>
+</body>
+</html>

@@ -206,19 +206,16 @@ function injectDetailKnoppen() {
   }, 100);
 }
 
-/* Zoek BFT-project-id op basis van projectrij data */
+/* Zoek BFT-project-id — servnr wordt als persistente bftId gebruikt */
 function vindBftId(tr) {
   var doc = grid.getState();
-  var projId = tr.dataset.pid;
+  var projId = tr.dataset.pid || tr.dataset.id;
   var proj = doc.projecten.find(function (p) { return p.id === projId; });
   if (!proj) return null;
-  /* bftId wordt opgeslagen in proj._bftId bij sync */
-  if (proj._bftId) return proj._bftId;
-  /* Fallback: zoek op WO-nr */
-  var bftProj = BFT_PROJECTEN.find(function (p) {
-    return p.projectnr === (proj.wo || '').replace(/[^0-9]/g, '') ||
-           p.id === proj.wo;
-  });
+  /* servnr bevat de bftId (wordt bij Sync zo ingevuld) */
+  if (proj.servnr && BFT_PROJECTEN.find(function(p){ return p.id === proj.servnr; })) return proj.servnr;
+  /* Fallback: match op WO-nr = projectnr */
+  var bftProj = BFT_PROJECTEN.find(function (p) { return p.projectnr === (proj.wo || '').trim(); });
   return bftProj ? bftProj.id : null;
 }
 
@@ -251,7 +248,7 @@ function schrijfPlanningSnapshots() {
    ================================================================ */
 document.getElementById('btnSync').addEventListener('click', function () {
   var doc = grid.getState();
-  var bestaandeIds = doc.projecten.map(function (p) { return p._bftId; }).filter(Boolean);
+  var bestaandeIds = doc.projecten.map(function (p) { return p.servnr; }).filter(Boolean);
   var nieuw = BFT_PROJECTEN.filter(function (p) {
     return p.status !== 'gearchiveerd' && bestaandeIds.indexOf(p.id) === -1;
   });
@@ -266,11 +263,10 @@ document.getElementById('btnSync').addEventListener('click', function () {
       klant:        p.klant,
       omschrijving: p.naam,
       wo:           p.projectnr,
-      servnr:       p.id,
+      servnr:       p.id,        /* persistent bftId — niet wijzigen */
       pl:           p.pl || '',
       eng:          '',
-      wvb:          '',
-      _bftId:       p.id
+      wvb:          ''
     });
   });
 

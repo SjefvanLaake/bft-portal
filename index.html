@@ -271,7 +271,7 @@
   <p class="hero-sub">SharePoint-gekoppeld · Multi-user · Consistent documentbeheer</p>
   <div class="hero-stats">
     <div class="hero-stat">
-      <span class="hero-stat-val" id="statLive">5</span>
+      <span class="hero-stat-val" id="statLive">8</span>
       <span class="hero-stat-lbl">Live</span>
     </div>
     <div class="hero-stat">
@@ -418,16 +418,16 @@
         </div>
       </a>
 
-      <a href="#" class="tool-card binnenkort" data-tags="planning"
-         style="--tc:#7c3aed;">
+      <a href="tools/BFT_ResourcePlanning.html" class="tool-card" data-tags="planning"
+         style="--tc:#7c3aed; --ic-bg:rgba(124,58,237,0.09); --ic-br:rgba(124,58,237,0.25);">
         <div class="tool-card-top"></div>
         <div class="tool-card-body">
-          <div class="tool-card-icon" style="--ic-bg:rgba(124,58,237,0.09);--ic-br:rgba(124,58,237,0.25);">👷</div>
+          <div class="tool-card-icon">👷</div>
           <div class="tool-card-name">Resource Planning</div>
-          <div class="tool-card-desc">Bezettiging per medewerker en discipline per week. Overzicht van beschikbare capaciteit per project.</div>
+          <div class="tool-card-desc">Capaciteit per medewerker per week of kwartaal. Sticky kolommen, huidig-week focus, totalen per week.</div>
         </div>
         <div class="tool-card-foot">
-          <span class="soon-tag">Binnenkort</span>
+          <span class="tool-tag" style="background:rgba(124,58,237,0.09);color:#7c3aed;border-color:rgba(124,58,237,0.25)"><span class="live-dot"></span>Live</span>
           <span class="tool-arrow">→</span>
         </div>
       </a>
@@ -443,20 +443,40 @@
     </div>
     <div class="tools-grid">
 
-      <a href="#" class="tool-card binnenkort" data-tags="document"
-         style="--tc:#3d4558;">
+      <a href="tools/BFT_Projectevaluatie.html" class="tool-card" data-tags="document"
+         style="--tc:#3d4558; --ic-bg:rgba(61,69,88,0.09); --ic-br:rgba(61,69,88,0.25);">
         <div class="tool-card-top"></div>
         <div class="tool-card-body">
-          <div class="tool-card-icon" style="--ic-bg:rgba(61,69,88,0.09);--ic-br:rgba(61,69,88,0.25);">📝</div>
+          <div class="tool-card-icon">📝</div>
           <div class="tool-card-name">Projectevaluatie</div>
-          <div class="tool-card-desc">Stap-voor-stap evaluatieformulier na oplevering. Schaalscores en opmerkingen per categorie, opgeslagen in SharePoint.</div>
+          <div class="tool-card-desc">6 categorieën, 17 vragen, schaalscores 1-5. Gemiddelde score zichtbaar in Projectoverzicht. PDF-export.</div>
         </div>
         <div class="tool-card-foot">
-          <span class="soon-tag">Binnenkort</span>
+          <span class="tool-tag grey"><span class="live-dot"></span>Live</span>
           <span class="tool-arrow">→</span>
         </div>
       </a>
 
+    </div>
+  </div>
+
+  <!-- ─── Beheer ─── -->
+  <div class="tool-section">
+    <div class="category-header">Beheer <span class="category-count">1 tool</span></div>
+    <div class="tools-grid">
+      <a href="tools/BFT_NieuwProject.html" class="tool-card" data-tags="planning"
+         style="--tc:#00509e; --ic-bg:rgba(0,80,158,0.09); --ic-br:rgba(0,80,158,0.25);">
+        <div class="tool-card-top"></div>
+        <div class="tool-card-body">
+          <div class="tool-card-icon">⊕</div>
+          <div class="tool-card-name">Nieuw Project</div>
+          <div class="tool-card-desc">Genereer code om een nieuw project toe te voegen aan bft-projects.js. Duplicaatcheck ingebouwd.</div>
+        </div>
+        <div class="tool-card-foot">
+          <span class="tool-tag blue">Beheer</span>
+          <span class="tool-arrow">→</span>
+        </div>
+      </a>
     </div>
   </div>
 
