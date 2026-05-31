@@ -258,28 +258,28 @@ function injectCapaciteitsRijen() {
   var tijdThs = ths.filter(function(th){ return th.classList.contains('og-th-week') || th.classList.contains('og-th-maand'); });
   if (!tijdThs.length) return;
 
-  /* Lees resource-uren per week voor alle gekende BFT-projecten */
+  /* Lees ALLE resource-data uit localStorage (alle bft_v2_res_* keys) */
   var weekTotalen = {};
-  doc.projecten.forEach(function(proj) {
-    var bftId = vindBftIdVanProj(proj);
-    if (!bftId) return;
+  for (var i = 0; i < localStorage.length; i++) {
+    var lsKey = localStorage.key(i);
+    if (!lsKey || !lsKey.startsWith('bft_v2_res_')) continue;
     try {
-      var resState = JSON.parse(localStorage.getItem('bft_v2_res_' + bftId));
-      if (!resState || !resState.uren) return;
+      var resState = JSON.parse(localStorage.getItem(lsKey));
+      if (!resState || !resState.uren) continue;
       Object.values(resState.uren).forEach(function(mdwUren) {
-        Object.keys(mdwUren).forEach(function(key) {
-          weekTotalen[key] = (weekTotalen[key] || 0) + (mdwUren[key] || 0);
+        Object.keys(mdwUren).forEach(function(weekKey) {
+          weekTotalen[weekKey] = (weekTotalen[weekKey] || 0) + (mdwUren[weekKey] || 0);
         });
       });
     } catch(e) {}
-  });
+  }
 
   /* Scheidingsrij */
   var sep = document.createElement('tr');
   sep.className = 'cap-sep';
   var sepTd = document.createElement('td');
   sepTd.colSpan = ths.length;
-  sepTd.textContent = 'Capaciteit — ResourcePlanning (totaal uren alle projecten)';
+  sepTd.textContent = 'Capaciteit — totaal ingeplande uren alle projecten (ResourcePlanning)';
   sep.appendChild(sepTd);
 
   /* Capaciteitsrij */
