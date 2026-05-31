@@ -68,6 +68,7 @@
     storeKey   : 'document',
     uiKey      : 'ui',
     jaar       : new Date().getFullYear(),
+    accordion  : false,
     onChange   : null
   };
 
@@ -579,8 +580,15 @@
     function toggleResolutie() { setResolutie(ui.resolutie === 'week' ? 'maand' : 'week'); }
 
     function toggleExpand(id) {
-      if (ui.expanded[id]) delete ui.expanded[id];
-      else ui.expanded[id] = true;
+      if (opts.accordion) {
+        /* Sluit alle andere projecten — één render */
+        var wasOpen = !!ui.expanded[id];
+        ui.expanded = {};
+        if (!wasOpen) ui.expanded[id] = true;
+      } else {
+        if (ui.expanded[id]) delete ui.expanded[id];
+        else ui.expanded[id] = true;
+      }
       saveUi(); render();
     }
 

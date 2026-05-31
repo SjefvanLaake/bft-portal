@@ -103,6 +103,23 @@
     tr.cap-rij td { font-family: var(--mono); font-size: 10px; font-weight: 700; text-align: center; min-height: 30px; }
     tr.cap-rij .cap-naam { text-align: left; padding: 4px 8px; color: var(--muted); font-size: 10px; }
 
+    /* Deadline-markering */
+    .og-td-deadline {
+      border-right: 3px solid var(--danger) !important;
+      position: relative;
+    }
+    .og-td-deadline::after {
+      content: attr(data-dl);
+      position: absolute;
+      top: 1px; right: 4px;
+      font-family: var(--mono);
+      font-size: 8px;
+      font-weight: 700;
+      color: var(--danger);
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
     /* Resource-panel rijen (per project, inline) */
     tr.res-sep td { background: rgba(124,58,237,0.06); border-top: 1px dashed rgba(124,58,237,0.25); padding: 2px 16px; font-family: var(--mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #7c3aed; }
     tr.res-rij td { background: rgba(124,58,237,0.03); }
@@ -187,10 +204,12 @@
 var grid = BFTOverallGrid.register({
   container: document.getElementById('og-grid'),
   jaar:       new Date().getFullYear(),
+  accordion:  true,
   onChange: function () {
     updateBadge();
     injectDetailKnoppen();
     schrijfPlanningSnapshots();
+    setTimeout(injectDeadlineMarkers, 150);
     setTimeout(injectCapaciteitsRijen, 200);
     setTimeout(injectResourceRijen, 250);
   }
@@ -244,6 +263,75 @@ function injectDetailKnoppen() {
       actieCell.insertBefore(btnDet, actieCell.firstChild);
     });
   }, 100);
+}
+
+/* ── Deadline-markers per projectrij ── */
+function isoWeekVanDatum(dateStr, jaar) {
+  var d = new Date(dateStr);
+  if (isNaN(d) || d.getFullYear() !== jaar) return null;
+  var jan4 = new Date(Date.UTC(jaar, 0, 4));
+  var day  = jan4.getUTCDay() || 7;
+  var mon  = new Date(jan4); mon.setUTCDate(jan4.getUTCDate() - day + 1);
+  return Math.ceil(((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - mon) / 86400000 + 1) / 7);
+}
+
+function fmtDeadline(dateStr) {
+  var d = new Date(dateStr);
+  if (isNaN(d)) return '';
+  return d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
+}
+
+function injectDeadlineMarkers() {
+  var tabel = document.querySelector('table.og-tbl');
+  if (!tabel) return;
+  tabel.querySelectorAll('.og-td-deadline').forEach(function(td){
+    td.classList.remove('og-td-deadline');
+    td.removeAttribute('data-dl');
+    td.removeAttribute('title');
+  });
+
+  var doc  = grid.getState();
+  var ths  = Array.prototype.slice.call(tabel.querySelectorAll('thead th'));
+
+  tabel.querySelectorAll('tr.og-row-project').forEach(function(tr) {
+    var bftId = vindBftId(tr);
+    if (!bftId) return;
+    var proj = BFT_PROJECTEN.find(function(p){ return p.id === bftId; });
+    if (!proj || !proj.oplevering) return;
+
+    var dlLabel = fmtDeadline(proj.oplevering);
+    var resolutie = grid.getResolutie();
+    var tdIdx = -1;
+
+    if (resolutie === 'week') {
+      var dlWeek = isoWeekVanDatum(proj.oplevering, doc.jaar);
+      if (!dlWeek) return;
+      ths.forEach(function(th, i) {
+        if (th.classList.contains('og-th-week')) {
+          var w = parseInt(th.textContent.trim().replace('w',''), 10);
+          if (w === dlWeek) tdIdx = i;
+        }
+      });
+    } else {
+      var dlMaand = new Date(proj.oplevering).getMonth();
+      if (new Date(proj.oplevering).getFullYear() !== doc.jaar) return;
+      ths.forEach(function(th, i) {
+        if (th.classList.contains('og-th-maand')) {
+          var MAANDEN = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+          var label = th.textContent.trim().toLowerCase();
+          if (MAANDEN[dlMaand] && label.startsWith(MAANDEN[dlMaand])) tdIdx = i;
+        }
+      });
+    }
+
+    if (tdIdx < 0) return;
+    var tds = tr.querySelectorAll('td');
+    if (tds[tdIdx]) {
+      tds[tdIdx].classList.add('og-td-deadline');
+      tds[tdIdx].setAttribute('data-dl', dlLabel);
+      tds[tdIdx].setAttribute('title', 'Opleverdatum: ' + proj.oplevering);
+    }
+  });
 }
 
 /* ── Optie B: Capaciteitslaag ── */
@@ -613,6 +701,7 @@ function scrollNaarHuidig() {
    ================================================================ */
 updateBadge();
 injectDetailKnoppen();
+setTimeout(injectDeadlineMarkers, 150);
 scrollNaarHuidig();
 
 /* Sync-badge initial */
@@ -622,6 +711,7 @@ document.getElementById('syncBadge').textContent =
 /* MutationObserver voor detail-knoppen na grid-renders */
 var obs = new MutationObserver(function() {
   injectDetailKnoppen();
+  setTimeout(injectDeadlineMarkers, 150);
   setTimeout(injectCapaciteitsRijen, 200);
   setTimeout(injectResourceRijen, 250);
 });
