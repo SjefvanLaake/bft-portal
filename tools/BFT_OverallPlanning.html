@@ -245,11 +245,16 @@ function injectDetailKnoppen() {
       var actieCell = tr.querySelector('.og-td-act');
       if (!actieCell) return;
 
-      /* Verwijder eerder geïnjecteerde knoppen */
+      var isOpen  = tr.classList.contains('open');
+
+      /* Skip als knoppen al kloppen voor huidige staat — voorkomt MutationObserver-loop */
+      if (isOpen  && actieCell.querySelector('.og-det-btn')) return;
+      if (!isOpen && actieCell.querySelector('.og-nav-btn')) return;
+
+      /* Verwijder knoppen van vorige staat */
       actieCell.querySelectorAll('.og-det-btn,.og-res-btn,.og-nav-btn').forEach(function (b) { b.remove(); });
 
-      var bftId   = vindBftId(tr);
-      var isOpen  = tr.classList.contains('open');
+      var bftId = vindBftId(tr);
 
       function openDetails(e) {
         e.stopPropagation();
