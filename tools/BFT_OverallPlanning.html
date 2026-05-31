@@ -750,14 +750,26 @@ function _balkNaarWekenEntries(balk) {
   return entries;
 }
 
-function _excelioNaarGrid(ioResult) {
-  var projecten = ioResult.projecten.map(function (p) {
+function _excelioNaarGrid(ioResult, opts) {
+  opts = opts || {};
+  var lijst = ioResult.projecten;
+
+  /* Filter: alleen rijen vanaf startRij (Excel-rijnummer) */
+  if (opts.startRij) lijst = lijst.filter(function (p) { return p.rij >= opts.startRij; });
+
+  /* Filter: laatste maxAantal projecten */
+  if (opts.maxAantal && lijst.length > opts.maxAantal) lijst = lijst.slice(-opts.maxAantal);
+
+  var projecten = lijst.map(function (p) {
+    /* Alleen metadatakolommen — balken worden niet meegenomen tenzij opts.metBalken = true */
     var weken = {};
-    p.balken.forEach(function (b) {
-      if (!b.disciplineKey) return;
-      if (!weken[b.disciplineKey]) weken[b.disciplineKey] = [];
-      weken[b.disciplineKey] = weken[b.disciplineKey].concat(_balkNaarWekenEntries(b));
-    });
+    if (opts.metBalken) {
+      p.balken.forEach(function (b) {
+        if (!b.disciplineKey) return;
+        if (!weken[b.disciplineKey]) weken[b.disciplineKey] = [];
+        weken[b.disciplineKey] = weken[b.disciplineKey].concat(_balkNaarWekenEntries(b));
+      });
+    }
     return {
       klant: p.klant || '', omschrijving: p.omschrijving || '',
       wo: p.wo || '', servnr: p.servnr || '',
@@ -776,7 +788,7 @@ function _voerExcelImportUit(file) {
   reader.onload = function (ev) {
     BFTOverallExcelIO.importBuffer(ev.target.result, {})
       .then(function (ioResult) {
-        var conv = _excelioNaarGrid(ioResult);
+        var conv = _excelioNaarGrid(ioResult, { startRij: 200, maxAantal: 30, metBalken: false });
         if (!conv.projecten.length) {
           showToast('Geen projecten gevonden in Excel', 'var(--warn)'); return;
         }
