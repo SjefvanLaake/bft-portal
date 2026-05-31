@@ -430,6 +430,14 @@ function getToolSnapshot(projectId) {
       droog: 0, nat: 0
     };
   } catch(e) {}
+  try {
+    const snap = JSON.parse(localStorage.getItem('bft_v2_snap_str_' + projectId));
+    if (snap) def.storingslog = {
+      count:     snap.count     || 0,
+      openCount: snap.openCount || 0,
+      lastDate:  snap.lastDate  || null
+    };
+  } catch(e) {}
   return def;
 }
 

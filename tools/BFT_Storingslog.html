@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Storingslog — BFT</title>
+  <link rel="stylesheet" href="../library/css/bofram-style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.min.js"></script>
+  <script src="../library/js/bft-projects.js"></script>
+  <script src="../library/js/bft-pdf-logo.js"></script>
+  <script src="../library/js/bft-dialog.js" defer></script>
+  <style>
+    .container { max-width: 860px; margin: 0 auto; padding: 24px 20px 100px; }
+
+    /* ── Progress nav ── */
+    .prog-nav {
+      display: flex; align-items: center; flex-wrap: nowrap;
+      overflow-x: auto; scrollbar-width: none; gap: 0;
+      margin-bottom: 20px; padding-bottom: 2px;
+    }
+    .prog-nav::-webkit-scrollbar { display: none; }
+    .pstep {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 10px; font-family: var(--mono); color: var(--muted);
+      white-space: nowrap; cursor: pointer; padding: 2px 0;
+    }
+    .pstep .pn {
+      width: 22px; height: 22px; border-radius: 4px;
+      border: 1.5px solid var(--border2); background: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; transition: all 0.2s;
+    }
+    .pstep.act  .pn { background: var(--accent); border-color: var(--accent); color: #000; }
+    .pstep.done .pn { background: var(--success); border-color: var(--success); color: #fff; }
+    .pconn { width: 20px; height: 1px; background: var(--border); flex-shrink: 0; margin: 0 2px; }
+
+    /* ── Sectie cards ── */
+    .section {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; margin-bottom: 10px; overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .sec-head {
+      padding: 13px 18px; background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+      cursor: pointer; user-select: none; transition: background 0.15s;
+    }
+    .sec-head:hover { background: var(--bg2); }
+    .sec-num {
+      width: 24px; height: 24px; border-radius: 4px;
+      background: var(--accent); color: #000;
+      font-family: var(--mono); font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .sec-num.done { background: var(--success); color: #fff; }
+    .sec-label { font-size: 12px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text2); }
+    .sec-sub   { font-size: 10px; color: var(--muted); font-family: var(--mono); margin-left: auto; }
+    .sec-chev  { color: var(--muted); font-size: 11px; margin-left: 6px; transition: transform 0.2s; }
+    .section.collapsed .sec-chev { transform: rotate(-90deg); }
+    .section.collapsed .sec-body { display: none; }
+    .sec-body { padding: 18px; }
+
+    /* ── Form grid ── */
+    .fg  { display: grid; gap: 13px; }
+    .fg2 { grid-template-columns: 1fr 1fr; }
+    .fg3 { grid-template-columns: 1fr 1fr 1fr; }
+    @media(max-width:640px){ .fg2,.fg3{ grid-template-columns:1fr; } }
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field label {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.9px;
+      text-transform: uppercase; color: var(--muted); font-family: var(--mono);
+    }
+    .field label .req { color: var(--danger); }
+    input[type=text], input[type=number], input[type=datetime-local],
+    input[type=date], select, textarea {
+      background: #fff; border: 1.5px solid var(--border);
+      border-radius: 5px; color: var(--text);
+      font-family: var(--sans); font-size: 13px;
+      padding: 8px 10px; transition: border-color 0.15s; outline: none;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent2); }
+    textarea { resize: vertical; min-height: 80px; }
+
+    /* ── Machine picker ── */
+    .mpicker { display: flex; flex-wrap: wrap; gap: 6px; }
+    .mbtn {
+      padding: 7px 14px; border-radius: 5px;
+      border: 1.5px solid var(--border2); background: #fff;
+      font-family: var(--mono); font-size: 11px; font-weight: 600;
+      cursor: pointer; transition: all 0.12s; color: var(--muted);
+    }
+    .mbtn:hover { border-color: var(--accent); color: var(--accent-dk); }
+    .mbtn.sel   { background: var(--accent); border-color: var(--accent-dk); color: #000; }
+    .mbtn.sel-vrij { background: var(--accent2); border-color: #1557a7; color: #fff; }
+
+    /* Vrije invoer velden */
+    .vrij-velden {
+      display: none; margin-top: 12px;
+      padding: 14px; background: rgba(26,110,199,0.05);
+      border: 1px solid rgba(26,110,199,0.2); border-radius: 6px;
+    }
+    .vrij-velden.zichtbaar { display: block; }
+
+    /* ── Tags / toggle buttons ── */
+    .tags, .gbtn-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tag, .gbtn {
+      padding: 5px 12px; border-radius: 20px;
+      border: 1.5px solid var(--border2); background: #fff;
+      font-size: 11px; cursor: pointer; transition: all 0.12s;
+      color: var(--muted); user-select: none;
+    }
+    .tag:hover, .gbtn:hover { border-color: var(--accent); color: var(--accent-dk); }
+    .tag.on, .gbtn.sel {
+      background: rgba(232,160,0,0.1); border-color: var(--accent);
+      color: var(--accent-dk); font-weight: 600;
+    }
+
+    /* ── Schaal-knoppen (GO/NOGO stijl) ── */
+    .srow { display: flex; gap: 6px; flex-wrap: wrap; }
+    .sbtn {
+      padding: 7px 14px; border-radius: 5px; cursor: pointer;
+      font-family: var(--mono); font-size: 11px; font-weight: 600;
+      border: 1.5px solid var(--border); background: #fff; color: var(--muted);
+      transition: all 0.12s; user-select: none;
+    }
+    .sbtn.sg.sel { background: rgba(30,158,94,0.1);  border-color: var(--success); color: var(--success); }
+    .sbtn.so.sel { background: rgba(232,160,0,0.1);  border-color: var(--accent);  color: var(--accent-dk); }
+    .sbtn.sr.sel { background: rgba(214,48,48,0.1);  border-color: var(--danger);  color: var(--danger); }
+
+    /* ── Component tree ── */
+    .ctree { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; }
+    .ctree-arrow { color: var(--muted); font-size: 16px; padding-bottom: 8px; }
+
+    /* ── Onderdelen lijst ── */
+    .part-row {
+      display: grid; grid-template-columns: 1fr auto auto auto;
+      gap: 8px; align-items: center; margin-bottom: 6px;
+    }
+    .part-row input { font-size: 12px; padding: 6px 8px; }
+    .rm-btn {
+      width: 28px; height: 28px; border: none; background: var(--danger);
+      color: #fff; border-radius: 4px; cursor: pointer; font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── LOGO hint ── */
+    .lhint { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 4px; }
+    .lf { display: flex; gap: 8px; align-items: center; }
+    .lbadge {
+      background: #1a1f2e; color: #e8a000; font-family: var(--mono);
+      font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    /* ── Footer ── */
+    .str-footer {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--surface); border-top: 1px solid var(--border);
+      padding: 10px 20px;
+      display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.06); z-index: 20;
+    }
+    .str-footer-snr {
+      font-family: var(--mono); font-size: 11px; font-weight: 700;
+      color: var(--accent-dk); flex: 1;
+    }
+    .save-ind { font-family: var(--mono); font-size: 10px; color: var(--success); opacity: 0; transition: opacity 0.3s; }
+    .save-ind.zichtbaar { opacity: 1; }
+
+    /* ── Mock banner ── */
+    .mock-banner {
+      background: rgba(26,110,199,0.08); border: 1px solid rgba(26,110,199,0.2);
+      border-radius: 6px; padding: 8px 14px; margin-bottom: 16px;
+      font-family: var(--mono); font-size: 10px; color: var(--accent2);
+    }
+
+    /* ── Divider ── */
+    .div { height: 1px; background: var(--border); margin: 14px 0; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="bf-header">
+  <div class="bf-header-left">
+    <a href="../index.html" title="Terug naar portaal"
+       style="color:rgba(255,255,255,0.55);font-family:var(--mono);font-size:11px;text-decoration:none;display:flex;align-items:center;gap:4px;flex-shrink:0">
+      ← Portaal
+    </a>
+    <div class="bf-logo"></div>
+    <div class="bf-header-div"></div>
+    <div class="bf-header-title">
+      <h1>Storingslog</h1>
+      <p>Service &amp; storingsregistratie</p>
+    </div>
+  </div>
+  <span class="save-ind" id="saveInd">✓ Opgeslagen</span>
+  <div class="bf-badge" id="snrBadge">STR-????</div>
+</header>
+
+<div class="container">
+  <div class="mock-banner">⚠ Mock-modus — opgeslagen in browser. Na IT App Registration → automatisch naar SharePoint.</div>
+
+  <!-- Progress nav -->
+  <div class="prog-nav" id="progNav"></div>
+
+  <!-- 1. Identificatie -->
+  <div class="section" id="sec1">
+    <div class="sec-head" onclick="toggleSec('sec1')">
+      <div class="sec-num" id="sn1">1</div>
+      <span class="sec-label">Identificatie</span>
+      <span class="sec-sub">Machine · monteur · datum</span>
+      <span class="sec-chev">▾</span>
+    </div>
+    <div class="sec-body">
+
+      <!-- Machine picker -->
+      <div class="field" style="margin-bottom:14px">
+        <label>Machine serie <span class="req">*</span></label>
+        <div class="mpicker" id="mpicker">
+          <div class="mbtn" data-m="BFR"   onclick="pickM(this)">BFR</div>
+          <div class="mbtn" data-m="BFM"   onclick="pickM(this)">BFM</div>
+          <div class="mbtn" data-m="BFP"   onclick="pickM(this)">BFP</div>
+          <div class="mbtn" data-m="BFMR"  onclick="pickM(this)">BFMR</div>
+          <div class="mbtn" data-m="BFRC"  onclick="pickM(this)">BFRC</div>
+          <div class="mbtn" data-m="BFGM"  onclick="pickM(this)">BFGM</div>
+          <div class="mbtn" data-m="BFWS"  onclick="pickM(this)">BFWS</div>
+          <div class="mbtn" data-m="BFMWS" onclick="pickM(this)">BFMWS</div>
+          <div class="mbtn" data-m="VRIJ"  onclick="pickM(this)" title="Derde partij of vrije omschrijving">Vrij ✏</div>
+        </div>
+      </div>
+
+      <!-- Vrije invoer (alleen zichtbaar bij VRIJ) -->
+      <div class="vrij-velden fg fg2" id="vrijVelden">
+        <div class="field">
+          <label>Machine omschrijving <span class="req">*</span></label>
+          <input type="text" id="f_vrijtype" placeholder="bijv. Caterpillar 320, Liebherr LTM 1050" oninput="updateSNR()">
+        </div>
+        <div class="field">
+          <label>Opdrachtgever / klant</label>
+          <input type="text" id="f_opdrachtgever" placeholder="Naam bedrijf of klant">
+        </div>
+      </div>
+
+      <div class="fg fg3" style="margin-bottom:14px" id="boframVelden">
+        <div class="field">
+          <label>Type / uitvoering</label>
+          <input type="text" id="f_type" placeholder="bijv. 2000EK, 1000EG" oninput="updateSNR()">
+        </div>
+        <div class="field">
+          <label>Machine-ID / serienummer</label>
+          <input type="text" id="f_machid" placeholder="bijv. HDD-05 / SN-2031">
+        </div>
+        <div class="field">
+          <label>Machine-uren</label>
+          <input type="number" id="f_uren" placeholder="bijv. 4720">
+        </div>
+      </div>
+
+      <!-- Project koppeling -->
+      <div class="field" style="margin-bottom:14px" id="projectVeld">
+        <label>Koppel aan project <span style="color:var(--muted);font-weight:400">(optioneel)</span></label>
+        <select id="f_project" onchange="updateSNR()">
+          <option value="">— Geen project (derde partij / standalone) —</option>
+        </select>
+      </div>
+
+      <div class="div"></div>
+
+      <div class="fg fg2">
+        <div class="field">
+          <label>Datum &amp; tijd <span class="req">*</span></label>
+          <input type="datetime-local" id="f_datum" oninput="updateSNR()">
+        </div>
+        <div class="field">
+          <label>Monteur <span class="req">*</span></label>
+          <input type="text" id="f_monteur" placeholder="Naam monteur">
+        </div>
+        <div class="field">
+          <label>Locatie / werf</label>
+          <input type="text" id="f_locatie" placeholder="bijv. Gasleiding N34-West">
+        </div>
+        <div class="field">
+          <label>Prioriteit</label>
+          <div class="srow">
+            <div class="sbtn sg" data-g="prio" data-v="Laag"   onclick="pickSbtn(this)">↓ Laag</div>
+            <div class="sbtn so" data-g="prio" data-v="Middel" onclick="pickSbtn(this)">⚡ Middel</div>
+            <div class="sbtn sr" data-g="prio" data-v="Hoog"   onclick="pickSbtn(this)">▲ Hoog</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Grondsoort & omgeving -->
+  <div class="section collapsed" id="sec2">
+    <div class="sec-head" onclick="toggleSec('sec2')">
+      <div class="sec-num" id="sn2">2</div>
+      <span class="sec-label">Omgeving</span>
+      <span class="sec-sub">Grondsoort · werkomstandigheden</span>
+      <span class="sec-chev">▾</span>
+    </div>
+    <div class="sec-body">
+      <div class="field" style="margin-bottom:14px">
+        <label>Grondsoort (meerdere mogelijk)</label>
+        <div class="gbtn-wrap">
+          <div class="gbtn" onclick="this.classList.toggle('sel')">🟫 Klei</div>
+          <div class="gbtn" onclick="this.classList.toggle('sel')">🟤 Veen</div>
+          <div class="gbtn" onclick="this.classList.toggle('sel')">🟡 Zand</div>
+          <div class="gbtn" onclick="this.classList.toggle('sel')">⬜ Grind / kiezel</div>
+          <div class="gbtn" onclick="this.classList.toggle('sel')">🪨 Zacht gesteente</div>
+          <div class="gbtn" onclick="this.classList.toggle('sel')">💎 Hard gesteente</div>
+          <div class="gbtn" onclick="this.classList.toggle('sel')">🔩 Puinlaag</div>
+          <div class="gbtn" onclick="this.classList.toggle('sel')">💧 Hoge waterstand</div>
+          <div class="gbtn" onclick="this.classList.toggle('sel')">🧱 Gemengd / wisselend</div>
+          <div class="gbtn" onclick="this.classList.toggle('sel')">❓ Onbekend / n.v.t.</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Omgevingscondities</label>
+        <div class="tags">
+          <div class="tag" onclick="this.classList.toggle('on')">🌧️ Neerslag</div>
+          <div class="tag" onclick="this.classList.toggle('on')">❄️ Vriesweer</div>
+          <div class="tag" onclick="this.classList.toggle('on')">☀️ Extreme hitte</div>
+          <div class="tag" onclick="this.classList.toggle('on')">💨 Harde wind</div>
+          <div class="tag" onclick="this.classList.toggle('on')">🌊 Wateroverlast</div>
+          <div class="tag" onclick="this.classList.toggle('on')">🌫️ Mist / beperkt zicht</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Componentlocatie -->
+  <div class="section collapsed" id="sec3">
+    <div class="sec-head" onclick="toggleSec('sec3')">
+      <div class="sec-num" id="sn3">3</div>
+      <span class="sec-label">Componentlocatie</span>
+      <span class="sec-sub">Systeem → component</span>
+      <span class="sec-chev">▾</span>
+    </div>
+    <div class="sec-body">
+      <div class="ctree" style="margin-bottom:12px">
+        <div class="field" style="flex:1">
+          <label>Systeem <span class="req">*</span></label>
+          <select id="f_systeem" onchange="fillSub()">
+            <option value="">— selecteer —</option>
+            <option>Hydrauliek</option>
+            <option>Pneumatiek</option>
+            <option>Elektrisch / Besturing</option>
+            <option>Aandrijving</option>
+            <option>Trilaandrijving</option>
+            <option>Overig</option>
+          </select>
+        </div>
+        <div class="ctree-arrow">→</div>
+        <div class="field" style="flex:1">
+          <label>Subsysteem</label>
+          <select id="f_sub"><option value="">— eerst systeem —</option></select>
+        </div>
+        <div class="ctree-arrow">→</div>
+        <div class="field" style="flex:1.3">
+          <label>Component / onderdeel</label>
+          <input type="text" id="f_comp" placeholder="bijv. Hydrauliekpomp P2">
+        </div>
+      </div>
+      <div class="fg fg2">
+        <div class="field">
+          <label>Onderdeelnummer</label>
+          <input type="text" id="f_partno" placeholder="bijv. HYD-042-B">
+        </div>
+        <div class="field">
+          <label>Serienummer component</label>
+          <input type="text" id="f_compser">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Symptomen -->
+  <div class="section collapsed" id="sec4">
+    <div class="sec-head" onclick="toggleSec('sec4')">
+      <div class="sec-num" id="sn4">4</div>
+      <span class="sec-label">Symptomen</span>
+      <span class="sec-sub">Wat wordt waargenomen?</span>
+      <span class="sec-chev">▾</span>
+    </div>
+    <div class="sec-body">
+      <div class="fg" style="margin-bottom:12px">
+        <div class="field">
+          <label>Symptoomomschrijving <span class="req">*</span></label>
+          <textarea id="f_symptoom" placeholder="Beschrijf wat er mis is: geluid, gedrag, lekkage, temperatuur, vermogensverlies..."></textarea>
+        </div>
+        <div class="field">
+          <label>!LOGO foutcodes (afgelezen van display)</label>
+          <div class="lf">
+            <input type="text" id="f_logo" placeholder="bijv. E01, Q3 AAN, I7 actief, B3 fout...">
+            <span class="lbadge">!LOGO</span>
+          </div>
+          <p class="lhint">Noteer de exacte weergave — I1…I8 / Q1…Q4 / B1…B16</p>
+        </div>
+        <div class="field">
+          <label>Overige foutmeldingen / displaytekst</label>
+          <input type="text" id="f_foutov" placeholder="bijv. TEMP HIGH, PRESS LOW, E-12">
+        </div>
+      </div>
+      <div class="field">
+        <label>Symptoomtags</label>
+        <div class="tags">
+          <div class="tag" onclick="this.classList.toggle('on')">🔊 Ongewoon geluid</div>
+          <div class="tag" onclick="this.classList.toggle('on')">💧 Lekkage</div>
+          <div class="tag" onclick="this.classList.toggle('on')">🌡️ Oververhitting</div>
+          <div class="tag" onclick="this.classList.toggle('on')">⚡ Start niet op</div>
+          <div class="tag" onclick="this.classList.toggle('on')">📉 Vermogensverlies</div>
+          <div class="tag" onclick="this.classList.toggle('on')">📳 Trilling / vibratie</div>
+          <div class="tag" onclick="this.classList.toggle('on')">🔴 Drukval</div>
+          <div class="tag" onclick="this.classList.toggle('on')">⚙️ Vastloper</div>
+          <div class="tag" onclick="this.classList.toggle('on')">🔌 Geen stroom</div>
+          <div class="tag" onclick="this.classList.toggle('on')">🛢️ Olieverlies</div>
+          <div class="tag" onclick="this.classList.toggle('on')">💨 Luchtlekkage</div>
+          <div class="tag" onclick="this.classList.toggle('on')">📡 Communicatiefout</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Omstandigheden -->
+  <div class="section collapsed" id="sec5">
+    <div class="sec-head" onclick="toggleSec('sec5')">
+      <div class="sec-num" id="sn5">5</div>
+      <span class="sec-label">Omstandigheden</span>
+      <span class="sec-sub">Context · eerdere storingen</span>
+      <span class="sec-chev">▾</span>
+    </div>
+    <div class="sec-body">
+      <div class="fg">
+        <div class="field">
+          <label>Wanneer treedt de storing op?</label>
+          <div class="tags">
+            <div class="tag" onclick="this.classList.toggle('on')">🔁 Bij opstarten</div>
+            <div class="tag" onclick="this.classList.toggle('on')">🔄 Tijdens bedrijf</div>
+            <div class="tag" onclick="this.classList.toggle('on')">🛑 Bij stilstaan</div>
+            <div class="tag" onclick="this.classList.toggle('on')">🌡️ Na opwarming</div>
+            <div class="tag" onclick="this.classList.toggle('on')">❄️ Alleen bij kou</div>
+            <div class="tag" onclick="this.classList.toggle('on')">🎲 Willekeurig</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Eerdere storing zelfde probleem?</label>
+          <div class="srow">
+            <div class="sbtn sg" data-g="eerder" data-v="Nee"        onclick="pickSbtn(this)">Nee</div>
+            <div class="sbtn so" data-g="eerder" data-v="Mogelijk"   onclick="pickSbtn(this)">Mogelijk</div>
+            <div class="sbtn sr" data-g="eerder" data-v="Ja"         onclick="pickSbtn(this)">Ja</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Context / aanvullende informatie</label>
+          <textarea id="f_context" placeholder="Bijv. storing treedt op bij zwaar grondcontact, recent onderhoud gehad..."></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Diagnose -->
+  <div class="section collapsed" id="sec6">
+    <div class="sec-head" onclick="toggleSec('sec6')">
+      <div class="sec-num" id="sn6">6</div>
+      <span class="sec-label">Diagnose</span>
+      <span class="sec-sub">Oorzaak · categorie</span>
+      <span class="sec-chev">▾</span>
+    </div>
+    <div class="sec-body">
+      <div class="fg">
+        <div class="field">
+          <label>Diagnose categorieën</label>
+          <div class="tags">
+            <div class="tag" onclick="this.classList.toggle('on')">🔩 Slijtage</div>
+            <div class="tag" onclick="this.classList.toggle('on')">💥 Breuk / schade</div>
+            <div class="tag" onclick="this.classList.toggle('on')">🔧 Montagefout</div>
+            <div class="tag" onclick="this.classList.toggle('on')">💻 Softwarefout</div>
+            <div class="tag" onclick="this.classList.toggle('on')">⚙️ Instelling / kalibratie</div>
+            <div class="tag" onclick="this.classList.toggle('on')">🧲 Elektrisch defect</div>
+            <div class="tag" onclick="this.classList.toggle('on')">🛢️ Vervuiling / blokkade</div>
+            <div class="tag" onclick="this.classList.toggle('on')">❓ Onbekend</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Diagnosebeschrijving <span class="req">*</span></label>
+          <textarea id="f_diag" placeholder="Beschrijf de vastgestelde oorzaak van de storing..."></textarea>
+        </div>
+        <div class="field">
+          <label>Zekerheid diagnose</label>
+          <div class="srow">
+            <div class="sbtn sg" data-g="zekerheid" data-v="Zeker"         onclick="pickSbtn(this)">Zeker</div>
+            <div class="sbtn so" data-g="zekerheid" data-v="Waarschijnlijk" onclick="pickSbtn(this)">Waarschijnlijk</div>
+            <div class="sbtn sr" data-g="zekerheid" data-v="Onzeker"       onclick="pickSbtn(this)">Onzeker</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Actie -->
+  <div class="section collapsed" id="sec7">
+    <div class="sec-head" onclick="toggleSec('sec7')">
+      <div class="sec-num" id="sn7">7</div>
+      <span class="sec-label">Actie</span>
+      <span class="sec-sub">Uitgevoerde werkzaamheden</span>
+      <span class="sec-chev">▾</span>
+    </div>
+    <div class="sec-body">
+      <div class="fg">
+        <div class="field">
+          <label>Uitgevoerde actie <span class="req">*</span></label>
+          <textarea id="f_actie" placeholder="Beschrijf wat er gedaan is om de storing te verhelpen..."></textarea>
+        </div>
+        <div class="field">
+          <label>Stilstandtijd (uren)</label>
+          <input type="number" id="f_stilstand" placeholder="bijv. 4.5" step="0.5" min="0">
+        </div>
+        <div class="field">
+          <label>Vervangen onderdelen</label>
+          <div id="partsList"></div>
+          <button type="button" class="bf-btn bf-btn-ghost" style="margin-top:6px;font-size:11px" onclick="addPart()">+ Onderdeel toevoegen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. Resultaat -->
+  <div class="section collapsed" id="sec8">
+    <div class="sec-head" onclick="toggleSec('sec8')">
+      <div class="sec-num" id="sn8">8</div>
+      <span class="sec-label">Resultaat</span>
+      <span class="sec-sub">Status · vervolg</span>
+      <span class="sec-chev">▾</span>
+    </div>
+    <div class="sec-body">
+      <div class="fg">
+        <div class="field">
+          <label>Resultaatstatus <span class="req">*</span></label>
+          <div class="srow">
+            <div class="sbtn sg" data-g="resultaat" data-v="Opgelost"         onclick="pickSbtn(this)">✓ Opgelost</div>
+            <div class="sbtn so" data-g="resultaat" data-v="Tijdelijk opgelost" onclick="pickSbtn(this)">⏳ Tijdelijk</div>
+            <div class="sbtn sr" data-g="resultaat" data-v="Niet opgelost"    onclick="pickSbtn(this)">✕ Niet opgelost</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Preventieve maatregel aanbevolen?</label>
+          <div class="srow">
+            <div class="sbtn sg" data-g="preventief" data-v="Nee"  onclick="pickSbtn(this)">Nee</div>
+            <div class="sbtn so" data-g="preventief" data-v="Ja"   onclick="pickSbtn(this)">Ja</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Vervolgactie / aanbeveling</label>
+          <textarea id="f_vervolg" placeholder="Bijv. pomp vervanging plannen binnen 500u, filters controleren bij eerstvolgende service..."></textarea>
+        </div>
+        <div class="field">
+          <label>Open punten</label>
+          <textarea id="f_open" placeholder="Wat is nog niet opgelost of onduidelijk?"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<div class="str-footer">
+  <div class="str-footer-snr" id="snrFooter">STR-????</div>
+  <span class="save-ind" id="saveInd2">✓ Opgeslagen</span>
+  <button class="bf-btn bf-btn-ghost" onclick="resetForm()">↺ Nieuw</button>
+  <button class="bf-btn bf-btn-sec"   onclick="exportJSON()">⬇ JSON</button>
+  <button class="bf-btn bf-btn-primary" onclick="exportPDF()">⬇ PDF</button>
+</div>
+
+<script>
+/* ================================================================
+   CONSTANTEN
+   ================================================================ */
+const SECS = [
+  {id:'sec1',label:'Identificatie'}, {id:'sec2',label:'Omgeving'},
+  {id:'sec3',label:'Component'},     {id:'sec4',label:'Symptomen'},
+  {id:'sec5',label:'Omstandigh.'},   {id:'sec6',label:'Diagnose'},
+  {id:'sec7',label:'Actie'},         {id:'sec8',label:'Resultaat'}
+];
+
+const SUBMAP = {
+  'Hydrauliek':             ['Hydrauliekpomp','Hydrauliekmotor','Stuurcilinder','Regelklep','Drukbegrenzingsventiel','Filter','Reservoir / tank','Slangen / koppelingen','Accumulator'],
+  'Pneumatiek':             ['Compressor','Pneumatische cilinder','Luchtfilter','Regelklep pneumatisch','Slangen / koppelingen'],
+  'Elektrisch / Besturing': ['!LOGO besturingsunit','Schakelkast / verdeler','Sensor / encoder','Kabelboom','Accu / lader','Bedieningspaneel','CAN-bus / communicatie','Relais / zekering'],
+  'Aandrijving':            ['Dieselmotor','Elektromotor','Transmissie','Koppeling','Tandwielkast','Riemaandrijving','Aandrijfas','Startmotor'],
+  'Trilaandrijving':        ['Trilmotor','Excentrische massa','Trillager','Trilframe','Verbindingsstuk'],
+  'Overig':                 ['Rotary drive','Boorkop','Boorpijpen','Spoelpomp','Spoelleiding','Frame / Chassis','Rijonderstel','Overig']
+};
+
+/* ================================================================
+   STATE
+   ================================================================ */
+let selM = '', sbtnState = {}, parts = [], pid = 0;
+let savedCount = 0;
+
+/* ================================================================
+   INIT
+   ================================================================ */
+window.addEventListener('load', function () {
+  /* Progress nav */
+  const nav = document.getElementById('progNav');
+  SECS.forEach((s, i) => {
+    const el = document.createElement('div');
+    el.className = 'pstep'; el.id = 'ps' + s.id;
+    el.innerHTML = `<div class="pn">${i + 1}</div>${s.label}`;
+    el.onclick = () => { document.getElementById(s.id)?.classList.remove('collapsed'); document.getElementById(s.id)?.scrollIntoView({behavior:'smooth',block:'start'}); };
+    nav.appendChild(el);
+    if (i < SECS.length - 1) { const c = document.createElement('div'); c.className = 'pconn'; nav.appendChild(c); }
+  });
+
+  /* Project dropdown vullen */
+  const sel = document.getElementById('f_project');
+  sel.innerHTML = '<option value="">— Geen project (derde partij / standalone) —</option>' +
+    BFT_PROJECTEN.map(p => `<option value="${p.id}">${p.projectnr} · ${p.naam}</option>`).join('');
+
+  /* Datum standaard = nu */
+  const nu = new Date();
+  nu.setSeconds(0, 0);
+  document.getElementById('f_datum').value = nu.toISOString().slice(0, 16);
+
+  updateSNR();
+});
+
+/* ================================================================
+   MACHINE PICKER
+   ================================================================ */
+function pickM(el) {
+  document.querySelectorAll('.mbtn').forEach(b => { b.classList.remove('sel', 'sel-vrij'); });
+  const isVrij = el.dataset.m === 'VRIJ';
+  el.classList.add(isVrij ? 'sel-vrij' : 'sel');
+  selM = el.dataset.m;
+
+  document.getElementById('vrijVelden').classList.toggle('zichtbaar', isVrij);
+  document.getElementById('boframVelden').style.display = isVrij ? 'none' : '';
+  updateSNR();
+}
+
+/* ================================================================
+   SCHAAL-KNOPPEN
+   ================================================================ */
+function pickSbtn(el) {
+  const g = el.dataset.g;
+  document.querySelectorAll(`[data-g="${g}"]`).forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+  sbtnState[g] = el.dataset.v;
+}
+
+/* ================================================================
+   SYSTEEM → SUBSYSTEEM
+   ================================================================ */
+function fillSub() {
+  const sys = document.getElementById('f_systeem').value;
+  const sub = document.getElementById('f_sub');
+  sub.innerHTML = (SUBMAP[sys] || ['Overig']).map(o => `<option>${o}</option>`).join('');
+}
+
+/* ================================================================
+   STORINGNUMMER
+   ================================================================ */
+function updateSNR() {
+  const d   = document.getElementById('f_datum').value;
+  const yr  = d ? new Date(d).getFullYear() : new Date().getFullYear();
+  const seq = String(savedCount + 1).padStart(3, '0');
+  let serie = selM || 'XX';
+  if (selM === 'VRIJ') {
+    const vt = (document.getElementById('f_vrijtype')?.value || '').replace(/[^a-zA-Z0-9]/g,'').toUpperCase().substring(0, 6);
+    serie = 'VRIJ' + (vt ? '-' + vt : '');
+  } else {
+    const t = (document.getElementById('f_type')?.value || '').replace(/[^a-zA-Z0-9]/g,'').toUpperCase().substring(0, 6);
+    serie = (selM || 'XX') + (t ? '-' + t : '');
+  }
+  const snr = `STR-${yr}-${serie}-${seq}`;
+  document.getElementById('snrBadge').textContent = snr;
+  document.getElementById('snrFooter').textContent = snr;
+}
+
+/* ================================================================
+   ONDERDELEN
+   ================================================================ */
+function addPart() {
+  const id = ++pid;
+  parts.push({ id, naam: '', artnr: '', lev: '' });
+  const row = document.createElement('div');
+  row.className = 'part-row'; row.id = `pr-${id}`;
+  row.innerHTML = `
+    <input type="text" placeholder="Omschrijving" oninput="updPart(${id},'naam',this.value)">
+    <input type="text" placeholder="Art.nr." style="max-width:120px" oninput="updPart(${id},'artnr',this.value)">
+    <input type="text" placeholder="Leverancier" style="max-width:140px" oninput="updPart(${id},'lev',this.value)">
+    <button class="rm-btn" onclick="rmPart(${id})">×</button>`;
+  document.getElementById('partsList').appendChild(row);
+}
+function updPart(id, k, v) { const p = parts.find(x => x.id === id); if (p) p[k] = v; }
+function rmPart(id) { parts = parts.filter(x => x.id !== id); document.getElementById(`pr-${id}`)?.remove(); }
+
+/* ================================================================
+   DATA VERZAMELEN
+   ================================================================ */
+function collect() {
+  const isVrij = selM === 'VRIJ';
+  return {
+    storingnummer:  document.getElementById('snrBadge').textContent,
+    identificatie: {
+      datum:          document.getElementById('f_datum').value,
+      monteur:        document.getElementById('f_monteur').value,
+      locatie:        document.getElementById('f_locatie').value,
+      prioriteit:     sbtnState['prio'] || '',
+      machineSerie:   selM,
+      machineType:    isVrij ? document.getElementById('f_vrijtype').value : document.getElementById('f_type').value,
+      machineID:      isVrij ? '' : document.getElementById('f_machid').value,
+      machineUren:    isVrij ? '' : document.getElementById('f_uren').value,
+      opdrachtgever:  isVrij ? document.getElementById('f_opdrachtgever').value : '',
+      projectNr:      document.getElementById('f_project').value || null
+    },
+    omgeving: {
+      grondsoort:  [...document.querySelectorAll('.gbtn.sel')].map(b => b.textContent.trim()),
+      condities:   [...document.querySelectorAll('#sec2 .tag.on')].map(t => t.textContent.trim())
+    },
+    component: {
+      systeem:    document.getElementById('f_systeem').value,
+      subsysteem: document.getElementById('f_sub').value,
+      component:  document.getElementById('f_comp').value,
+      partno:     document.getElementById('f_partno').value,
+      compSer:    document.getElementById('f_compser').value
+    },
+    symptomen: {
+      omschrijving: document.getElementById('f_symptoom').value,
+      logoCodes:    document.getElementById('f_logo').value,
+      overigeCode:  document.getElementById('f_foutov').value,
+      tags:         [...document.querySelectorAll('#sec4 .tag.on')].map(t => t.textContent.trim())
+    },
+    omstandigheden: {
+      moment:        [...document.querySelectorAll('#sec5 .tags .tag.on')].map(t => t.textContent.trim()),
+      eerdereStoring: sbtnState['eerder'] || '',
+      context:       document.getElementById('f_context').value
+    },
+    diagnose: {
+      categorieen:  [...document.querySelectorAll('#sec6 .tag.on')].map(t => t.textContent.trim()),
+      omschrijving: document.getElementById('f_diag').value,
+      zekerheid:    sbtnState['zekerheid'] || ''
+    },
+    actie: {
+      omschrijving:       document.getElementById('f_actie').value,
+      stilstandUren:      document.getElementById('f_stilstand').value,
+      vervangenOnderdelen: parts.filter(p => p.naam)
+    },
+    resultaat: {
+      status:     sbtnState['resultaat'] || '',
+      preventief: sbtnState['preventief'] || '',
+      vervolg:    document.getElementById('f_vervolg').value,
+      openPunten: document.getElementById('f_open').value
+    }
+  };
+}
+
+/* ================================================================
+   VALIDATIE
+   ================================================================ */
+function valideer() {
+  const d = collect();
+  const id = d.identificatie;
+  if (!id.datum)    { alert('Vul datum en tijd in.'); return false; }
+  if (!id.monteur)  { alert('Vul monteur in.'); return false; }
+  if (!selM)        { alert('Kies een machine serie.'); return false; }
+  if (selM === 'VRIJ' && !id.machineType) { alert('Vul machine omschrijving in bij Vrije keuze.'); return false; }
+  if (!d.symptomen.omschrijving) { alert('Vul symptoomomschrijving in.'); return false; }
+  if (!d.diagnose.omschrijving)  { alert('Vul diagnose in.'); return false; }
+  if (!d.actie.omschrijving)     { alert('Vul uitgevoerde actie in.'); return false; }
+  if (!d.resultaat.status)       { alert('Kies een resultaatstatus.'); return false; }
+  return true;
+}
+
+/* ================================================================
+   OPSLAAN — localStorage + snapshot
+   ================================================================ */
+function slaOp(d) {
+  const snr = d.storingnummer;
+  try { localStorage.setItem('bft_v2_str_' + snr, JSON.stringify(d)); } catch(e) {}
+
+  /* Snapshot voor Projectoverzicht (per project) */
+  const projectNr = d.identificatie.projectNr;
+  if (projectNr) {
+    try {
+      const snapKey = 'bft_v2_snap_str_' + projectNr;
+      const bestaand = JSON.parse(localStorage.getItem(snapKey) || '{"count":0,"openCount":0,"lastDate":null}');
+      const isOpen = d.resultaat.status !== 'Opgelost';
+      localStorage.setItem(snapKey, JSON.stringify({
+        count:     (bestaand.count || 0) + 1,
+        openCount: (bestaand.openCount || 0) + (isOpen ? 1 : 0),
+        lastDate:  d.identificatie.datum?.slice(0, 10) || null,
+        updated:   new Date().toISOString()
+      }));
+    } catch(e) {}
+  }
+
+  savedCount++;
+  updateSNR();
+  const ind = document.getElementById('saveInd');
+  const ind2 = document.getElementById('saveInd2');
+  [ind, ind2].forEach(el => { if (!el) return; el.classList.add('zichtbaar'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('zichtbaar'), 2000); });
+}
+
+/* ================================================================
+   JSON EXPORT
+   ================================================================ */
+function exportJSON() {
+  if (!valideer()) return;
+  const d = collect();
+  slaOp(d);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(d, null, 2)], { type: 'application/json' }));
+  a.download = d.storingnummer.replace(/[:\s]/g, '_') + '.json';
+  a.click();
+}
+
+/* ================================================================
+   RESET
+   ================================================================ */
+function resetForm() {
+  if (!confirm('Formulier leegmaken voor nieuwe storing?')) return;
+  selM = ''; sbtnState = {}; parts = []; pid = 0;
+  document.querySelectorAll('.mbtn').forEach(b => b.classList.remove('sel','sel-vrij'));
+  document.querySelectorAll('.tag, .gbtn').forEach(t => t.classList.remove('on','sel'));
+  document.querySelectorAll('.sbtn').forEach(b => b.classList.remove('sel'));
+  document.getElementById('vrijVelden').classList.remove('zichtbaar');
+  document.getElementById('boframVelden').style.display = '';
+  document.getElementById('partsList').innerHTML = '';
+  document.querySelectorAll('input[type=text], input[type=number], textarea').forEach(el => el.value = '');
+  document.getElementById('f_project').value = '';
+  const nu = new Date(); nu.setSeconds(0,0);
+  document.getElementById('f_datum').value = nu.toISOString().slice(0,16);
+  document.getElementById('f_systeem').value = '';
+  document.getElementById('f_sub').innerHTML = '<option value="">— eerst systeem —</option>';
+  updateSNR();
+}
+
+/* ================================================================
+   PDF EXPORT
+   ================================================================ */
+function exportPDF() {
+  if (!valideer()) return;
+  const d = collect();
+  slaOp(d);
+  const datum = new Date().toISOString().slice(0, 10);
+  const titel = d.storingnummer;
+  const PDF_LOGO = (typeof BFT_PDF_LOGO !== 'undefined') ? BFT_PDF_LOGO : null;
+
+  const rij = (label, val) => [
+    { text: label, fontSize: 9, color: '#7a849a', bold: true, margin: [0,3,0,3] },
+    { text: val || '—', fontSize: 10, color: '#1a1f2e', margin: [0,3,0,3] }
+  ];
+
+  const content = [];
+
+  /* Info-tabel */
+  const id = d.identificatie;
+  content.push({
+    table: { widths: [130, '*'], body: [
+      rij('Storingnummer', d.storingnummer),
+      rij('Datum & tijd',  id.datum),
+      rij('Monteur',       id.monteur),
+      rij('Locatie',       id.locatie),
+      rij('Machine serie', id.machineSerie === 'VRIJ' ? `Vrij — ${id.machineType}` : `${id.machineSerie} ${id.machineType}`),
+      rij('Machine-ID',    id.machineID),
+      rij('Machine-uren',  id.machineUren),
+      id.machineSerie === 'VRIJ' ? rij('Opdrachtgever', id.opdrachtgever) : null,
+      id.projectNr ? rij('Project', id.projectNr) : null,
+      rij('Prioriteit',    id.prioriteit)
+    ].filter(Boolean)}, layout: 'noBorders', margin: [0,0,0,12]
+  });
+
+  const sectie = (titel, body) => {
+    content.push({ text: titel, fontSize: 11, bold: true, margin: [0,10,0,3] });
+    content.push({ canvas: [{ type:'rect', x:0, y:0, w:515, h:2, color:'#e8a000' }], margin:[0,0,0,6] });
+    content.push({ text: body || '—', fontSize: 10, color: '#3d4558', margin:[0,0,0,8] });
+  };
+
+  const sym = d.symptomen;
+  sectie('Symptomen', [sym.omschrijving, sym.logoCodes ? `LOGO: ${sym.logoCodes}` : '', sym.tags.join(' · ')].filter(Boolean).join('\n'));
+
+  const diag = d.diagnose;
+  sectie('Diagnose', [`${diag.omschrijving}`, diag.categorieen.length ? `Categorieën: ${diag.categorieen.join(', ')}` : '', `Zekerheid: ${diag.zekerheid}`].filter(Boolean).join('\n'));
+
+  const act = d.actie;
+  let actTekst = act.omschrijving;
+  if (act.stilstandUren) actTekst += `\nStilstandtijd: ${act.stilstandUren} uur`;
+  if (act.vervangenOnderdelen.length) actTekst += '\nVervangen: ' + act.vervangenOnderdelen.map(p => `${p.naam} (${p.artnr || 'geen art.nr.'})`).join(', ');
+  sectie('Actie', actTekst);
+
+  const res = d.resultaat;
+  sectie('Resultaat', [`Status: ${res.status}`, res.vervolg ? `Vervolg: ${res.vervolg}` : '', res.openPunten ? `Open: ${res.openPunten}` : ''].filter(Boolean).join('\n'));
+
+  const headerImg = PDF_LOGO
+    ? { image: PDF_LOGO, width: 58, margin:[12,7,0,0], border:[false,false,false,false], fillColor:'#000000' }
+    : { text: 'BOFRAM', fontSize: 13, bold: true, color: '#e8a000', margin:[16,15,0,0], border:[false,false,false,false], fillColor:'#000000' };
+
+  const btn = document.querySelector('.str-footer .bf-btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Bezig…'; }
+
+  try {
+    pdfMake.createPdf({
+      pageMargins: [40,88,40,40],
+      defaultStyle: { fontSize: 10, lineHeight: 1.4, color: '#3d4558' },
+      header: (page, pages) => ({ stack: [
+        { table: { widths:[90,'*',90], body: [[
+          headerImg,
+          { text: titel, fontSize:11, bold:true, color:'#fff', alignment:'center', margin:[0,16,0,0], border:[false,false,false,false], fillColor:'#000000' },
+          { text:`${page} / ${pages}`, fontSize:9, color:'rgba(255,255,255,0.5)', alignment:'right', margin:[0,20,15,0], border:[false,false,false,false], fillColor:'#000000' }
+        ]]}, layout:{defaultBorder:false}},
+        { canvas: [{type:'rect',x:0,y:0,w:595,h:3,color:'#e8a000'}] }
+      ]}),
+      footer: (page, pages) => ({ columns:[
+        { text: titel, fontSize:8, color:'#aaa', margin:[40,8,0,0] },
+        { text:`Pagina ${page} / ${pages}`, fontSize:8, color:'#aaa', alignment:'right', margin:[0,8,40,0] }
+      ]}),
+      content
+    }).download(`${d.storingnummer.replace(/[:\s]/g,'_')}_${datum}.pdf`, () => {
+      if (btn) { btn.disabled = false; btn.textContent = '⬇ PDF'; }
+    });
+  } catch(err) {
+    console.error('PDF fout:', err);
+    if (btn) { btn.disabled = false; btn.textContent = '⬇ PDF'; }
+  }
+}
+
+toggleSec('sec1'); /* sec1 standaard open */
+
+function toggleSec(id) {
+  document.getElementById(id)?.classList.toggle('collapsed');
+}
+</script>
+</body>
+</html>
