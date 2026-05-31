@@ -12,7 +12,6 @@
   <script src="../library/js/bft-overall-excelio.js"></script>
   <style>
     /* ── Volle breedte layout ── */
-    body { overflow-x: hidden; }
     .op-page { padding: 16px 20px 60px; }
     .toolbar { display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
     .toolbar .spacer { flex:1; }
@@ -20,6 +19,8 @@
     /* Grid wrapper — horizontaal scrollbaar, linker kolommen gefixeerd */
     .og-wrap {
       overflow: auto;
+      width: 100%;
+      max-width: 100%;
       border: 1px solid var(--border);
       border-radius: 6px;
       background: #fff;
