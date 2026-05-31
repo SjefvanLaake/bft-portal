@@ -42,7 +42,7 @@
     table.og-tbl { border-collapse:collapse; width:100%; font-size:12px; }
     table.og-tbl th, table.og-tbl td {
       border:1px solid var(--border,#e1e4e8);
-      padding:6px 8px; text-align:left; white-space:nowrap;
+      padding:4px 6px; text-align:left; white-space:nowrap;
     }
     table.og-tbl thead th {
       position:sticky; top:0; z-index:2;
@@ -53,7 +53,12 @@
     table.og-tbl.og-res-week .og-th-tijd,
     table.og-tbl.og-res-week .og-td-tijd { min-width:24px; padding:4px 2px; font-size:10px; }
     table.og-tbl.og-res-week { user-select:none; }
-    .og-th-act,.og-td-act { width:80px; text-align:center; padding:2px; white-space:nowrap; }
+    .og-th-act,.og-td-act { width:52px; text-align:center; padding:2px; white-space:nowrap; }
+    .og-nav-btn {
+      border:none; background:transparent; color:var(--muted,#8a909c);
+      cursor:pointer; font-size:11px; line-height:1; padding:2px 3px; border-radius:3px;
+    }
+    .og-nav-btn:hover { background:var(--accent2,#00509e); color:#fff; }
     .og-td-meta { color:var(--text,#1a1f2e); }
 
     tr.og-row-project { cursor:pointer; }
@@ -235,36 +240,45 @@ function updateBadge() {
 function injectDetailKnoppen() {
   setTimeout(function () {
     document.querySelectorAll('tr.og-row-project').forEach(function (tr) {
-      if (tr.querySelector('.og-det-btn')) return;
       var actieCell = tr.querySelector('.og-td-act');
       if (!actieCell) return;
 
-      var bftId = vindBftId(tr);
+      /* Verwijder eerder geïnjecteerde knoppen */
+      actieCell.querySelectorAll('.og-det-btn,.og-res-btn,.og-nav-btn').forEach(function (b) { b.remove(); });
 
-      /* Details → knop */
-      var btnDet = document.createElement('button');
-      btnDet.className = 'og-det-btn';
-      btnDet.textContent = 'Details →';
-      btnDet.title = 'Open Projectoverzicht';
-      btnDet.onclick = function (e) {
+      var bftId   = vindBftId(tr);
+      var isOpen  = tr.classList.contains('open');
+
+      function openDetails(e) {
         e.stopPropagation();
         if (bftId) window.open('BFT_Projectoverzicht.html?project=' + encodeURIComponent(bftId), 'bft-tool');
         else showToast('Geen BFT-project gekoppeld — gebruik Sync', 'var(--warn)');
-      };
-
-      /* Resource → knop */
-      var btnRes = document.createElement('button');
-      btnRes.className = 'og-res-btn';
-      btnRes.textContent = 'Resource →';
-      btnRes.title = 'Open ResourcePlanning voor dit project';
-      btnRes.onclick = function (e) {
+      }
+      function openResource(e) {
         e.stopPropagation();
         if (bftId) window.open('BFT_ResourcePlanning.html?project=' + encodeURIComponent(bftId), 'bft-tool');
         else showToast('Geen BFT-project gekoppeld — gebruik Sync', 'var(--warn)');
-      };
+      }
 
-      actieCell.insertBefore(btnRes, actieCell.firstChild);
-      actieCell.insertBefore(btnDet, actieCell.firstChild);
+      if (isOpen) {
+        /* Uitklapt: volledige knoppen */
+        var btnRes = document.createElement('button');
+        btnRes.className = 'og-res-btn'; btnRes.textContent = 'Resource →';
+        btnRes.title = 'Open ResourcePlanning'; btnRes.onclick = openResource;
+
+        var btnDet = document.createElement('button');
+        btnDet.className = 'og-det-btn'; btnDet.textContent = 'Details →';
+        btnDet.title = 'Open Projectoverzicht'; btnDet.onclick = openDetails;
+
+        actieCell.insertBefore(btnRes, actieCell.firstChild);
+        actieCell.insertBefore(btnDet, actieCell.firstChild);
+      } else {
+        /* Ingeklapt: compact navigatie-icoontje */
+        var btnNav = document.createElement('button');
+        btnNav.className = 'og-nav-btn'; btnNav.textContent = '↗';
+        btnNav.title = 'Open Projectoverzicht'; btnNav.onclick = openDetails;
+        actieCell.insertBefore(btnNav, actieCell.firstChild);
+      }
     });
   }, 100);
 }

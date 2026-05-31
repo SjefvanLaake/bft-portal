@@ -134,7 +134,7 @@
 
   // ── sticky kolom-configuratie ────────────────────────────────────────────
   var STICKY_ACT  = 52;
-  var STICKY_META = [110, 160, 72, 80, 44, 44, 44]; // breedte per meta-kolom
+  var STICKY_META = [90, 130, 56, 64, 44, 44, 44]; // breedte per meta-kolom
   var STICKY_LEFT = [STICKY_ACT];                     // cumulatieve left-offset per meta-kolom
   STICKY_META.forEach(function (w, i) { STICKY_LEFT.push(STICKY_LEFT[i] + STICKY_META[i]); });
   var BG_HEAD  = 'var(--accent-dk,#00509e)';
