@@ -8,6 +8,8 @@
   <script src="../library/js/bft-projects.js"></script>
   <script src="../library/js/bft-overallgrid.js"></script>
   <script src="../library/js/bft-dialog.js" defer></script>
+  <script src="../library/vendor/exceljs/exceljs.min.js"></script>
+  <script src="../library/js/bft-overall-excelio.js"></script>
   <style>
     /* ── Volle breedte layout ── */
     body { overflow-x: hidden; }
@@ -174,6 +176,7 @@
     <div class="spacer"></div>
     <button class="bf-btn bf-btn-ghost" id="btnExport">⤓ JSON</button>
     <button class="bf-btn bf-btn-ghost" id="btnImport">⤒ JSON</button>
+    <button class="bf-btn bf-btn-ghost" id="btnExcelImport" title="Importeer projecten uit Excel (.xlsx)">⤒ Excel</button>
   </div>
 
   <div class="og-wrap">
@@ -195,6 +198,7 @@
 </div>
 
 <input type="file" id="fileInput" accept=".json" style="display:none">
+<input type="file" id="xlsxInput" accept=".xlsx" style="display:none">
 <div class="toast" id="toast"></div>
 
 <script>
@@ -703,6 +707,115 @@ updateBadge();
 injectDetailKnoppen();
 setTimeout(injectDeadlineMarkers, 150);
 scrollNaarHuidig();
+
+/* ================================================================
+   EXCEL-IMPORT — BFTOverallExcelIO + conversie datum→week
+   ================================================================ */
+
+function _isoWeeksInYear(year) {
+  var d = new Date(Date.UTC(year, 11, 28));
+  var day = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - day);
+  var ys = new Date(Date.UTC(year, 0, 1));
+  return Math.ceil(((d - ys) / 86400000 + 1) / 7);
+}
+
+function _datumNaarISOWeek(dateStr) {
+  var d = new Date(dateStr);
+  if (isNaN(d)) return null;
+  var jaar = d.getUTCFullYear();
+  var jan4 = new Date(Date.UTC(jaar, 0, 4));
+  var day  = jan4.getUTCDay() || 7;
+  var w1   = new Date(jan4); w1.setUTCDate(jan4.getUTCDate() - day + 1);
+  var week = Math.floor((d - w1) / (7 * 86400000)) + 1;
+  if (week <= 0)               { jaar--; week = _isoWeeksInYear(jaar); }
+  else if (week > _isoWeeksInYear(jaar)) { jaar++; week = 1; }
+  return { week: week, jaar: jaar };
+}
+
+function _balkNaarWekenEntries(balk) {
+  var start = _datumNaarISOWeek(balk.start);
+  var eind  = _datumNaarISOWeek(balk.eind);
+  if (!start || !eind) return [];
+  var notitie = balk.notitie || '';
+  if (start.jaar === eind.jaar) {
+    return [{ startWeek: start.week, eindWeek: eind.week, jaar: start.jaar, notitie: notitie }];
+  }
+  var entries = [];
+  for (var j = start.jaar; j <= eind.jaar; j++) {
+    var sw = (j === start.jaar) ? start.week : 1;
+    var ew = (j === eind.jaar)  ? eind.week  : _isoWeeksInYear(j);
+    entries.push({ startWeek: sw, eindWeek: ew, jaar: j, notitie: j === start.jaar ? notitie : '' });
+  }
+  return entries;
+}
+
+function _excelioNaarGrid(ioResult) {
+  var projecten = ioResult.projecten.map(function (p) {
+    var weken = {};
+    p.balken.forEach(function (b) {
+      if (!b.disciplineKey) return;
+      if (!weken[b.disciplineKey]) weken[b.disciplineKey] = [];
+      weken[b.disciplineKey] = weken[b.disciplineKey].concat(_balkNaarWekenEntries(b));
+    });
+    return {
+      klant: p.klant || '', omschrijving: p.omschrijving || '',
+      wo: p.wo || '', servnr: p.servnr || '',
+      pl: p.pl || '', eng: p.eng || '', wvb: p.wvb || '',
+      weken: weken
+    };
+  });
+  return { disciplines: ioResult.disciplines, projecten: projecten };
+}
+
+function _voerExcelImportUit(file) {
+  if (!window.BFTOverallExcelIO) {
+    showToast('ExcelJS niet geladen', 'var(--danger)'); return;
+  }
+  var reader = new FileReader();
+  reader.onload = function (ev) {
+    BFTOverallExcelIO.importBuffer(ev.target.result, {})
+      .then(function (ioResult) {
+        var conv = _excelioNaarGrid(ioResult);
+        if (!conv.projecten.length) {
+          showToast('Geen projecten gevonden in Excel', 'var(--warn)'); return;
+        }
+        var huidig = grid.getState();
+        var msg = conv.projecten.length + ' project' + (conv.projecten.length !== 1 ? 'en' : '') +
+          ' gevonden in Excel.\n\nBestaande ' + huidig.projecten.length +
+          ' project' + (huidig.projecten.length !== 1 ? 'en' : '') + ' vervangen?\n(Annuleer = toevoegen aan bestaand)';
+        BFTDialog.confirm(msg, { danger: true }).then(function (vervangen) {
+          if (vervangen) {
+            var discNieuw = conv.disciplines.length ? conv.disciplines : huidig.disciplines;
+            grid.importJSON({ versie: 1, jaar: huidig.jaar, disciplines: discNieuw, projecten: conv.projecten });
+          } else {
+            conv.projecten.forEach(function (p) { grid.addProject(p); });
+            var doc2 = grid.getState();
+            conv.disciplines.forEach(function (d) {
+              if (!doc2.disciplines.some(function (x) { return x.key === d.key; })) {
+                doc2.disciplines.push(d);
+              }
+            });
+          }
+          showToast(conv.projecten.length + ' projecten geïmporteerd uit Excel');
+        });
+      })
+      .catch(function (err) {
+        showToast('Excel-fout: ' + (err && err.message || err), 'var(--danger)');
+        console.error('[ExcelImport]', err);
+      });
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+document.getElementById('btnExcelImport').addEventListener('click', function () {
+  document.getElementById('xlsxInput').click();
+});
+document.getElementById('xlsxInput').addEventListener('change', function (e) {
+  var file = e.target.files[0]; if (!file) return;
+  _voerExcelImportUit(file);
+  e.target.value = '';
+});
 
 /* Sync-badge initial */
 document.getElementById('syncBadge').textContent =
