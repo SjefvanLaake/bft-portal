@@ -462,7 +462,29 @@
           META_KOLOMMEN.forEach(function (k, i) { html += stickyTd('og-td-meta', STICKY_LEFT[i], STICKY_META[i], BG_ROW, esc(p[k.veld])); });
           kol.forEach(function (c) {
             var isHuidig = (c.type === 'week' && c.week === huidigWeek) || (c.type === 'maand' && c.maand === huidigMaand);
-            html += '<td class="og-td-tijd' + (isHuidig ? ' og-td-huidig' : '') + '"></td>';
+            var hCls = isHuidig ? ' og-td-huidig' : '';
+
+            /* Verzamel disciplines met data in deze kolom */
+            var actief = doc.disciplines.filter(function (d) {
+              var set = weekSetFor(p, d.key);
+              if (c.type === 'week') return !!set[c.week];
+              for (var w in set) {
+                if (set[w] && maandVanWeek(doc.jaar, Number(w)) === c.maand) return true;
+              }
+              return false;
+            });
+
+            if (actief.length === 0) {
+              html += '<td class="og-td-tijd' + hCls + '"></td>';
+            } else {
+              /* Gestapelde gekleurde balkjes per discipline */
+              var h = Math.floor(100 / actief.length);
+              var bars = actief.map(function (d) {
+                return '<div style="flex:1;background:' + esc(d.color) + ';opacity:0.85"></div>';
+              }).join('');
+              html += '<td class="og-td-tijd' + hCls + '" style="padding:0;vertical-align:top">'
+                + '<div style="height:100%;min-height:22px;display:flex;flex-direction:column">' + bars + '</div></td>';
+            }
           });
           html += '</tr>';
 

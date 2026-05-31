@@ -162,8 +162,12 @@
     </div>
   </div>
 
-  <p style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:10px">
-    Klik op een projectregel om disciplines uit te klappen · Klik op een maandcel om te schilderen · <strong>Details →</strong> opent Projectoverzicht
+  <p style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:10px;line-height:1.7">
+    <strong>▶ Klik op een rij</strong> om disciplines uit te klappen ·
+    <strong>Week-modus</strong>: sleep om weken te schilderen per discipline ·
+    <strong>Maand-modus</strong>: gekleurde balkjes = disciplines met ingeplande weken ·
+    <strong>⊷ Capaciteit</strong>: uren vanuit ResourcePlanning per week ·
+    Details/Resource opent in één vast venster
   </p>
 
 </div>
@@ -215,7 +219,7 @@ function injectDetailKnoppen() {
       btnDet.title = 'Open Projectoverzicht';
       btnDet.onclick = function (e) {
         e.stopPropagation();
-        if (bftId) window.open('BFT_Projectoverzicht.html?project=' + encodeURIComponent(bftId), '_blank');
+        if (bftId) window.open('BFT_Projectoverzicht.html?project=' + encodeURIComponent(bftId), 'bft-tool');
         else showToast('Geen BFT-project gekoppeld — gebruik Sync', 'var(--warn)');
       };
 
@@ -226,7 +230,7 @@ function injectDetailKnoppen() {
       btnRes.title = 'Open ResourcePlanning voor dit project';
       btnRes.onclick = function (e) {
         e.stopPropagation();
-        if (bftId) window.open('BFT_ResourcePlanning.html?project=' + encodeURIComponent(bftId), '_blank');
+        if (bftId) window.open('BFT_ResourcePlanning.html?project=' + encodeURIComponent(bftId), 'bft-tool');
         else showToast('Geen BFT-project gekoppeld — gebruik Sync', 'var(--warn)');
       };
 
