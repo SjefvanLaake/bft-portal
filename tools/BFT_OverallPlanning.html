@@ -12,7 +12,6 @@
   <script src="../library/js/bft-overall-excelio.js"></script>
   <style>
     /* ── Volle breedte layout ── */
-    body { overflow-x: hidden; }
     .op-page { padding: 16px 20px 60px; }
     .toolbar { display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
     .toolbar .spacer { flex:1; }
@@ -21,7 +20,6 @@
     .og-wrap {
       overflow: auto;
       width: 100%;
-      max-width: calc(100vw - 40px);
       border: 1px solid var(--border);
       border-radius: 6px;
       background: #fff;
@@ -41,9 +39,10 @@
     }
     /* Zorg dat painted cells de huidig-markering overrulen */
     .og-paint-cell.painted.og-td-huidig { background: inherit !important; }
-    table.og-tbl { border-collapse:collapse; font-size:12px; }
+    table.og-tbl { border-collapse:separate; border-spacing:0; font-size:12px; }
     table.og-tbl th, table.og-tbl td {
-      border:1px solid var(--border,#e1e4e8);
+      border-right:1px solid var(--border,#e1e4e8);
+      border-bottom:1px solid var(--border,#e1e4e8);
       padding:4px 6px; text-align:left; white-space:nowrap;
     }
     table.og-tbl thead th {
@@ -130,9 +129,9 @@
     }
 
     /* Resource-panel rijen (per project, inline) */
-    tr.res-sep td { background: rgba(124,58,237,0.06); border-top: 1px dashed rgba(124,58,237,0.25); padding: 2px 16px; font-family: var(--mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #7c3aed; }
-    tr.res-rij td { background: rgba(124,58,237,0.03); }
-    tr.res-rij:hover td { background: rgba(124,58,237,0.07); }
+    tr.res-sep td { background: #efe9fb; border-top: 1px dashed rgba(124,58,237,0.25); padding: 2px 16px; font-family: var(--mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #7c3aed; }
+    tr.res-rij td { background: #f7f4fd; }
+    tr.res-rij:hover td { background: #efe9fb; }
 
     /* Sync-badge */
     .sync-badge {
@@ -217,12 +216,16 @@ var grid = BFTOverallGrid.register({
   jaar:       new Date().getFullYear(),
   accordion:  true,
   onChange: function () {
+    /* Data-event: alleen state-afgeleide zaken. DOM-injectors draaien in onRender. */
     updateBadge();
-    injectDetailKnoppen();
     schrijfPlanningSnapshots();
-    setTimeout(injectDeadlineMarkers, 150);
-    setTimeout(injectCapaciteitsRijen, 200);
-    setTimeout(injectResourceRijen, 250);
+  },
+  onRender: function () {
+    /* Draait synchroon ná elke render, op de verse DOM — geen MutationObserver-loop. */
+    injectDetailKnoppen();
+    injectDeadlineMarkers();
+    injectCapaciteitsRijen();
+    injectResourceRijen();
   }
 });
 
@@ -240,54 +243,44 @@ function updateBadge() {
    ================================================================ */
 /* ── Optie A: Details + Resource knoppen per rij ── */
 function injectDetailKnoppen() {
-  setTimeout(function () {
-    document.querySelectorAll('tr.og-row-project').forEach(function (tr) {
-      var actieCell = tr.querySelector('.og-td-act');
-      if (!actieCell) return;
+  document.querySelectorAll('tr.og-row-project').forEach(function (tr) {
+    var actieCell = tr.querySelector('.og-td-act');
+    if (!actieCell) return;
 
-      var isOpen  = tr.classList.contains('open');
+    var isOpen = tr.classList.contains('open');
+    var bftId  = vindBftId(tr);
 
-      /* Skip als knoppen al kloppen voor huidige staat — voorkomt MutationObserver-loop */
-      if (isOpen  && actieCell.querySelector('.og-det-btn')) return;
-      if (!isOpen && actieCell.querySelector('.og-nav-btn')) return;
+    function openDetails(e) {
+      e.stopPropagation();
+      if (bftId) window.open('BFT_Projectoverzicht.html?project=' + encodeURIComponent(bftId), 'bft-tool');
+      else showToast('Geen BFT-project gekoppeld — gebruik Sync', 'var(--warn)');
+    }
+    function openResource(e) {
+      e.stopPropagation();
+      if (bftId) window.open('BFT_ResourcePlanning.html?project=' + encodeURIComponent(bftId), 'bft-tool');
+      else showToast('Geen BFT-project gekoppeld — gebruik Sync', 'var(--warn)');
+    }
 
-      /* Verwijder knoppen van vorige staat */
-      actieCell.querySelectorAll('.og-det-btn,.og-res-btn,.og-nav-btn').forEach(function (b) { b.remove(); });
+    if (isOpen) {
+      /* Uitgeklapt: volledige knoppen */
+      var btnRes = document.createElement('button');
+      btnRes.className = 'og-res-btn'; btnRes.textContent = 'Resource →';
+      btnRes.title = 'Open ResourcePlanning'; btnRes.onclick = openResource;
 
-      var bftId = vindBftId(tr);
+      var btnDet = document.createElement('button');
+      btnDet.className = 'og-det-btn'; btnDet.textContent = 'Details →';
+      btnDet.title = 'Open Projectoverzicht'; btnDet.onclick = openDetails;
 
-      function openDetails(e) {
-        e.stopPropagation();
-        if (bftId) window.open('BFT_Projectoverzicht.html?project=' + encodeURIComponent(bftId), 'bft-tool');
-        else showToast('Geen BFT-project gekoppeld — gebruik Sync', 'var(--warn)');
-      }
-      function openResource(e) {
-        e.stopPropagation();
-        if (bftId) window.open('BFT_ResourcePlanning.html?project=' + encodeURIComponent(bftId), 'bft-tool');
-        else showToast('Geen BFT-project gekoppeld — gebruik Sync', 'var(--warn)');
-      }
-
-      if (isOpen) {
-        /* Uitklapt: volledige knoppen */
-        var btnRes = document.createElement('button');
-        btnRes.className = 'og-res-btn'; btnRes.textContent = 'Resource →';
-        btnRes.title = 'Open ResourcePlanning'; btnRes.onclick = openResource;
-
-        var btnDet = document.createElement('button');
-        btnDet.className = 'og-det-btn'; btnDet.textContent = 'Details →';
-        btnDet.title = 'Open Projectoverzicht'; btnDet.onclick = openDetails;
-
-        actieCell.insertBefore(btnRes, actieCell.firstChild);
-        actieCell.insertBefore(btnDet, actieCell.firstChild);
-      } else {
-        /* Ingeklapt: compact navigatie-icoontje */
-        var btnNav = document.createElement('button');
-        btnNav.className = 'og-nav-btn'; btnNav.textContent = '↗';
-        btnNav.title = 'Open Projectoverzicht'; btnNav.onclick = openDetails;
-        actieCell.insertBefore(btnNav, actieCell.firstChild);
-      }
-    });
-  }, 100);
+      actieCell.insertBefore(btnRes, actieCell.firstChild);
+      actieCell.insertBefore(btnDet, actieCell.firstChild);
+    } else {
+      /* Ingeklapt: compact navigatie-icoontje */
+      var btnNav = document.createElement('button');
+      btnNav.className = 'og-nav-btn'; btnNav.textContent = '↗';
+      btnNav.title = 'Open Projectoverzicht'; btnNav.onclick = openDetails;
+      actieCell.insertBefore(btnNav, actieCell.firstChild);
+    }
+  });
 }
 
 /* ── Deadline-markers per projectrij ── */
@@ -409,27 +402,20 @@ function injectCapaciteitsRijen() {
   var tr = document.createElement('tr');
   tr.className = 'cap-rij';
 
-  /* Sticky actiecel */
+  /* Sticky cellen — breedtes/offsets uit de werkelijke header lezen (één bron van waarheid) */
+  var hdrAct  = tabel.querySelector('thead th.og-th-act');
+  var hdrMeta = Array.prototype.slice.call(tabel.querySelectorAll('thead th.og-th-meta'));
+
   var tdAct = document.createElement('td');
-  tdAct.style.cssText = 'position:sticky;left:0;z-index:2;background:var(--surface2);min-width:52px';
+  tdAct.style.cssText = 'position:sticky;left:0;z-index:2;background:var(--surface2);min-width:' + (hdrAct ? hdrAct.style.minWidth : '52px');
   tr.appendChild(tdAct);
 
-  /* Sticky naam-cel */
-  var STICKY_META = [110,160,72,80,44,44,44];
-  var STICKY_LEFT = [52];
-  STICKY_META.forEach(function(w,i){ STICKY_LEFT.push(STICKY_LEFT[i]+STICKY_META[i]); });
-
-  var tdNaam = document.createElement('td');
-  tdNaam.className = 'cap-naam';
-  tdNaam.style.cssText = 'position:sticky;left:52px;z-index:2;background:var(--surface2);min-width:110px';
-  tdNaam.textContent = 'Ingepland (u)';
-  tr.appendChild(tdNaam);
-
-  for (var i = 1; i < 7; i++) {
-    var tdLeeg = document.createElement('td');
-    tdLeeg.style.cssText = 'position:sticky;left:' + STICKY_LEFT[i] + 'px;z-index:2;background:var(--surface2);min-width:' + STICKY_META[i] + 'px';
-    tr.appendChild(tdLeeg);
-  }
+  hdrMeta.forEach(function(hth, i) {
+    var td = document.createElement('td');
+    if (i === 0) { td.className = 'cap-naam'; td.textContent = 'Ingepland (u)'; }
+    td.style.cssText = 'position:sticky;left:' + hth.style.left + ';z-index:2;background:var(--surface2);min-width:' + hth.style.minWidth;
+    tr.appendChild(td);
+  });
 
   /* Tijdkolommen */
   tijdThs.forEach(function(th) {
@@ -511,19 +497,26 @@ function injectResourceRijen() {
       tr.className = 'res-rij'; tr.dataset.id = projId;
 
       /* Sticky action cel */
+      /* Sticky cellen — losse cellen per meta-kolom, breedtes uit de header (geen brede colspan-cel die overlapt) */
+      var hdrActR  = tabel.querySelector('thead th.og-th-act');
+      var hdrMetaR = Array.prototype.slice.call(tabel.querySelectorAll('thead th.og-th-meta'));
+
       var tdAct = document.createElement('td');
-      tdAct.style.cssText = 'position:sticky;left:0;z-index:2;background:rgba(124,58,237,0.03);min-width:52px';
+      tdAct.style.cssText = 'position:sticky;left:0;z-index:2;background:#f7f4fd;min-width:' + (hdrActR ? hdrActR.style.minWidth : '52px');
       tr.appendChild(tdAct);
 
-      /* Sticky naam cel — colspan = aantal META_KOLOMMEN (7) */
-      var tdNaam = document.createElement('td');
-      tdNaam.colSpan = 7;
-      tdNaam.style.cssText = 'position:sticky;left:52px;z-index:2;background:rgba(124,58,237,0.03);padding-left:22px;white-space:nowrap';
-      tdNaam.innerHTML =
-        '<span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#7c3aed;vertical-align:middle;margin-right:8px;opacity:0.7"></span>'
-        + '<span style="font-family:var(--mono);font-size:11px;color:var(--text2)">' + mdw.naam + '</span>'
-        + '<span style="font-family:var(--mono);font-size:9px;color:#7c3aed;margin-left:8px;opacity:0.8">' + mdw.discipline + '</span>';
-      tr.appendChild(tdNaam);
+      hdrMetaR.forEach(function(hth, i) {
+        var td = document.createElement('td');
+        td.style.cssText = 'position:sticky;left:' + hth.style.left + ';z-index:2;background:#f7f4fd;min-width:' + hth.style.minWidth
+          + (i === 0 ? ';padding-left:22px;white-space:nowrap' : '');
+        if (i === 0) {
+          td.innerHTML =
+            '<span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#7c3aed;vertical-align:middle;margin-right:8px;opacity:0.7"></span>'
+            + '<span style="font-family:var(--mono);font-size:11px;color:var(--text2)">' + mdw.naam + '</span>'
+            + '<span style="font-family:var(--mono);font-size:9px;color:#7c3aed;margin-left:8px;opacity:0.8">' + mdw.discipline + '</span>';
+        }
+        tr.appendChild(td);
+      });
 
       /* Tijdkolommen */
       tijdThs.forEach(function(th) {
@@ -547,7 +540,7 @@ function injectResourceRijen() {
         }
 
         if (uren > 0) {
-          td.style.cssText = 'text-align:center;font-family:var(--mono);font-size:10px;font-weight:700;color:#7c3aed;background:rgba(124,58,237,0.10)';
+          td.style.cssText = 'text-align:center;font-family:var(--mono);font-size:10px;font-weight:700;color:#7c3aed;background:#e6ddfb';
           td.textContent = uren + 'u';
         }
         tr.appendChild(td);
@@ -725,8 +718,9 @@ function scrollNaarHuidig() {
    INIT
    ================================================================ */
 updateBadge();
-injectDetailKnoppen();
-setTimeout(injectDeadlineMarkers, 150);
+/* Eén volledige render nu 'grid' is toegekend → onRender draait alle injectors
+   (knoppen/deadlines/capaciteit/resource) op de verse DOM. */
+grid.render();
 scrollNaarHuidig();
 
 /* ================================================================
@@ -854,14 +848,8 @@ document.getElementById('xlsxInput').addEventListener('change', function (e) {
 document.getElementById('syncBadge').textContent =
   'BFT_PROJECTEN: ' + (BFT_PROJECTEN ? BFT_PROJECTEN.length : 0) + ' beschikbaar';
 
-/* MutationObserver voor detail-knoppen na grid-renders */
-var obs = new MutationObserver(function() {
-  injectDetailKnoppen();
-  setTimeout(injectDeadlineMarkers, 150);
-  setTimeout(injectCapaciteitsRijen, 200);
-  setTimeout(injectResourceRijen, 250);
-});
-obs.observe(document.getElementById('og-grid'), { childList: true, subtree: true });
+/* Injectors draaien via de onRender-hook van het grid (zie register hierboven) —
+   geen MutationObserver meer, dus geen re-entrancy/loop. */
 </script>
 
 </body>

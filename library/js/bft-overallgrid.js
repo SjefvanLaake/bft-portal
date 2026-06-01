@@ -69,7 +69,8 @@
     uiKey      : 'ui',
     jaar       : new Date().getFullYear(),
     accordion  : false,
-    onChange   : null
+    onChange   : null,
+    onRender   : null
   };
 
   // ── utils ──────────────────────────────────────────────────────────────
@@ -544,6 +545,10 @@
       });
 
       if (ui.resolutie === 'week') wirePainting();
+
+      /* Post-render hook — DOM is volledig opgebouwd. Tool hangt hier z'n
+         injectors aan (knoppen/deadlines/capaciteit) i.p.v. via MutationObserver. */
+      if (typeof opts.onRender === 'function') { try { opts.onRender(getState()); } catch (e) { console.warn('[BFTOverallGrid] onRender error', e); } }
     }
 
     // ── schilderen (klik = toggle, sleep = reeks) ───────────────────────────
