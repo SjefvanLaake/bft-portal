@@ -6,6 +6,7 @@
   <title>Nieuw Project — BFT</title>
   <link rel="stylesheet" href="../library/css/bofram-style.css">
   <script src="../library/js/bft-projects.js"></script>
+  <script src="../library/js/bft-medewerkers.js"></script>
   <style>
     .container { max-width:620px;margin:0 auto;padding:28px 20px 80px; }
     .card { background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;box-shadow:var(--shadow-md); }
@@ -76,15 +77,28 @@
         <input type="text" id="f_klant" placeholder="Naam klant / bedrijf" oninput="updatePreview()">
       </div>
     </div>
-    <div class="fg fg2" style="margin-bottom:20px">
+    <div class="fg fg2" style="margin-bottom:14px">
       <div class="field">
         <label>Projectleider</label>
-        <input type="text" id="f_pl" placeholder="Naam PL" oninput="updatePreview()">
+        <input type="text" id="f_pl" list="dl_pl" placeholder="Kies of typ naam PL" oninput="updatePreview()">
+        <datalist id="dl_pl"></datalist>
+      </div>
+      <div class="field">
+        <label>Engineer</label>
+        <input type="text" id="f_eng" list="dl_eng" placeholder="Kies of typ naam engineer" oninput="updatePreview()">
+        <datalist id="dl_eng"></datalist>
+      </div>
+      <div class="field">
+        <label>WVB (werkvoorbereiding)</label>
+        <input type="text" id="f_wvb" list="dl_wvb" placeholder="Kies of typ naam WVB" oninput="updatePreview()">
+        <datalist id="dl_wvb"></datalist>
       </div>
       <div class="field">
         <label>Geplande oplevering</label>
         <input type="date" id="f_oplevering" oninput="updatePreview()">
       </div>
+    </div>
+    <div class="fg fg2" style="margin-bottom:20px">
       <div class="field">
         <label>Status</label>
         <select id="f_status" onchange="updatePreview()">
@@ -142,6 +156,8 @@ function genereer(){
   const id = `${nr}_${type.replace(/[^a-zA-Z0-9]/g,'').toUpperCase()}`;
   const oplevering = gv('f_oplevering') || '';
   const pl = gv('f_pl') || '';
+  const eng = gv('f_eng') || '';
+  const wvb = gv('f_wvb') || '';
   const status = gv('f_status') || 'actief';
   const aangemaakt = gv('f_aangemaakt') || new Date().toISOString().slice(0,10);
 
@@ -153,7 +169,7 @@ function genereer(){
     return;
   }
 
-  const code = `  ,{\n    id: '${id}',\n    projectnr: '${nr}',\n    naam: '${naam}',\n    klant: '${klant}',\n    oplevering: '${oplevering}',\n    pl: '${pl}',\n    machineType: '${type}',\n    aangemaakt: '${aangemaakt}',\n    status: '${status}'\n  }`;
+  const code = `  ,{\n    id: '${id}',\n    projectnr: '${nr}',\n    naam: '${naam}',\n    klant: '${klant}',\n    oplevering: '${oplevering}',\n    pl: '${pl}',\n    eng: '${eng}',\n    wvb: '${wvb}',\n    machineType: '${type}',\n    aangemaakt: '${aangemaakt}',\n    status: '${status}'\n  }`;
 
   const gitCommands = `git -C "C:\\Users\\sjefv\\OneDrive\\Documenten\\Claude\\Projects\\BFT-V2" add library/js/bft-projects.js\ngit -C "C:\\Users\\sjefv\\OneDrive\\Documenten\\Claude\\Projects\\BFT-V2" commit -m "Nieuw project: ${nr} ${naam}"\ngit -C "C:\\Users\\sjefv\\OneDrive\\Documenten\\Claude\\Projects\\BFT-V2" push`;
 
@@ -174,6 +190,13 @@ function kopieer(){
 
 /* Datum standaard vandaag */
 document.getElementById('f_aangemaakt').value = new Date().toISOString().slice(0,10);
+
+/* Keuzelijsten vullen uit de gedeelde medewerkerslijst (gefilterd op discipline) */
+if (typeof bftMedewerkerOptions === 'function') {
+  document.getElementById('dl_pl').innerHTML  = bftMedewerkerOptions('Projectleider');
+  document.getElementById('dl_eng').innerHTML = bftMedewerkerOptions('Engineering');
+  document.getElementById('dl_wvb').innerHTML = bftMedewerkerOptions('WVB');
+}
 </script>
 </body>
 </html>

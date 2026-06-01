@@ -616,8 +616,8 @@ document.getElementById('btnSync').addEventListener('click', function () {
       wo:           p.projectnr,
       servnr:       p.id,        /* persistent bftId — niet wijzigen */
       pl:           p.pl || '',
-      eng:          '',
-      wvb:          ''
+      eng:          p.eng || '',
+      wvb:          p.wvb || ''
     });
   });
 

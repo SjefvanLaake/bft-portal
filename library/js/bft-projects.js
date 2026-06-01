@@ -10,6 +10,8 @@ const BFT_PROJECTEN = [
     klant: 'Demo Klant BV',
     oplevering: '2026-08-15',
     pl: 'J. de Vries',
+    eng: 'S. Hendriks',
+    wvb: 'T. Wouters',
     machineType: 'BFMR2000EK',
     aangemaakt: '2026-01-10',
     status: 'actief'
@@ -21,6 +23,8 @@ const BFT_PROJECTEN = [
     klant: 'Ander Bedrijf NV',
     oplevering: '2026-10-01',
     pl: 'P. Jansen',
+    eng: 'K. Evers',
+    wvb: 'R. Dekker',
     machineType: 'BFR500',
     aangemaakt: '2026-02-20',
     status: 'actief'
@@ -32,6 +36,8 @@ const BFT_PROJECTEN = [
     klant: 'Klant C Holding',
     oplevering: '2026-03-01',
     pl: 'M. Bakker',
+    eng: 'S. Hendriks',
+    wvb: 'T. Wouters',
     machineType: 'BFM800',
     aangemaakt: '2025-09-15',
     status: 'klaar'
