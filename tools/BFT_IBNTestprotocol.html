@@ -84,7 +84,7 @@
     .ibn-sb-count { margin-left: auto; font-family: var(--mono); font-size: 10px; color: var(--muted); }
 
     /* ── Hoofd-content ── */
-    .ibn-main { flex: 1; padding: 24px; max-width: 960px; }
+    .ibn-main { flex: 1; padding: 24px 24px 90px; max-width: 960px; }
 
     /* ── Mock-banner ── */
     .mock-banner {
@@ -370,6 +370,7 @@
 <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
 <script src="../library/js/bft-projects.js"></script>
 <script src="../library/js/bft-pdf-logo.js"></script>
+<script src="../library/js/bft-tool-shell.js" defer></script>
 <script src="../library/js/bft-auth.js" defer></script>
 <script src="../library/js/bft-dialog.js" defer></script>
 <script src="../library/js/bft-wizard.js" defer></script>
@@ -654,22 +655,24 @@ function laadProject() {
   try { const r = localStorage.getItem('bft_v2_ibn_' + id); if (r) state = JSON.parse(r); } catch(e){}
   if (!state.machineInfo) state.machineInfo = { chassis:'', tester:'', locatie:'', datum:'' };
   if (!state.gates) state.gates = {};
-  const proj = BFT_PROJECTEN.find(p => p.id === id);
-  document.getElementById('hdrSub').textContent = proj ? proj.naam : id;
-  if (window.BFTAuth && BFTAuth.isReady()) monteurNaam = BFTAuth.getUser()?.naam || '';
+  /* migratie: oude string-gates ('go'/'nogo') → audit-object {besluit,tester,ts,reden} */
+  Object.keys(state.gates).forEach(k => {
+    if (typeof state.gates[k] === 'string') state.gates[k] = { besluit: state.gates[k], tester: '', ts: '', reden: '' };
+  });
+  const proj = BFTToolShell.getProject(id) || {};
+  document.getElementById('hdrSub').textContent = proj.naam || id;
+  monteurNaam = BFTToolShell.monteur.laad();
   renderFaseNav();
   switchFase(actieveFase);
 }
 
 window.addEventListener('load', function() {
-  const param = new URLSearchParams(window.location.search).get('project');
-  document.getElementById('projSelect').innerHTML = bftProjectOptions(param || '');
+  const param = BFTToolShell.leesParam();
+  BFTToolShell.vulSelect(document.getElementById('projSelect'), param || '');
   if (param) laadProject();
-  if (window.BFTAuth && BFTAuth.isConfigured()) BFTAuth.init().then(() => {
-    if (BFTAuth.isReady()) monteurNaam = BFTAuth.getUser()?.naam || monteurNaam;
-  });
+  BFTToolShell.initBackend().then(() => { monteurNaam = BFTToolShell.monteur.naam() || monteurNaam; });
 
-  if (window.BFTWizard) {
+  if (typeof BFTWizard !== 'undefined') {
     BFTWizard.register({
       name: 'IBN Testprotocol',
       getItems: function () {
@@ -780,9 +783,9 @@ function renderContent() {
 
 function renderMachineInfo() {
   const m = state.machineInfo;
-  const proj = BFT_PROJECTEN.find(p => p.id === huidigProject) || {};
+  const proj = BFTToolShell.getProject(huidigProject) || {};
   return `
-    <div class="mock-banner">⚠ Mock-modus — data opgeslagen in browser tot SharePoint live is</div>
+    ${BFTToolShell.mockBanner()}
     <div class="ibn-fase-hdr">
       <div class="ibn-fase-icon">📋</div>
       <div><div class="ibn-fase-naam">Machine-identificatie</div>
@@ -803,9 +806,6 @@ function renderMachineInfo() {
       <div class="bf-field"><label>Testdatum <span style="color:var(--danger)">*</span></label>
         <input type="date" class="bf-input" id="inf-datum" value="${m.datum||''}"
           oninput="slaInfoOp()"></div>
-      <div class="bf-field"><label>Eindbestemming / locatie</label>
-        <input type="text" class="bf-input" id="inf-locatie" value="${m.locatie||''}"
-          placeholder="Klantlocatie of intern" oninput="slaInfoOp()"></div>
     </div>
     <div class="ibn-fase-nav">
       <div></div>
@@ -818,8 +818,7 @@ function slaInfoOp() {
   state.machineInfo = {
     chassis: document.getElementById('inf-chassis')?.value || '',
     tester:  document.getElementById('inf-tester')?.value  || '',
-    datum:   document.getElementById('inf-datum')?.value   || '',
-    locatie: document.getElementById('inf-locatie')?.value || ''
+    datum:   document.getElementById('inf-datum')?.value   || ''
   };
   if (state.machineInfo.tester) monteurNaam = state.machineInfo.tester;
   slaOp();
@@ -834,7 +833,7 @@ function renderFase(fase) {
   const gs = state.gates[fase.id] || null;
 
   return `
-    <div class="mock-banner">⚠ Mock-modus — data opgeslagen in browser</div>
+    ${BFTToolShell.mockBanner()}
     <div class="ibn-fase-hdr">
       <div class="ibn-fase-icon">${fase.icon}</div>
       <div><div class="ibn-fase-naam">Fase ${fase.id} — ${fase.titel}</div>
@@ -865,13 +864,26 @@ function renderVrijgave(fase) {
   );
   const open = totaal - gedaan - nvt;
 
+  const esc = BFTToolShell.esc;
   const gatesFasen = FASEN.filter(f => f.gate);
+  const alleGo    = gatesFasen.length > 0 && gatesFasen.every(f => (state.gates[f.id] || {}).besluit === 'go');
+  const enigeNogo = gatesFasen.some(f => (state.gates[f.id] || {}).besluit === 'nogo');
+  const vrijgegeven = alleGo && open === 0 && !enigeNogo;
+  const redenNiet = enigeNogo ? 'er is een NOGO-gate' : open > 0 ? `${open} open item(s)` : 'niet alle gates op GO';
+  const releaseStijl = vrijgegeven
+    ? 'background:rgba(30,158,94,0.12);color:var(--success);border:1px solid rgba(30,158,94,0.3)'
+    : 'background:rgba(214,48,48,0.10);color:var(--danger);border:1px solid rgba(214,48,48,0.3)';
+
   return `
-    <div class="mock-banner">⚠ Mock-modus</div>
+    ${BFTToolShell.mockBanner()}
     <div class="ibn-fase-hdr">
       <div class="ibn-fase-icon">📦</div>
       <div><div class="ibn-fase-naam">Vrijgave & verzendgereed</div>
       <div class="ibn-fase-sub">Samenvatting + documentatie afronden</div></div>
+    </div>
+
+    <div style="padding:12px 16px;border-radius:8px;margin-bottom:16px;font-weight:700;font-family:var(--mono);font-size:13px;${releaseStijl}">
+      ${vrijgegeven ? '✓ VRIJGEGEVEN — alle gates GO, geen open items' : `⚠ NIET VRIJGEGEVEN — ${redenNiet}`}
     </div>
 
     <div class="ibn-summary-grid">
@@ -884,12 +896,15 @@ function renderVrijgave(fase) {
     <div class="ibn-gates-overzicht">
       <div class="ibn-gates-head">Gate-overzicht</div>
       ${gatesFasen.map(f => {
-        const gs = state.gates[f.id];
-        const pill = gs === 'go' ? 'go' : gs === 'nogo' ? 'nogo' : 'open';
-        const txt  = gs === 'go' ? 'GO' : gs === 'nogo' ? 'NOGO' : 'Open';
+        const gs = state.gates[f.id] || null;
+        const besluit = gs && gs.besluit;
+        const pill = besluit === 'go' ? 'go' : besluit === 'nogo' ? 'nogo' : 'open';
+        const txt  = besluit === 'go' ? 'GO' : besluit === 'nogo' ? 'NOGO' : 'Open';
+        const door = (besluit && gs.tester) ? ` <span style="color:var(--muted);font-family:var(--mono);font-size:9px">(${esc(gs.tester)})</span>` : '';
+        const reden = (besluit === 'nogo' && gs.reden) ? `<div style="color:var(--danger);font-size:10px;margin-top:2px">Reden: ${esc(gs.reden)}</div>` : '';
         return `<div class="ibn-gate-rij">
           <span class="ibn-gate-fase">Gate ${f.id}</span>
-          <span class="ibn-gate-naam">${f.gate.label}</span>
+          <span class="ibn-gate-naam">${esc(f.gate.label)}${door}${reden}</span>
           <span class="ibn-gate-pill ${pill}">${txt}</span>
         </div>`;
       }).join('')}
@@ -957,16 +972,27 @@ function renderRij(it) {
   `;
 }
 
+function gateStempel(gs) {
+  if (!gs || !gs.tester) return '';
+  const ts = gs.ts ? new Date(gs.ts).toLocaleString('nl-NL', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+  return `${gs.tester}${ts ? ' · ' + ts : ''}`;
+}
+
 function renderGate(faseId, gate, gs) {
-  const cls = gs === 'go' ? 'go-gate' : gs === 'nogo' ? 'nogo-gate' : '';
+  const besluit = gs && gs.besluit;
+  const cls = besluit === 'go' ? 'go-gate' : besluit === 'nogo' ? 'nogo-gate' : '';
+  const esc = BFTToolShell.esc;
+  const stempel = gateStempel(gs);
   return `
     <div class="ibn-gate ${cls}" id="gate-${faseId}">
       <div class="ibn-gate-tekst">
-        <div class="ibn-gate-label">${gate.label}</div>
-        <div class="ibn-gate-sub">${gate.sub}</div>
+        <div class="ibn-gate-label">${esc(gate.label)}</div>
+        <div class="ibn-gate-sub">${esc(gate.sub)}</div>
+        ${besluit === 'nogo' && gs.reden ? `<div class="ibn-gate-sub" style="color:var(--danger)">Reden NOGO: ${esc(gs.reden)}</div>` : ''}
+        ${stempel ? `<div class="ibn-gate-sub">✓ ${esc(stempel)}</div>` : ''}
       </div>
-      ${gs
-        ? `<span class="ibn-gate-status ${gs}">${gs.toUpperCase()}</span>
+      ${besluit
+        ? `<span class="ibn-gate-status ${besluit}">${besluit.toUpperCase()}</span>
            <button class="btn-nogo" onclick="setGate(${faseId}, null)" style="font-size:10px;padding:5px 10px">Wijzigen</button>`
         : `<button class="btn-go"   onclick="setGate(${faseId},'go')">GO</button>
            <button class="btn-nogo" onclick="setGate(${faseId},'nogo')">NOGO</button>`
@@ -1006,12 +1032,42 @@ function slaNotaOp(id, tekst) {
   if (btn) btn.classList.toggle('heeft-note', !!tekst.trim());
 }
 
+function faseOpenItems(fase) {
+  let open = 0;
+  (fase.sections || []).forEach(s => s.items.forEach(it => { if (!state.checks[it.id]?.status) open++; }));
+  return open;
+}
+
 function setGate(faseId, besluit) {
-  state.gates[faseId] = besluit;
+  /* Wijzigen / wissen */
+  if (besluit === null) { delete state.gates[faseId]; naGate(faseId); return; }
+
+  /* Gate-beslissing vereist een tester (zoals een afvink-stempel) */
+  if (!monteurNaam) {
+    if (window.BFTDialog) BFTDialog.alert('Vul eerst de tester-naam in bij Machine-identificatie.');
+    else alert('Vul eerst de tester-naam in.');
+    return;
+  }
+
+  const fase = FASEN.find(f => f.id === faseId);
+
+  if (besluit === 'go') {
+    const open = fase ? faseOpenItems(fase) : 0;
+    if (open > 0 && !confirm(`Deze fase heeft nog ${open} open item(s).\nGO geven betekent vrijgave ondanks openstaande punten. Toch GO?`)) return;
+    state.gates[faseId] = { besluit: 'go', tester: monteurNaam, ts: new Date().toISOString(), reden: '' };
+  } else { /* nogo — reden verplicht */
+    const reden = (prompt('Reden voor NOGO (verplicht):') || '').trim();
+    if (!reden) return;
+    state.gates[faseId] = { besluit: 'nogo', tester: monteurNaam, ts: new Date().toISOString(), reden: reden };
+  }
+  naGate(faseId);
+}
+
+function naGate(faseId) {
   slaOp();
   const gate = FASEN.find(f => f.id === faseId)?.gate;
   const el = document.getElementById('gate-' + faseId);
-  if (el && gate) el.outerHTML = renderGate(faseId, gate, besluit);
+  if (el && gate) el.outerHTML = renderGate(faseId, gate, state.gates[faseId] || null);
   renderFaseNav();
 }
 
@@ -1071,9 +1127,7 @@ function updateVoortgang() {
   );
   const open = totaal - gedaan;
   const pct  = totaal > 0 ? Math.round(gedaan / totaal * 100) : 0;
-  const omtrek = 106.8;
-  document.getElementById('progCircle').style.strokeDashoffset = omtrek - (omtrek * pct / 100);
-  document.getElementById('progPct').textContent = pct + '%';
+  BFTToolShell.setRing(document.getElementById('progCircle'), document.getElementById('progPct'), pct);
   const btn = document.getElementById('pdfBtn');
   if (open > 0) {
     document.getElementById('footerStatus').innerHTML =
@@ -1093,7 +1147,7 @@ const PDF_LOGO = (typeof BFT_PDF_LOGO !== 'undefined') ? BFT_PDF_LOGO : null;
 function exportPDF() {
   if (!huidigProject) return;
   const m     = state.machineInfo;
-  const proj  = BFT_PROJECTEN.find(p => p.id === huidigProject) || {};
+  const proj  = BFTToolShell.getProject(huidigProject) || {};
   const datum = new Date().toISOString().slice(0,10);
   const titel = `IBN Testprotocol — ${huidigProject}`;
 
@@ -1105,7 +1159,6 @@ function exportPDF() {
     ['Klant',         proj.klant   || '—'],
     ['Tester',        m.tester     || '—'],
     ['Testdatum',     m.datum      || '—'],
-    ['Locatie',       m.locatie    || '—'],
     ['Afgedrukt op',  datum]
   ];
   content.push({
@@ -1125,13 +1178,17 @@ function exportPDF() {
        {text:'Omschrijving',fontSize:8,color:'#7a849a',bold:true,fillColor:'#f8f9fa'},
        {text:'Status',fontSize:8,color:'#7a849a',bold:true,fillColor:'#f8f9fa',alignment:'center'}],
       ...gatesFasen.map(f => {
-        const gs = state.gates[f.id];
-        const txt = gs === 'go' ? 'GO' : gs === 'nogo' ? 'NOGO' : '-';
-        const kleur = gs === 'go' ? '#1e9e5e' : gs === 'nogo' ? '#d63030' : '#7a849a';
+        const gs = state.gates[f.id] || null;
+        const besluit = gs && gs.besluit;
+        const txt = besluit === 'go' ? 'GO' : besluit === 'nogo' ? 'NOGO' : '-';
+        const kleur = besluit === 'go' ? '#1e9e5e' : besluit === 'nogo' ? '#d63030' : '#7a849a';
+        const stempel = gateStempel(gs);
+        const labelParts = [{ text: f.gate.label, fontSize:8, color:'#1a1f2e' }];
+        if (besluit === 'nogo' && gs.reden) labelParts.push({ text:`\nReden NOGO: ${gs.reden}`, fontSize:7, color:'#d63030', italics:true });
         return [
           {text:`Gate ${f.id}`, fontSize:8, color:'#7a849a'},
-          {text:f.gate.label, fontSize:8, color:'#1a1f2e'},
-          {text:txt, fontSize:8, bold:true, color:kleur, alignment:'center'}
+          {text: labelParts},
+          {text: stempel ? [{text:txt+'\n', bold:true, color:kleur}, {text:stempel, fontSize:6, color:'#7a849a'}] : txt, fontSize:8, bold:true, color:kleur, alignment:'center'}
         ];
       })
     ]}, layout:'lightHorizontalLines', margin:[0,0,0,16]
