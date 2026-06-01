@@ -114,6 +114,10 @@
         <input type="date" id="f_aangemaakt" oninput="updatePreview()">
       </div>
     </div>
+    <div class="field" style="margin-bottom:20px">
+      <label>Planner-URL <span style="color:var(--muted);font-weight:400">(optioneel)</span></label>
+      <input type="url" id="f_plannerurl" placeholder="Plak de 'Koppeling naar plan kopiëren'-URL uit Planner">
+    </div>
     <button class="bf-btn bf-btn-primary" onclick="opslaanProject()" style="width:100%">💾 Opslaan — direct testen (deze browser)</button>
     <button class="bf-btn bf-btn-sec" onclick="genereer()" style="width:100%;margin-top:8px">Genereer code → (permanent / voor iedereen, via git)</button>
     <div id="saveMsg" style="display:none;background:rgba(30,158,94,0.08);border:1px solid rgba(30,158,94,0.3);border-radius:6px;padding:10px 14px;font-family:var(--mono);font-size:11px;color:var(--success);margin-top:12px;line-height:1.6"></div>
@@ -165,7 +169,8 @@ function huidigProjectObj(){
     pl: gv('f_pl') || '', eng: gv('f_eng') || '', wvb: gv('f_wvb') || '',
     machineType: type,
     aangemaakt: gv('f_aangemaakt') || new Date().toISOString().slice(0,10),
-    status: gv('f_status') || 'actief'
+    status: gv('f_status') || 'actief',
+    plannerUrl: gv('f_plannerurl') || ''
   };
 }
 
@@ -191,7 +196,7 @@ function genereer(){
     return;
   }
 
-  const code = `  ,{\n    id: '${p.id}',\n    projectnr: '${p.projectnr}',\n    naam: '${p.naam}',\n    klant: '${p.klant}',\n    oplevering: '${p.oplevering}',\n    pl: '${p.pl}',\n    eng: '${p.eng}',\n    wvb: '${p.wvb}',\n    machineType: '${p.machineType}',\n    aangemaakt: '${p.aangemaakt}',\n    status: '${p.status}'\n  }`;
+  const code = `  ,{\n    id: '${p.id}',\n    projectnr: '${p.projectnr}',\n    naam: '${p.naam}',\n    klant: '${p.klant}',\n    oplevering: '${p.oplevering}',\n    pl: '${p.pl}',\n    eng: '${p.eng}',\n    wvb: '${p.wvb}',\n    machineType: '${p.machineType}',\n    aangemaakt: '${p.aangemaakt}',\n    status: '${p.status}',\n    plannerUrl: '${p.plannerUrl}'\n  }`;
   const nr = p.projectnr, naam = p.naam;
 
   const gitCommands = `git -C "C:\\Users\\sjefv\\OneDrive\\Documenten\\Claude\\Projects\\BFT-V2" add library/js/bft-projects.js\ngit -C "C:\\Users\\sjefv\\OneDrive\\Documenten\\Claude\\Projects\\BFT-V2" commit -m "Nieuw project: ${nr} ${naam}"\ngit -C "C:\\Users\\sjefv\\OneDrive\\Documenten\\Claude\\Projects\\BFT-V2" push`;

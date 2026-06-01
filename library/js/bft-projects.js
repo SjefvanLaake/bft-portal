@@ -1,6 +1,11 @@
 /**
  * bft-projects.js — gedeelde projectenlijst voor alle BFT-tools
  * Vervang later door BFTGraph.query('BFT_Projecten')
+ *
+ * plannerUrl (optioneel): volledige deep-link naar het Planner-bord van dit
+ *   project. PLAK de URL uit Planner's eigen "Koppeling naar plan kopiëren" —
+ *   construeer hem NIET zelf (Microsoft migreert Planner-URL's). Leeg = de
+ *   "Taken in Planner"-knop verschijnt niet.
  */
 const BFT_PROJECTEN = [
   {
@@ -14,7 +19,8 @@ const BFT_PROJECTEN = [
     wvb: 'T. Wouters',
     machineType: 'BFMR2000EK',
     aangemaakt: '2026-01-10',
-    status: 'actief'
+    status: 'actief',
+    plannerUrl: ''
   },
   {
     id: '201268_BFR500',
@@ -27,7 +33,8 @@ const BFT_PROJECTEN = [
     wvb: 'R. Dekker',
     machineType: 'BFR500',
     aangemaakt: '2026-02-20',
-    status: 'actief'
+    status: 'actief',
+    plannerUrl: ''
   },
   {
     id: '201250_BFM800',
@@ -40,7 +47,8 @@ const BFT_PROJECTEN = [
     wvb: 'T. Wouters',
     machineType: 'BFM800',
     aangemaakt: '2025-09-15',
-    status: 'klaar'
+    status: 'klaar',
+    plannerUrl: ''
   }
 ];
 
