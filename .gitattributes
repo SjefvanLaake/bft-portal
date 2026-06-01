@@ -1,0 +1,11 @@
+# Normaliseer regeleindes: in de repo altijd LF, ongeacht OS.
+* text=auto eol=lf
+
+# Binaire bestanden niet aanraken
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.pdf binary
+*.xlsx binary
+*.ico binary
