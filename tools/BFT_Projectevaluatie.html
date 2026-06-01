@@ -136,7 +136,7 @@ let state = {}; /* { [vraagId]: { score: 1-5, tekst: '' } } */
 window.addEventListener('load', function () {
   const sel = document.getElementById('projSelect');
   sel.innerHTML = '<option value="">— Kies project —</option>' +
-    BFT_PROJECTEN.map(p => `<option value="${p.id}">${p.projectnr} · ${p.naam}</option>`).join('');
+    bftAlleProjecten().map(p => `<option value="${p.id}">${p.projectnr} · ${p.naam}</option>`).join('');
   const param = new URLSearchParams(window.location.search).get('project');
   if (param) { sel.value = param; laadProject(); }
 });
@@ -146,7 +146,7 @@ function laadProject() {
   if (!huidigProject) return;
   state = {};
   try { const r = localStorage.getItem('bft_v2_eval_' + huidigProject); if (r) state = JSON.parse(r); } catch(e) {}
-  const proj = BFT_PROJECTEN.find(p => p.id === huidigProject);
+  const proj = bftAlleProjecten().find(p => p.id === huidigProject);
   document.getElementById('hdrSub').textContent = proj ? proj.naam : huidigProject;
   renderCategorieën();
   updateScore();
@@ -267,7 +267,7 @@ function resetEvaluatie() {
 }
 
 function exportPDF() {
-  const proj = BFT_PROJECTEN.find(p => p.id === huidigProject) || {};
+  const proj = bftAlleProjecten().find(p => p.id === huidigProject) || {};
   const datum = new Date().toISOString().slice(0,10);
   const scores = Object.values(state).map(s => s.score).filter(Boolean);
   const gem = scores.length ? (scores.reduce((a,b) => a+b, 0) / scores.length).toFixed(1) : '—';

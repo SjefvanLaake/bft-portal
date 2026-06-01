@@ -120,7 +120,7 @@ function huidigWeek() {
 window.addEventListener('load',function(){
   const sel = document.getElementById('projSelect');
   sel.innerHTML = '<option value="">— Kies project —</option>' +
-    BFT_PROJECTEN.map(p=>`<option value="${p.id}">${p.projectnr} · ${p.naam}</option>`).join('');
+    bftAlleProjecten().map(p=>`<option value="${p.id}">${p.projectnr} · ${p.naam}</option>`).join('');
   const param = new URLSearchParams(window.location.search).get('project');
   if (param) { sel.value = param; laadProject(); }
 });
@@ -132,7 +132,7 @@ function laadProject(){
   try { const r=localStorage.getItem('bft_v2_res_'+huidigProject); if(r) state=JSON.parse(r); } catch(e){}
   if (!state.medewerkers) state.medewerkers=[];
   if (!state.uren) state.uren={};
-  const proj = BFT_PROJECTEN.find(p=>p.id===huidigProject);
+  const proj = bftAlleProjecten().find(p=>p.id===huidigProject);
   document.getElementById('hdrSub').textContent = proj ? proj.naam : huidigProject;
   renderMdwLijst();
   renderTabel();

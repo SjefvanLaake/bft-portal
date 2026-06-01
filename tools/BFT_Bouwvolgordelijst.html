@@ -653,7 +653,7 @@ function exportPDF() {
   FASEN.forEach(f => { const t = telF(f); totaal += t.totaal; gedaan += t.done + t.nvt; });
   if (gedaan < totaal) return; /* veiligheidsnet — knop is al disabled */
 
-  const proj     = BFT_PROJECTEN.find(p => p.id === huidigProject) || {};
+  const proj     = BFTToolShell.getProject(huidigProject) || {};
   const datumNu  = new Date();
   const datumStr = datumNu.toLocaleDateString('nl-NL', { day:'2-digit', month:'2-digit', year:'numeric' });
   const datumPad = datumNu.toISOString().slice(0, 10);

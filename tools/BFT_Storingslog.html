@@ -620,7 +620,7 @@ window.addEventListener('load', function () {
   /* Project dropdown vullen */
   const sel = document.getElementById('f_project');
   sel.innerHTML = '<option value="">— Geen project (derde partij / standalone) —</option>' +
-    BFT_PROJECTEN.map(p => `<option value="${p.id}">${p.projectnr} · ${p.naam}</option>`).join('');
+    bftAlleProjecten().map(p => `<option value="${p.id}">${p.projectnr} · ${p.naam}</option>`).join('');
 
   /* Datum standaard = nu */
   const nu = new Date();
