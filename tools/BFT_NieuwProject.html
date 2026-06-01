@@ -53,8 +53,8 @@
 
 <div class="container">
 
-  <div class="warn">
-    ℹ Dit scherm genereert de code die handmatig in <code>library/js/bft-projects.js</code> geplakt moet worden. Na een git push is het project beschikbaar in alle tools.
+  <div class="warn" style="background:rgba(26,110,199,0.06);border-color:rgba(26,110,199,0.25);color:var(--accent2)">
+    ℹ Twee opties: <strong>Opslaan</strong> = direct beschikbaar in alle tools, maar alléén in <strong>deze browser</strong> (mock-fase). <strong>Genereer code</strong> = permanent / voor iedereen, via een git-push naar <code>bft-projects.js</code>. Zodra SharePoint/Graph live is, vervangt één gedeelde store beide.
   </div>
 
   <div class="card">
@@ -114,7 +114,9 @@
         <input type="date" id="f_aangemaakt" oninput="updatePreview()">
       </div>
     </div>
-    <button class="bf-btn bf-btn-primary" onclick="genereer()" style="width:100%">Genereer code →</button>
+    <button class="bf-btn bf-btn-primary" onclick="opslaanProject()" style="width:100%">💾 Opslaan — direct testen (deze browser)</button>
+    <button class="bf-btn bf-btn-sec" onclick="genereer()" style="width:100%;margin-top:8px">Genereer code → (permanent / voor iedereen, via git)</button>
+    <div id="saveMsg" style="display:none;background:rgba(30,158,94,0.08);border:1px solid rgba(30,158,94,0.3);border-radius:6px;padding:10px 14px;font-family:var(--mono);font-size:11px;color:var(--success);margin-top:12px;line-height:1.6"></div>
   </div>
 
   <div class="result-blok" id="resultBlok">
@@ -152,26 +154,45 @@ function updatePreview(){
   }
 }
 
-function genereer(){
+/* Bouwt het projectobject uit het formulier (of null bij ontbrekende velden) */
+function huidigProjectObj(){
   const nr = gv('f_nr'), type = gv('f_type'), naam = gv('f_naam'), klant = gv('f_klant');
-  if (!nr || !type || !naam || !klant) { alert('Vul minimaal projectnummer, type, naam en klant in.'); return; }
-  const id = `${nr}_${type.replace(/[^a-zA-Z0-9]/g,'').toUpperCase()}`;
-  const oplevering = gv('f_oplevering') || '';
-  const pl = gv('f_pl') || '';
-  const eng = gv('f_eng') || '';
-  const wvb = gv('f_wvb') || '';
-  const status = gv('f_status') || 'actief';
-  const aangemaakt = gv('f_aangemaakt') || new Date().toISOString().slice(0,10);
+  if (!nr || !type || !naam || !klant) { alert('Vul minimaal projectnummer, type, naam en klant in.'); return null; }
+  return {
+    id: `${nr}_${type.replace(/[^a-zA-Z0-9]/g,'').toUpperCase()}`,
+    projectnr: nr, naam, klant,
+    oplevering: gv('f_oplevering') || '',
+    pl: gv('f_pl') || '', eng: gv('f_eng') || '', wvb: gv('f_wvb') || '',
+    machineType: type,
+    aangemaakt: gv('f_aangemaakt') || new Date().toISOString().slice(0,10),
+    status: gv('f_status') || 'actief'
+  };
+}
 
-  /* Check duplikaatcheck */
-  const bestaand = BFT_PROJECTEN.find(p => p.id === id || p.projectnr === nr);
+/* Direct opslaan in de runtime-store → meteen zichtbaar in alle tools (deze browser) */
+function opslaanProject(){
+  const p = huidigProjectObj();
+  if (!p) return;
+  bftSlaProjectOp(p);
+  const msg = document.getElementById('saveMsg');
+  msg.style.display = 'block';
+  msg.innerHTML = `✓ <strong>${p.projectnr} — ${p.naam}</strong> opgeslagen. Direct beschikbaar in Projectoverzicht en alle tools (in deze browser; OverallPlanning: klik ⟳ Sync). `
+    + `Voor permanent/voor iedereen: gebruik "Genereer code →" en push naar git.`;
+  msg.scrollIntoView({ behavior:'smooth', block:'center' });
+}
+
+function genereer(){
+  const p = huidigProjectObj();
+  if (!p) return;
+  const bestaand = bftAlleProjecten().find(x => x.id === p.id || x.projectnr === p.projectnr);
   if (bestaand) {
-    document.getElementById('codeBlok').textContent = `⚠ WAARSCHUWING: project ${nr} bestaat al (${bestaand.naam}).\nPas het projectnummer aan.`;
+    document.getElementById('codeBlok').textContent = `⚠ WAARSCHUWING: project ${p.projectnr} bestaat al (${bestaand.naam}).\nPas het projectnummer aan.`;
     document.getElementById('resultBlok').classList.add('zichtbaar');
     return;
   }
 
-  const code = `  ,{\n    id: '${id}',\n    projectnr: '${nr}',\n    naam: '${naam}',\n    klant: '${klant}',\n    oplevering: '${oplevering}',\n    pl: '${pl}',\n    eng: '${eng}',\n    wvb: '${wvb}',\n    machineType: '${type}',\n    aangemaakt: '${aangemaakt}',\n    status: '${status}'\n  }`;
+  const code = `  ,{\n    id: '${p.id}',\n    projectnr: '${p.projectnr}',\n    naam: '${p.naam}',\n    klant: '${p.klant}',\n    oplevering: '${p.oplevering}',\n    pl: '${p.pl}',\n    eng: '${p.eng}',\n    wvb: '${p.wvb}',\n    machineType: '${p.machineType}',\n    aangemaakt: '${p.aangemaakt}',\n    status: '${p.status}'\n  }`;
+  const nr = p.projectnr, naam = p.naam;
 
   const gitCommands = `git -C "C:\\Users\\sjefv\\OneDrive\\Documenten\\Claude\\Projects\\BFT-V2" add library/js/bft-projects.js\ngit -C "C:\\Users\\sjefv\\OneDrive\\Documenten\\Claude\\Projects\\BFT-V2" commit -m "Nieuw project: ${nr} ${naam}"\ngit -C "C:\\Users\\sjefv\\OneDrive\\Documenten\\Claude\\Projects\\BFT-V2" push`;
 

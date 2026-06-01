@@ -175,7 +175,7 @@
 <div class="op-page">
 
   <div class="toolbar">
-    <button class="bf-btn bf-btn-primary" id="btnAdd">+ Project</button>
+    <button class="bf-btn bf-btn-primary" id="btnAdd" title="Voegt alleen een lokale planningsrij toe. Echte projecten maak je in Nieuw Project, daarna ⟳ Sync.">+ Planningsrij</button>
     <button class="bf-btn bf-btn-sec"     id="btnSync" title="Importeer actieve projecten uit BFT_PROJECTEN">⟳ Sync projecten</button>
     <button class="bf-btn bf-btn-ghost"   id="btnDisc">⚙ Disciplines</button>
     <button class="bf-btn bf-btn-ghost"   id="btnRes">↔ Week/Maand</button>
@@ -316,7 +316,7 @@ function injectDeadlineMarkers() {
   tabel.querySelectorAll('tr.og-row-project').forEach(function(tr) {
     var bftId = vindBftId(tr);
     if (!bftId) return;
-    var proj = BFT_PROJECTEN.find(function(p){ return p.id === bftId; });
+    var proj = bftAlleProjecten().find(function(p){ return p.id === bftId; });
     if (!proj || !proj.oplevering) return;
 
     var dlLabel = fmtDeadline(proj.oplevering);
@@ -555,7 +555,7 @@ function injectResourceRijen() {
 }
 
 function vindBftIdVanProj(proj) {
-  if (proj.servnr && BFT_PROJECTEN.find(function(p){ return p.id === proj.servnr; })) return proj.servnr;
+  if (proj.servnr && bftAlleProjecten().find(function(p){ return p.id === proj.servnr; })) return proj.servnr;
   return null;
 }
 
@@ -566,9 +566,9 @@ function vindBftId(tr) {
   var proj = doc.projecten.find(function (p) { return p.id === projId; });
   if (!proj) return null;
   /* servnr bevat de bftId (wordt bij Sync zo ingevuld) */
-  if (proj.servnr && BFT_PROJECTEN.find(function(p){ return p.id === proj.servnr; })) return proj.servnr;
+  if (proj.servnr && bftAlleProjecten().find(function(p){ return p.id === proj.servnr; })) return proj.servnr;
   /* Fallback: match op WO-nr = projectnr */
-  var bftProj = BFT_PROJECTEN.find(function (p) { return p.projectnr === (proj.wo || '').trim(); });
+  var bftProj = bftAlleProjecten().find(function (p) { return p.projectnr === (proj.wo || '').trim(); });
   return bftProj ? bftProj.id : null;
 }
 
@@ -602,7 +602,7 @@ function schrijfPlanningSnapshots() {
 document.getElementById('btnSync').addEventListener('click', function () {
   var doc = grid.getState();
   var bestaandeIds = doc.projecten.map(function (p) { return p.servnr; }).filter(Boolean);
-  var nieuw = BFT_PROJECTEN.filter(function (p) {
+  var nieuw = bftAlleProjecten().filter(function (p) {
     return p.status !== 'gearchiveerd' && bestaandeIds.indexOf(p.id) === -1;
   });
 
@@ -629,7 +629,7 @@ document.getElementById('btnSync').addEventListener('click', function () {
   badge.textContent = nieuw.length + ' nieuw toegevoegd';
   badge.className = 'sync-badge nieuw';
   setTimeout(function () {
-    badge.textContent = 'BFT_PROJECTEN: ' + BFT_PROJECTEN.length + ' beschikbaar';
+    badge.textContent = 'BFT_PROJECTEN: ' + bftAlleProjecten().length + ' beschikbaar';
     badge.className = 'sync-badge';
   }, 3000);
 });
@@ -848,7 +848,7 @@ document.getElementById('xlsxInput').addEventListener('change', function (e) {
 
 /* Sync-badge initial */
 document.getElementById('syncBadge').textContent =
-  'BFT_PROJECTEN: ' + (BFT_PROJECTEN ? BFT_PROJECTEN.length : 0) + ' beschikbaar';
+  'BFT_PROJECTEN: ' + bftAlleProjecten().length + ' beschikbaar';
 
 /* Injectors draaien via de onRender-hook van het grid (zie register hierboven) —
    geen MutationObserver meer, dus geen re-entrancy/loop. */

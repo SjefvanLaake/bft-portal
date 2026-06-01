@@ -68,7 +68,10 @@ const BFTToolShell = (function (global) {
   /* ── Project-resolutie ──
      LET OP: BFT_PROJECTEN/BFTAuth/BFTGraph zijn top-level `const` in hun scripts
      en hangen dus NIET aan window. Daarom bare referenties met typeof-guard. */
-  function _projecten(){ return (typeof BFT_PROJECTEN !== 'undefined') ? BFT_PROJECTEN : []; }
+  function _projecten(){
+    if (typeof bftAlleProjecten === 'function') return bftAlleProjecten();
+    return (typeof BFT_PROJECTEN !== 'undefined') ? BFT_PROJECTEN : [];
+  }
 
   function vulSelect(selectEl, gekozenId){
     if (!selectEl) return;

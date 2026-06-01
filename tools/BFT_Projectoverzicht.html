@@ -403,7 +403,7 @@
 
 /* Leest tool-voortgang uit snapshots geschreven door MBCL en IBN */
 function getToolSnapshot(projectId) {
-  const proj = BFT_PROJECTEN.find(p => p.id === projectId) || {};
+  const proj = bftAlleProjecten().find(p => p.id === projectId) || {};
   const def = {
     mbcl:        { pct: 0, status: 'open', openItems: '—', oplevering: proj.oplevering || null },
     ibn:         { pct: 0, status: 'open', droog: 0, nat: 0 },
@@ -462,7 +462,7 @@ function getToolSnapshot(projectId) {
 }
 
 /* Bouw werkarray met live tool-data */
-const PROJECTEN = BFT_PROJECTEN.map(p => ({ ...p, tools: getToolSnapshot(p.id) }));
+const PROJECTEN = bftAlleProjecten().map(p => ({ ...p, tools: getToolSnapshot(p.id) }));
 
 /* ================================================================
    STATE

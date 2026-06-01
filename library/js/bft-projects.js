@@ -44,10 +44,40 @@ const BFT_PROJECTEN = [
   }
 ];
 
-/* Genereer <option>-elementen voor een <select> */
+/* ──────────────────────────────────────────────────────────────────────
+   Runtime-store (mock-fase): BFT_PROJECTEN = seed in code; nieuw aangemaakte
+   projecten komen in localStorage 'bft_v2_projecten'. Alle tools lezen via
+   bftAlleProjecten() → seed + custom samengevoegd (custom overschrijft op id).
+   Eén create-pad dat vandaag werkt zonder backend. Bij go-live: deze twee
+   functies vervangen door BFTGraph.query / .create.
+   ────────────────────────────────────────────────────────────────────── */
+const BFT_PROJECTEN_LS = 'bft_v2_projecten';
+
+function bftCustomProjecten() {
+  try { const r = localStorage.getItem(BFT_PROJECTEN_LS); return r ? JSON.parse(r) : []; }
+  catch (e) { return []; }
+}
+
+/* Samengevoegde lijst: seed + custom (custom op id wint, bv. bij bewerken) */
+function bftAlleProjecten() {
+  const custom = bftCustomProjecten();
+  const ids = custom.map(p => p.id);
+  return BFT_PROJECTEN.filter(p => ids.indexOf(p.id) === -1).concat(custom);
+}
+
+/* Upsert een (custom) project in de runtime-store */
+function bftSlaProjectOp(proj) {
+  if (!proj || !proj.id) return false;
+  const custom = bftCustomProjecten().filter(p => p.id !== proj.id);
+  custom.push(proj);
+  try { localStorage.setItem(BFT_PROJECTEN_LS, JSON.stringify(custom)); return true; }
+  catch (e) { return false; }
+}
+
+/* Genereer <option>-elementen voor een <select> (uit de samengevoegde lijst) */
 function bftProjectOptions(gekozenId) {
   return '<option value="">— Kies project —</option>' +
-    BFT_PROJECTEN.map(p =>
+    bftAlleProjecten().map(p =>
       `<option value="${p.id}" ${p.id === gekozenId ? 'selected' : ''}>${p.projectnr} · ${p.naam}</option>`
     ).join('');
 }
