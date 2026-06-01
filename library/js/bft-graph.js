@@ -288,6 +288,25 @@ const BFTGraph = (function () {
     };
   }
 
+  /* ── Bestanden in een map van de Document Library lijsten ────────
+     folderPad — relatief pad onder de library, bv. "201267_BFMR2000EK/tekeningen"
+     Geeft een array {naam, ext, grootte, webUrl, downloadUrl, categorie} terug.
+  ── */
+  async function listFiles(folderPad) {
+    const pad = `${_sitePath()}/drives/${await _getDriveId()}/root:/${LIBRARY_DOCS}/${folderPad}:/children`;
+    const data = await _call('GET', pad);
+    return (data.value || [])
+      .filter(x => x.file)
+      .map(x => ({
+        naam: x.name,
+        ext: (x.name.split('.').pop() || '').toLowerCase(),
+        grootte: x.size || 0,
+        webUrl: x.webUrl || null,
+        downloadUrl: x['@microsoft.graph.downloadUrl'] || null,
+        categorie: folderPad.split('/').pop() || ''
+      }));
+  }
+
   /* ── Status ── */
   function isReady() { return !!_siteId; }
 
@@ -298,6 +317,7 @@ const BFTGraph = (function () {
     update,
     archiveer,
     upload,
+    listFiles,
     getProjectSnapshot,
     isReady,
     LISTS

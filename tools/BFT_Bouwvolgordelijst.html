@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bouwvolgordelijst — BFT</title>
+  <link rel="stylesheet" href="../library/css/bofram-style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.min.js"></script>
+  <script src="../library/js/bft-projects.js"></script>
+  <script src="../library/js/bft-pdf-logo.js"></script>
+  <script src="../library/js/bft-auth.js" defer></script>
+  <script src="../library/js/bft-graph.js" defer></script>
+  <script src="../library/js/bft-dialog.js" defer></script>
+  <!-- Bouwvolgorde-sjablonen per machinetype (één bestand per type) -->
+  <script src="../library/data/bouwvolgorde/bfmr2000ek.js"></script>
+  <style>
+    /* ── Layout shell ── */
+    .bvl-shell { display:flex; height:calc(100vh - 64px); overflow:hidden; }
+
+    /* ── Sidebar ── */
+    .bvl-sidebar { width:240px; flex-shrink:0; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+    .bvl-sb-head { padding:14px 16px; border-bottom:1px solid var(--border); background:var(--surface2); }
+    .bvl-sb-label { font-family:var(--mono); font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:8px; }
+    .bvl-proj-select { width:100%; padding:7px 10px; border:1.5px solid var(--border); border-radius:5px; font-family:var(--mono); font-size:11px; color:var(--text); background:#fff; cursor:pointer; }
+    .bvl-proj-select:focus { border-color:var(--accent2); outline:none; }
+    .bvl-sb-fasen { flex:1; overflow-y:auto; padding:8px; }
+    .bvl-fase-btn { width:100%; text-align:left; display:flex; align-items:center; gap:9px; padding:8px 10px; margin-bottom:4px; border:1px solid transparent; border-radius:6px; background:transparent; cursor:pointer; transition:background .12s; }
+    .bvl-fase-btn:hover { background:var(--bg2); }
+    .bvl-fase-btn.active { background:rgba(232,160,0,0.10); border-color:rgba(232,160,0,0.3); }
+    .bvl-fase-btn.done .bvl-fase-num { background:var(--success); }
+    .bvl-fase-num { width:22px; height:22px; border-radius:5px; background:var(--accent); color:#fff; font-family:var(--mono); font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .bvl-fase-titel { flex:1; font-size:12px; color:var(--text); line-height:1.3; }
+    .bvl-fase-pct { font-family:var(--mono); font-size:10px; color:var(--muted); flex-shrink:0; }
+
+    /* ── Hoofd-paneel ── */
+    .bvl-main { flex:1; overflow-y:auto; padding:20px 24px 80px; }
+    .bvl-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:var(--muted); font-family:var(--mono); font-size:12px; gap:12px; }
+
+    .mock-banner { background:rgba(26,110,199,0.08); border:1px solid rgba(26,110,199,0.2); border-radius:6px; padding:8px 14px; margin-bottom:16px; font-family:var(--mono); font-size:10px; color:var(--accent2); }
+
+    .bvl-info { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px 16px; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:16px 18px; margin-bottom:18px; box-shadow:var(--shadow); }
+
+    /* ── Waarschuwingsbanner ── */
+    .bvl-warn { background:rgba(232,160,0,0.08); border:1px solid rgba(232,160,0,0.3); border-radius:6px; padding:10px 16px; margin-bottom:16px; font-family:var(--mono); font-size:11px; color:var(--accent-dk); display:none; }
+    .bvl-warn.zichtbaar { display:block; }
+
+    /* ── Monteur-balk ── */
+    .bvl-monteur { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px 18px; margin-bottom:16px; display:flex; align-items:center; gap:14px; box-shadow:var(--shadow); }
+    .bvl-mont-avatar { width:36px; height:36px; border-radius:50%; background:var(--accent); color:#fff; font-family:var(--mono); font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .bvl-mont-avatar.leeg { background:var(--border2); color:var(--muted); }
+    .bvl-mont-info { flex:1; }
+    .bvl-mont-naam { font-size:13px; font-weight:600; color:var(--text); }
+    .bvl-mont-sub { font-family:var(--mono); font-size:10px; color:var(--muted); }
+    .bvl-mont-input { flex:1; padding:8px 10px; border:1.5px solid var(--accent); border-radius:5px; font-family:var(--mono); font-size:12px; color:var(--text); background:#fff; outline:none; }
+
+    /* ── Deadline-chip ── */
+    .bvl-deadline-chip { display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:10px; font-weight:600; padding:3px 9px; border-radius:12px; margin-top:6px; align-self:flex-start; }
+    .bvl-deadline-chip.ok   { background:rgba(30,158,94,0.10); color:var(--success); }
+    .bvl-deadline-chip.soon { background:rgba(232,160,0,0.14); color:var(--accent-dk); }
+    .bvl-deadline-chip.over { background:rgba(214,48,48,0.10); color:var(--danger); }
+
+    /* ── Huidige fase (sequential-hint) ── */
+    .bvl-fase-btn.huidig { border-color:var(--accent); }
+    .bvl-fnum.huidig, .bvl-fase-num.huidig { box-shadow:0 0 0 2px var(--accent); }
+
+    /* ── Toast ── */
+    .bvl-toast { position:fixed; bottom:70px; left:50%; transform:translateX(-50%); background:var(--text); color:#fff; padding:11px 22px; border-radius:6px; font-family:var(--mono); font-size:12px; box-shadow:var(--shadow-md); opacity:0; pointer-events:none; transition:opacity .2s; z-index:1000; }
+    .bvl-toast.show { opacity:1; }
+
+    /* ── Ref-badge op bouwstap (verwijst naar specificatieblok) ── */
+    .bvl-ref-badge { display:inline-block; font-family:var(--mono); font-size:9px; font-weight:700; padding:1px 6px; border-radius:3px; margin-left:8px; cursor:pointer; vertical-align:middle; letter-spacing:.03em; border:1px solid; }
+    .bvl-ref-badge.hydro   { background:rgba(30,100,200,0.10); color:#1e64c8; border-color:rgba(30,100,200,0.25); }
+    .bvl-ref-badge.elektro { background:rgba(180,50,50,0.10); color:#b43232; border-color:rgba(180,50,50,0.25); }
+    .bvl-ref-badge:hover { filter:brightness(0.95); text-decoration:underline; }
+
+    /* ── Specificatie-blokken ── */
+    .bvl-spec { margin-top:14px; }
+    .bvl-spec-toggle { width:100%; display:flex; align-items:center; gap:10px; padding:11px 16px; background:var(--surface); border:1px solid var(--border); border-radius:8px; cursor:pointer; font-size:12px; font-weight:600; color:var(--text); text-align:left; transition:background .12s; }
+    .bvl-spec-toggle:hover { background:var(--bg2); }
+    .bvl-spec-toggle .arrow { margin-left:auto; font-size:10px; color:var(--muted); transition:transform .18s; }
+    .bvl-spec.open .bvl-spec-toggle .arrow { transform:rotate(180deg); }
+    .bvl-spec-badge { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:4px; font-family:var(--mono); font-size:10px; font-weight:700; }
+    .bvl-spec-badge.elektro { background:rgba(180,50,50,0.10); color:#b43232; border:1px solid rgba(180,50,50,0.25); }
+    .bvl-spec-badge.hydro   { background:rgba(30,100,200,0.10); color:#1e64c8; border:1px solid rgba(30,100,200,0.25); }
+    .bvl-spec-badge.bouten  { background:rgba(99,69,30,0.10); color:#7a5a00; border:1px solid rgba(232,160,0,0.3); }
+    .bvl-spec-badge.knoppen { background:rgba(30,158,94,0.10); color:#1e9e5e; border:1px solid rgba(30,158,94,0.3); }
+    .bvl-spec-prog { margin-left:auto; font-family:var(--mono); font-size:10px; color:var(--muted); padding:0 8px; }
+    .bvl-spec-prog.done { color:var(--success); font-weight:600; }
+    .bvl-spec-body { display:none; border:1px solid var(--border); border-top:none; border-radius:0 0 8px 8px; overflow:auto; margin-top:-1px; max-height:460px; }
+    .bvl-spec.open .bvl-spec-body { display:block; }
+
+    .bvl-spec-tbl { width:100%; border-collapse:collapse; font-size:12px; background:#fff; }
+    .bvl-spec-tbl th { position:sticky; top:0; background:var(--surface2); padding:7px 12px; font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); text-align:left; border-bottom:1px solid var(--border); white-space:nowrap; z-index:1; }
+    .bvl-spec-tbl td { padding:8px 12px; border-bottom:1px solid var(--border); color:var(--text); vertical-align:top; line-height:1.35; }
+    .bvl-spec-tbl tr:last-child td { border-bottom:none; }
+    .bvl-spec-tbl tr.is-ok td  { background:rgba(30,158,94,0.10); }
+    .bvl-spec-tbl tr.is-nvt td { background:rgba(0,0,0,0.045); }
+    .bvl-spec-tbl .bout-sectie { font-weight:600; color:#7a5a00; }
+    .bvl-spec-chk-col { width:38px; text-align:center; padding:4px 2px; }
+    .bvl-spec-chk { width:22px; height:22px; border-radius:4px; border:1.5px solid var(--border2); background:#fff; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:11px; color:transparent; transition:all .12s; user-select:none; }
+    .bvl-spec-chk.ok  { background:var(--success); border-color:var(--success); color:#fff; }
+    .bvl-spec-chk.nvt { background:#c8c8c8; border-color:#999; color:#555; }
+
+    /* Knoppen-grid (operator-paneel) */
+    .bvl-knop-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; padding:14px; background:#fff; }
+    .bvl-knop-groep { grid-column:1/-1; font-family:var(--mono); font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; padding:8px 0 2px; border-top:1px solid var(--border); margin-top:6px; }
+    .bvl-knop-groep:first-child { border-top:none; margin-top:0; padding-top:0; }
+    .bvl-knop { background:#1a1a1a; color:#fff; border-radius:6px; padding:10px 8px; text-align:center; font-family:var(--mono); font-size:11px; line-height:1.3; min-height:60px; display:flex; flex-direction:column; align-items:center; justify-content:center; letter-spacing:.04em; border:1px solid #333; cursor:pointer; position:relative; }
+    .bvl-knop:hover { outline:2px solid var(--accent); outline-offset:1px; }
+    .bvl-knop.placed { background:#1e9e5e; border-color:#1e9e5e; }
+    .bvl-knop.placed::before { content:"✓"; position:absolute; top:3px; right:5px; font-size:11px; font-weight:700; color:#fff; opacity:.85; }
+    .bvl-knop .leeg { opacity:.3; font-size:9px; }
+
+    /* ── Tekeningen & bestanden ── */
+    .bvl-spec-badge.tekeningen { background:rgba(80,80,210,0.1); color:#4040b8; border:1px solid rgba(80,80,210,0.25); }
+    .bvl-tek-mock { padding:8px 14px; background:rgba(26,110,199,0.06); font-family:var(--mono); font-size:10px; color:var(--accent2); border-bottom:1px solid var(--border); }
+    .bvl-tek-groep { padding:6px 14px; background:var(--surface2); font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); border-bottom:1px solid var(--border); }
+    .bvl-tek-row { display:flex; align-items:center; gap:10px; padding:9px 14px; border-bottom:1px solid var(--border); font-size:12px; color:var(--text); cursor:pointer; background:#fff; }
+    .bvl-tek-row:last-child { border-bottom:none; }
+    .bvl-tek-row:hover { background:rgba(80,80,210,0.04); }
+    .bvl-tek-ext { font-family:var(--mono); font-size:9px; font-weight:700; padding:2px 6px; border-radius:3px; background:#f1f3f6; color:#3d4558; text-transform:uppercase; min-width:34px; text-align:center; flex:none; }
+    .bvl-tek-ext.pdf { background:rgba(214,48,48,0.1); color:#c02020; }
+    .bvl-tek-ext.img { background:rgba(30,158,94,0.1); color:#1a7a48; }
+    .bvl-tek-label { flex:1; line-height:1.3; }
+    .bvl-tek-open { font-family:var(--mono); font-size:10px; padding:4px 9px; border:1px solid var(--border2); border-radius:4px; background:transparent; cursor:pointer; color:var(--text2); flex:none; }
+    .bvl-tek-open:hover { border-color:#4040b8; color:#4040b8; }
+    .bvl-tek-viewer { background:#111; border-bottom:1px solid var(--border); }
+    .bvl-tek-viewer-bar { display:flex; align-items:center; gap:8px; padding:7px 12px; background:#1a1a1a; color:#ccc; font-family:var(--mono); font-size:11px; }
+    .bvl-tek-viewer-bar .naam { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .bvl-tek-close { background:none; border:none; color:#aaa; font-size:17px; cursor:pointer; line-height:1; }
+    .bvl-tek-close:hover { color:#fff; }
+    .bvl-tek-viewer iframe { width:100%; height:480px; border:0; display:block; background:#fff; }
+    .bvl-tek-viewer img { display:block; max-width:100%; margin:0 auto; }
+    .bvl-tek-ph { padding:34px 20px; text-align:center; color:#aaa; font-family:var(--mono); font-size:12px; line-height:1.7; }
+    .bvl-tek-empty { padding:22px 16px; text-align:center; color:var(--muted); font-family:var(--mono); font-size:11px; }
+
+    /* ── Fase-sectie ── */
+    .bvl-fase { background:var(--surface); border:1px solid var(--border); border-radius:8px; margin-bottom:12px; overflow:hidden; box-shadow:var(--shadow); }
+    .bvl-fase-head { padding:14px 18px; background:var(--surface2); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; cursor:pointer; user-select:none; }
+    .bvl-fase-head:hover { background:var(--bg2); }
+    .bvl-fnum { width:26px; height:26px; border-radius:5px; background:var(--accent); color:#fff; font-family:var(--mono); font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .bvl-fnum.klaar { background:var(--success); }
+    .bvl-ftitel { font-size:13px; font-weight:600; color:var(--text); flex:1; }
+    .bvl-fprog { font-family:var(--mono); font-size:11px; color:var(--muted); }
+    .bvl-fprog.klaar { color:var(--success); font-weight:700; }
+    .bvl-fchev { font-size:11px; color:var(--muted); transition:transform .2s; }
+    .bvl-fase.inklap .bvl-fchev { transform:rotate(-90deg); }
+    .bvl-fase.inklap .bvl-fase-body { display:none; }
+
+    /* ── Check-tabel ── */
+    .bvl-fase-body { padding:0; }
+    .bvl-tbl-head { display:grid; grid-template-columns:1fr 36px 56px 56px; padding:5px 18px; background:var(--bg2); border-bottom:1px solid var(--border); }
+    .bvl-tbl-head span { font-family:var(--mono); font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); text-align:center; }
+    .bvl-tbl-head span:first-child { text-align:left; }
+
+    .bvl-row { display:grid; grid-template-columns:1fr 36px 56px 56px; align-items:center; border-bottom:1px solid var(--border); transition:background .12s; min-height:46px; }
+    .bvl-row:last-child { border-bottom:none; }
+    .bvl-row.is-ok  { background:rgba(30,158,94,0.05); }
+    .bvl-row.is-nvt { background:rgba(122,132,154,0.06); }
+    .bvl-row-content { padding:10px 8px 10px 18px; min-width:0; }
+    .bvl-desc { font-size:12px; color:var(--text); line-height:1.5; }
+    .bvl-row.is-ok  .bvl-desc { text-decoration:line-through; color:var(--muted); }
+    .bvl-row.is-nvt .bvl-desc { color:var(--muted); font-style:italic; }
+    .bvl-sub { font-family:var(--mono); font-size:10px; color:var(--muted); margin-top:2px; }
+    .bvl-stempel { font-family:var(--mono); font-size:9px; color:var(--success); margin-top:3px; display:none; }
+    .bvl-row.is-ok .bvl-stempel { display:block; }
+
+    .bvl-note-btn { display:flex; align-items:center; justify-content:center; width:36px; height:100%; min-height:46px; border:none; background:transparent; cursor:pointer; font-size:14px; color:var(--muted); transition:all .12s; }
+    .bvl-note-btn:hover { color:var(--accent-dk); background:rgba(232,160,0,0.07); }
+    .bvl-note-btn.heeft-note { color:var(--accent-dk); }
+
+    .bvl-chk-col { display:flex; align-items:center; justify-content:center; height:100%; min-height:46px; border-left:1px solid var(--border); }
+    .bvl-chk { width:28px; height:28px; border-radius:5px; border:1.5px solid var(--border); background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; transition:all .12s; user-select:none; color:transparent; flex-shrink:0; }
+    .bvl-chk-ok:hover  { border-color:var(--success); color:var(--success); }
+    .bvl-chk-nvt:hover { border-color:var(--muted); }
+    .bvl-chk-ok.actief  { background:var(--success); border-color:var(--success); color:#fff; }
+    .bvl-chk-nvt.actief { background:var(--muted); border-color:var(--muted); color:#fff; font-weight:700; }
+
+    .bvl-note-row { max-height:0; overflow:hidden; transition:max-height .2s; padding:0 18px; }
+    .bvl-note-row.open { max-height:120px; padding:8px 18px; }
+    .bvl-note-ta { width:100%; padding:7px 10px; border:1.5px solid var(--border); border-radius:5px; font-family:var(--mono); font-size:11px; color:var(--text); background:#fff; resize:none; height:60px; outline:none; }
+    .bvl-note-ta:focus { border-color:var(--accent2); }
+
+    /* ── Progress ring ── */
+    .prog-ring { position:relative; flex-shrink:0; }
+    .prog-ring svg { display:block; }
+    .prog-pct { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:9px; font-weight:700; color:#fff; }
+
+    /* ── Footer ── */
+    .bvl-footer { position:fixed; bottom:0; left:240px; right:0; background:var(--surface); border-top:1px solid var(--border); padding:12px 24px; display:flex; align-items:center; gap:12px; box-shadow:0 -2px 8px rgba(0,0,0,0.06); z-index:20; }
+    .bvl-footer-status { flex:1; font-family:var(--mono); font-size:11px; color:var(--muted); }
+
+    .save-ind { font-family:var(--mono); font-size:10px; color:var(--success); opacity:0; transition:opacity .3s; }
+    .save-ind.zichtbaar { opacity:1; }
+  </style>
+</head>
+<body>
+
+<header class="bf-header">
+  <div class="bf-header-left">
+    <a href="../index.html" title="Terug naar portaal"
+       style="color:rgba(255,255,255,0.55);font-family:var(--mono);font-size:11px;text-decoration:none;display:flex;align-items:center;gap:4px;flex-shrink:0">
+      ← Portaal
+    </a>
+    <div class="bf-logo"></div>
+    <div class="bf-header-div"></div>
+    <div class="bf-header-title">
+      <h1>Bouwvolgordelijst</h1>
+      <p id="hdrSub">Productie — bouwvolgorde per machinetype</p>
+    </div>
+  </div>
+  <span class="save-ind" id="saveInd">✓ Opgeslagen</span>
+  <div class="prog-ring" title="Totale voortgang">
+    <svg width="42" height="42">
+      <circle cx="21" cy="21" r="17" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="3"/>
+      <circle id="progCircle" cx="21" cy="21" r="17" fill="none" stroke="#e8a000"
+        stroke-width="3" stroke-dasharray="106.8" stroke-dashoffset="106.8"
+        stroke-linecap="round" transform="rotate(-90 21 21)"/>
+    </svg>
+    <div class="prog-pct" id="progPct">0%</div>
+  </div>
+</header>
+
+<div class="bvl-shell">
+  <aside class="bvl-sidebar">
+    <div class="bvl-sb-head">
+      <div class="bvl-sb-label">Project</div>
+      <select class="bvl-proj-select" id="projSelect" onchange="laadProject()"></select>
+    </div>
+    <div class="bvl-sb-fasen" id="sidebarFasen"></div>
+  </aside>
+
+  <main class="bvl-main" id="hoofdPaneel">
+    <div class="bvl-empty">
+      <div style="font-size:40px;opacity:0.3">🔧</div>
+      <div>Kies een project in de sidebar</div>
+    </div>
+  </main>
+</div>
+
+<div class="bvl-footer" id="bvlFooter" style="display:none">
+  <div class="bvl-footer-status" id="footerStatus">0 / 0 stappen afgevinkt</div>
+  <button class="bf-btn bf-btn-ghost" onclick="resetLijst()">↺ Leegmaken</button>
+  <button class="bf-btn bf-btn-primary" id="pdfBtn" disabled style="opacity:0.4" onclick="exportPDF()">↓ Download PDF</button>
+</div>
+
+<div class="bvl-toast" id="toast"></div>
+
+<script>
+/* ================================================================
+   STATE
+   checks : { [itemId]: { status:'ok'|'nvt', monteur, ts } }
+   notes  : { [itemId]: string }
+   ================================================================ */
+let huidigProject = null;
+let sjabloon      = null;   // gekozen bouwvolgorde-sjabloon
+let FASEN         = [];     // sjabloon.fasen (actief)
+let state         = { checks: {}, notes: {} };
+let monteurNaam   = '';
+let activeFaseId  = null;
+
+/* ================================================================
+   PROJECT LADEN — mapt project.machineType → sjabloon
+   ================================================================ */
+function laadProject() {
+  const id = document.getElementById('projSelect').value;
+  const main = document.getElementById('hoofdPaneel');
+  if (!id) {
+    huidigProject = null; sjabloon = null; FASEN = [];
+    document.getElementById('bvlFooter').style.display = 'none';
+    main.innerHTML = '<div class="bvl-empty"><div style="font-size:40px;opacity:0.3">🔧</div><div>Kies een project in de sidebar</div></div>';
+    document.getElementById('sidebarFasen').innerHTML = '';
+    return;
+  }
+
+  huidigProject = id;
+  const proj = BFT_PROJECTEN.find(p => p.id === id) || {};
+  document.getElementById('hdrSub').textContent = proj.naam || id;
+
+  /* Sjabloon zoeken op machinetype */
+  const reg = window.BFT_BOUWVOLGORDE || {};
+  sjabloon = proj.machineType ? reg[proj.machineType] : null;
+
+  if (!sjabloon) {
+    FASEN = [];
+    document.getElementById('bvlFooter').style.display = 'none';
+    document.getElementById('sidebarFasen').innerHTML = '';
+    main.innerHTML = `
+      <div class="mock-banner">⚠ Mock-modus — wijzigingen opgeslagen in browser.</div>
+      <div class="bvl-empty" style="height:auto;padding:40px 0">
+        <div style="font-size:40px;opacity:0.3">📋</div>
+        <div>Geen bouwvolgorde-sjabloon voor machinetype <strong>${proj.machineType || '—'}</strong>.</div>
+        <div style="opacity:0.7">Voeg een sjabloon toe in <code>library/data/bouwvolgorde/</code>.</div>
+      </div>`;
+    return;
+  }
+
+  FASEN = sjabloon.fasen || [];
+  activeFaseId = FASEN.length ? FASEN[0].id : null;
+  state = { checks: {}, notes: {} };
+
+  /* MOCK: state uit localStorage (wordt straks BFTGraph.query) */
+  try {
+    const raw = localStorage.getItem('bft_v2_bvl_' + id);
+    if (raw) state = JSON.parse(raw);
+  } catch (e) {}
+  if (!state.checks) state.checks = {};
+  if (!state.notes)  state.notes  = {};
+  if (!state.refs)   state.refs   = {};
+  ['elektro','hydro','bouten','knoppen'].forEach(t => { if (!state.refs[t]) state.refs[t] = {}; });
+
+  /* Monteur (stempel/gating komt in stap 2; nu alleen ophalen) */
+  if (window.BFTAuth && BFTAuth.isReady && BFTAuth.isReady()) {
+    monteurNaam = (BFTAuth.getUser() && BFTAuth.getUser().naam) || '';
+  } else {
+    monteurNaam = localStorage.getItem('bft_v2_monteur') || '';
+  }
+
+  document.getElementById('bvlFooter').style.display = '';
+  renderSidebar();
+  renderHoofd();
+  updateVoortgang();
+  loadTekeningen();
+}
+
+/* ================================================================
+   URL-PARAMETER — ?project=<id>
+   ================================================================ */
+window.addEventListener('load', function () {
+  const sel = document.getElementById('projSelect');
+  const param = new URLSearchParams(window.location.search).get('project');
+  sel.innerHTML = bftProjectOptions(param || '');
+  if (param) laadProject();
+});
+
+/* ================================================================
+   SIDEBAR
+   ================================================================ */
+function renderSidebar() {
+  const el = document.getElementById('sidebarFasen');
+  const huidig = huidigeFaseId();
+  el.innerHTML = FASEN.map(f => {
+    const t = telFase(f);
+    const klaar = t.totaal > 0 && t.done + t.nvt === t.totaal;
+    const isAct = f.id === activeFaseId;
+    return `
+      <button class="bvl-fase-btn ${klaar ? 'done' : ''} ${isAct ? 'active' : ''} ${f.id === huidig ? 'huidig' : ''}" onclick="scrollNaarFase(${f.id})">
+        <div class="bvl-fase-num ${f.id === huidig ? 'huidig' : ''}">${f.id}</div>
+        <div class="bvl-fase-titel">${f.titel}</div>
+        <div class="bvl-fase-pct">${t.done + t.nvt}/${t.totaal}</div>
+      </button>`;
+  }).join('');
+}
+
+/* ================================================================
+   HOOFD-PANEEL
+   ================================================================ */
+function renderHoofd() {
+  const proj = BFT_PROJECTEN.find(p => p.id === huidigProject) || {};
+  document.getElementById('hoofdPaneel').innerHTML = `
+    <div class="mock-banner">
+      ⚠ Mock-modus — wijzigingen opgeslagen in browser. Na IT App Registration → automatisch naar SharePoint.
+    </div>
+    <div class="bvl-info">
+      <div class="bf-field"><label>Project</label>
+        <input type="text" class="bf-input" value="${huidigProject}" readonly style="background:var(--bg2);cursor:default"></div>
+      <div class="bf-field"><label>Machine</label>
+        <input type="text" class="bf-input" value="${proj.naam || ''}" readonly style="background:var(--bg2);cursor:default"></div>
+      <div class="bf-field"><label>Klant</label>
+        <input type="text" class="bf-input" value="${proj.klant || ''}" readonly style="background:var(--bg2);cursor:default"></div>
+      <div class="bf-field"><label>Projectleider</label>
+        <input type="text" class="bf-input" value="${proj.pl || ''}" readonly style="background:var(--bg2);cursor:default"></div>
+      <div class="bf-field"><label>Geplande oplevering</label>
+        <input type="date" class="bf-input" value="${proj.oplevering || ''}" readonly style="background:var(--bg2);cursor:default">
+        ${deadlineChip(proj.oplevering)}</div>
+    </div>
+    ${renderMonteurBalk()}
+    <div class="bvl-warn ${!monteurNaam ? 'zichtbaar' : ''}" id="monteurWarn">
+      ⚠ Geen monteur actief — vul naam in voor je begint met afvinken.
+    </div>
+    ${FASEN.map(f => renderFase(f)).join('')}
+    ${renderSpecs()}
+    ${renderTekeningenBlok()}
+  `;
+}
+
+function renderMonteurBalk() {
+  if (monteurNaam) {
+    const ini = monteurNaam.trim().split(/\s+/).map(w => w[0] || '').join('').toUpperCase().slice(0, 2);
+    return `
+      <div class="bvl-monteur">
+        <div class="bvl-mont-avatar">${ini}</div>
+        <div class="bvl-mont-info">
+          <div class="bvl-mont-naam">${monteurNaam}</div>
+          <div class="bvl-mont-sub">Actieve monteur — stempel wordt gezet bij afvinken</div>
+        </div>
+        <button class="bf-btn bf-btn-ghost" style="font-size:11px" onclick="wisselMonteur()">Wissel</button>
+      </div>`;
+  }
+  return `
+    <div class="bvl-monteur">
+      <div class="bvl-mont-avatar leeg">?</div>
+      <input class="bvl-mont-input" id="monteurInput" type="text"
+        placeholder="Vul naam monteur in voor je begint..." value=""
+        onkeydown="if(event.key==='Enter')stelMonteurIn()">
+      <button class="bf-btn bf-btn-primary" style="font-size:11px" onclick="stelMonteurIn()">Bevestigen</button>
+    </div>`;
+}
+
+function stelMonteurIn() {
+  const inp = document.getElementById('monteurInput');
+  if (!inp) return;
+  const naam = inp.value.trim();
+  if (!naam) { inp.focus(); return; }
+  monteurNaam = naam;
+  localStorage.setItem('bft_v2_monteur', naam);
+  renderHoofd();
+}
+
+function wisselMonteur() {
+  monteurNaam = '';
+  renderHoofd();
+}
+
+/* Deadline-chip o.b.v. geplande oplevering */
+function deadlineChip(datum) {
+  if (!datum) return '';
+  const d = new Date(datum);
+  if (isNaN(d)) return '';
+  const dagen = Math.ceil((d - new Date()) / 86400000);
+  let cls = 'ok', txt;
+  if (dagen < 0)        { cls = 'over'; txt = `${Math.abs(dagen)} d te laat`; }
+  else if (dagen <= 14) { cls = 'soon'; txt = `nog ${dagen} d`; }
+  else                  { cls = 'ok';   txt = `nog ${dagen} d`; }
+  return `<span class="bvl-deadline-chip ${cls}">⏱ ${txt}</span>`;
+}
+
+function renderFase(f) {
+  const t = telFase(f);
+  const klaar = t.totaal > 0 && t.done + t.nvt === t.totaal;
+  const huidig = f.id === huidigeFaseId();
+  return `
+    <div class="bvl-fase" id="fase-${f.id}">
+      <div class="bvl-fase-head" onclick="toggleFase(${f.id})">
+        <div class="bvl-fnum ${klaar ? 'klaar' : ''} ${huidig ? 'huidig' : ''}">${f.id}</div>
+        <div class="bvl-ftitel">${f.titel}</div>
+        <div class="bvl-fprog ${klaar ? 'klaar' : ''}">${t.done + t.nvt} / ${t.totaal}</div>
+        <span class="bvl-fchev">▾</span>
+      </div>
+      <div class="bvl-fase-body">
+        <div class="bvl-tbl-head"><span>Stap</span><span></span><span>OK</span><span>N.v.t.</span></div>
+        ${f.items.map(it => renderRij(it)).join('')}
+      </div>
+    </div>`;
+}
+
+function renderRij(it) {
+  const check  = state.checks[it.id];
+  const status = (check && check.status) || '';
+  const mont   = (check && check.monteur) || '';
+  const ts     = (check && check.ts) ? new Date(check.ts).toLocaleString('nl-NL', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+  const note   = state.notes[it.id] || '';
+  const rijCls = status === 'ok' ? 'is-ok' : status === 'nvt' ? 'is-nvt' : '';
+
+  return `
+    <div class="bvl-row ${rijCls}" id="row-${it.id}">
+      <div class="bvl-row-content">
+        <div class="bvl-desc">${it.desc}${it.ref ? refBadge(it.ref) : ''}</div>
+        <div class="bvl-sub">${it.id}</div>
+        <div class="bvl-stempel">${mont ? `✓ ${mont} · ${ts}` : ''}</div>
+      </div>
+      <button class="bvl-note-btn ${note ? 'heeft-note' : ''}" title="Opmerking toevoegen" onclick="toggleNote('${it.id}')">✎</button>
+      <div class="bvl-chk-col">
+        <div class="bvl-chk bvl-chk-ok ${status === 'ok' ? 'actief' : ''}" title="Gedaan" onclick="vink('${it.id}','ok')">✓</div>
+      </div>
+      <div class="bvl-chk-col">
+        <div class="bvl-chk bvl-chk-nvt ${status === 'nvt' ? 'actief' : ''}" title="Niet van toepassing" onclick="vink('${it.id}','nvt')">—</div>
+      </div>
+    </div>
+    <div class="bvl-note-row ${note ? 'open' : ''}" id="note-${it.id}">
+      <textarea class="bvl-note-ta" id="ta-${it.id}" placeholder="Opmerking bij deze stap..." oninput="slaNotaOp('${it.id}', this.value)">${note}</textarea>
+    </div>`;
+}
+
+/* ================================================================
+   SPECIFICATIES (elektrokabels / hydrauliekslangen / bouten / knoppen)
+   ================================================================ */
+const SPEC_DEFS = {
+  elektro: { badge:'E', titel:'Elektrokabels',
+    cols:[['Benaming','benaming'],['Soort','soort'],['Lengte (m)','lengte_m'],['Kleur','kleur'],['Art.nr','artnr'],['Aantal','aantal']] },
+  hydro:   { badge:'H', titel:'Hydrauliekslangen',
+    cols:[['#','nr'],['Locatie','loc'],['Aantal','aantal'],['Slang','slang'],['Koppeling','koppeling'],['Lengte (mm)','lengte_mm'],['Extra','extra']] },
+  bouten:  { badge:'B', titel:'Bouten per montagestap',
+    cols:[['Hoofdsectie','hoofdsectie'],['Subsectie','subsectie'],['Beschrijving','beschrijving'],['Aantal','aantal'],['Ring/borg','ring_borg'],['Type','type']] }
+};
+
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function refBadge(type){
+  const cls = type==='hydro'?'hydro':'elektro';
+  const lbl = type==='hydro'?'H · slang':'E · kabel';
+  return `<span class="bvl-ref-badge ${cls}" title="Naar specificaties" onclick="event.stopPropagation();openSpec('${type}')">${lbl}</span>`;
+}
+
+function specItems(type){ return (sjabloon && sjabloon.referenties && sjabloon.referenties[type]) || []; }
+
+function specProg(type){
+  const items = specItems(type);
+  let done = 0;
+  items.forEach((_, i) => { if (state.refs[type] && state.refs[type][i]) done++; });
+  return { totaal: items.length, done };
+}
+
+function renderSpecs(){
+  return ['elektro','hydro','bouten','knoppen'].map(type => {
+    const items = specItems(type);
+    if (!items.length) return '';
+    const def = SPEC_DEFS[type];
+    const p = specProg(type);
+    const klaar = p.totaal > 0 && p.done === p.totaal;
+    const titel = type === 'knoppen' ? 'Operator-paneel knoppen (EN)' : def.titel;
+    const badge = type === 'knoppen' ? 'K' : def.badge;
+    const progTxt = type === 'knoppen' ? `${p.done} / ${p.totaal} geplaatst` : `${p.done} / ${p.totaal}`;
+    return `
+      <div class="bvl-spec" id="spec-${type}">
+        <button type="button" class="bvl-spec-toggle" onclick="toggleSpec('${type}')">
+          <span class="bvl-spec-badge ${type}">${badge}</span> Specificaties — ${titel}
+          <span class="bvl-spec-prog ${klaar ? 'done' : ''}" id="specprog-${type}">${progTxt}</span>
+          <span class="arrow">▾</span>
+        </button>
+        <div class="bvl-spec-body" id="specbody-${type}">
+          ${type === 'knoppen' ? renderKnoppen(items) : renderSpecTabel(type, def, items)}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderSpecTabel(type, def, items){
+  const heads = def.cols.map(c => `<th>${c[0]}</th>`).join('')
+    + '<th class="bvl-spec-chk-col">N.v.t.</th><th class="bvl-spec-chk-col">Gedaan</th>';
+  const rows = items.map((it, i) => {
+    const st = state.refs[type] && state.refs[type][i];
+    const rijCls = st === 'ok' ? 'is-ok' : st === 'nvt' ? 'is-nvt' : '';
+    const tds = def.cols.map(c => {
+      const isSectie = (type === 'bouten' && c[1] === 'hoofdsectie');
+      return `<td class="${isSectie ? 'bout-sectie' : ''}">${esc(it[c[1]])}</td>`;
+    }).join('');
+    return `<tr id="specrow-${type}-${i}" class="${rijCls}">${tds}
+      <td class="bvl-spec-chk-col"><span class="bvl-spec-chk ${st === 'nvt' ? 'nvt' : ''}" title="N.v.t." onclick="zetRef('${type}',${i},'nvt')">—</span></td>
+      <td class="bvl-spec-chk-col"><span class="bvl-spec-chk ${st === 'ok' ? 'ok' : ''}" title="Gedaan" onclick="zetRef('${type}',${i},'ok')">✓</span></td>
+    </tr>`;
+  }).join('');
+  return `<table class="bvl-spec-tbl"><thead><tr>${heads}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderKnoppen(items){
+  let html = '', laatsteGroep = null;
+  items.forEach((k, i) => {
+    if (k.group !== laatsteGroep) { laatsteGroep = k.group; html += `<div class="bvl-knop-groep">Groep ${k.group}</div>`; }
+    const placed = (state.refs.knoppen && state.refs.knoppen[i]) ? 'placed' : '';
+    const regels = [k.regel1, k.regel2, k.regel3].map(r => r ? `<span>${esc(r)}</span>` : '').join('') || '<span class="leeg">—</span>';
+    html += `<div class="bvl-knop ${placed}" id="specrow-knoppen-${i}" onclick="toggleKnop(${i})">${regels}</div>`;
+  });
+  return `<div class="bvl-knop-grid">${html}</div>`;
+}
+
+function toggleSpec(type){ document.getElementById('spec-' + type).classList.toggle('open'); }
+
+function openSpec(type){
+  const el = document.getElementById('spec-' + type);
+  if (!el) { showToast('Geen specificaties voor dit blok'); return; }
+  el.classList.add('open');
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function zetRef(type, idx, status){
+  if (!state.refs[type]) state.refs[type] = {};
+  if (state.refs[type][idx] === status) delete state.refs[type][idx];
+  else state.refs[type][idx] = status;
+  slaOp();
+  const st = state.refs[type][idx];
+  const rij = document.getElementById(`specrow-${type}-${idx}`);
+  if (rij) {
+    rij.className = st === 'ok' ? 'is-ok' : st === 'nvt' ? 'is-nvt' : '';
+    const chks = rij.querySelectorAll('.bvl-spec-chk');
+    chks[0].className = 'bvl-spec-chk' + (st === 'nvt' ? ' nvt' : '');
+    chks[1].className = 'bvl-spec-chk' + (st === 'ok' ? ' ok' : '');
+  }
+  updateSpecProg(type);
+}
+
+function toggleKnop(idx){
+  if (!state.refs.knoppen) state.refs.knoppen = {};
+  if (state.refs.knoppen[idx]) delete state.refs.knoppen[idx];
+  else state.refs.knoppen[idx] = 'ok';
+  slaOp();
+  const el = document.getElementById('specrow-knoppen-' + idx);
+  if (el) el.classList.toggle('placed', !!state.refs.knoppen[idx]);
+  updateSpecProg('knoppen');
+}
+
+function updateSpecProg(type){
+  const p = specProg(type);
+  const el = document.getElementById('specprog-' + type);
+  if (!el) return;
+  el.textContent = type === 'knoppen' ? `${p.done} / ${p.totaal} geplaatst` : `${p.done} / ${p.totaal}`;
+  el.classList.toggle('done', p.totaal > 0 && p.done === p.totaal);
+}
+
+/* ================================================================
+   TEKENINGEN & BESTANDEN — SharePoint Document Library (nu mock)
+   Live: BFTGraph.listFiles('<projectId>/tekeningen')
+   ================================================================ */
+let tekeningenLijst = [];
+
+/* Mock-set zolang Graph/App Registration nog niet live is */
+const TEK_MOCK = [
+  { naam: 'Hydrauliekschema_BFMR2000EK.pdf', categorie: 'Hydrauliek' },
+  { naam: 'Slangenoverzicht.pdf',            categorie: 'Hydrauliek' },
+  { naam: 'Elektroschema_hoofdkast.pdf',     categorie: 'Elektro' },
+  { naam: 'Kabellijst.pdf',                  categorie: 'Elektro' },
+  { naam: 'Aanzicht_bovenbak.jpg',           categorie: 'Algemeen' },
+  { naam: 'Typeplaatje.png',                 categorie: 'Algemeen' }
+];
+
+function tekExt(naam){ return (String(naam).split('.').pop() || '').toLowerCase(); }
+function tekExtClass(ext){
+  if (ext === 'pdf') return 'pdf';
+  if (['jpg','jpeg','png','gif','bmp','webp','svg'].indexOf(ext) !== -1) return 'img';
+  return '';
+}
+
+function renderTekeningenBlok(){
+  return `
+    <div class="bvl-spec" id="spec-tekeningen">
+      <button type="button" class="bvl-spec-toggle" onclick="toggleSpec('tekeningen')">
+        <span class="bvl-spec-badge tekeningen">T</span> Tekeningen &amp; bestanden
+        <span class="bvl-spec-prog" id="specprog-tekeningen">…</span>
+        <span class="arrow">▾</span>
+      </button>
+      <div class="bvl-spec-body" id="specbody-tekeningen">
+        <div class="bvl-tek-empty">Laden…</div>
+      </div>
+    </div>`;
+}
+
+async function loadTekeningen(){
+  const body = document.getElementById('specbody-tekeningen');
+  if (!body) return;
+  let lijst = null, mock = true;
+  try {
+    if (window.BFTGraph && BFTGraph.isReady && BFTGraph.isReady()) {
+      lijst = await BFTGraph.listFiles(huidigProject + '/tekeningen');
+      mock = false;
+    }
+  } catch (e) { lijst = null; }
+  if (!lijst) lijst = TEK_MOCK.map(t => ({ naam: t.naam, categorie: t.categorie, ext: tekExt(t.naam), mock: true }));
+
+  tekeningenLijst = lijst;
+  body.innerHTML = renderTekeningen(lijst, mock);
+  updateTekProg(lijst.length);
+}
+
+function renderTekeningen(lijst, mock){
+  if (!lijst.length) return '<div class="bvl-tek-empty">Geen tekeningen gekoppeld voor dit project.</div>';
+  let html = '<div id="tekViewer"></div>';
+  if (mock) html += '<div class="bvl-tek-mock">⚠ Mock — voorbeeldlijst. Na SharePoint-koppeling tonen we de echte bestanden uit de project-bibliotheek.</div>';
+  let laatsteCat = null;
+  lijst.forEach((t, i) => {
+    if (t.categorie !== laatsteCat) { laatsteCat = t.categorie; html += `<div class="bvl-tek-groep">${esc(t.categorie || 'Overig')}</div>`; }
+    const ext = t.ext || tekExt(t.naam);
+    html += `
+      <div class="bvl-tek-row" onclick="openTekening(${i})">
+        <span class="bvl-tek-ext ${tekExtClass(ext)}">${esc(ext)}</span>
+        <span class="bvl-tek-label">${esc(t.naam)}</span>
+        <button class="bvl-tek-open" onclick="event.stopPropagation();openTekening(${i})">Openen →</button>
+      </div>`;
+  });
+  return html;
+}
+
+function openTekening(i){
+  const t = tekeningenLijst[i];
+  const viewer = document.getElementById('tekViewer');
+  if (!t || !viewer) return;
+  const ext = t.ext || tekExt(t.naam);
+  const cls = tekExtClass(ext);
+  let inhoud;
+  const url = t.downloadUrl || t.webUrl || null;
+  if (t.mock || !url) {
+    inhoud = `<div class="bvl-tek-ph">📄 Voorbeeldbestand<br>“${esc(t.naam)}”<br><br>Beschikbaar zodra de SharePoint-bibliotheek gekoppeld is.</div>`;
+  } else if (cls === 'pdf') {
+    inhoud = `<iframe src="${url}"></iframe>`;
+  } else if (cls === 'img') {
+    inhoud = `<img src="${url}" alt="${esc(t.naam)}">`;
+  } else {
+    inhoud = `<div class="bvl-tek-ph">Geen voorvertoning voor .${esc(ext)} — <a href="${url}" target="_blank" style="color:#7aa7ff">openen in nieuw tabblad</a></div>`;
+  }
+  viewer.innerHTML = `
+    <div class="bvl-tek-viewer">
+      <div class="bvl-tek-viewer-bar"><span class="naam">${esc(t.naam)}</span>
+        <button class="bvl-tek-close" title="Sluiten" onclick="sluitTekening()">×</button></div>
+      ${inhoud}
+    </div>`;
+  viewer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function sluitTekening(){ const v = document.getElementById('tekViewer'); if (v) v.innerHTML = ''; }
+
+function updateTekProg(n){
+  const el = document.getElementById('specprog-tekeningen');
+  if (el) el.textContent = `${n} bestand${n !== 1 ? 'en' : ''}`;
+}
+
+/* ================================================================
+   ACTIES
+   ================================================================ */
+function vink(id, modus) {
+  const huidig = state.checks[id] && state.checks[id].status;
+
+  /* Afvinken alleen mét actieve monteur (afzetten mag altijd) */
+  if (huidig !== modus && !monteurNaam) {
+    const inp = document.getElementById('monteurInput');
+    if (inp) { inp.focus(); inp.style.borderColor = 'var(--danger)'; setTimeout(() => { inp.style.borderColor = ''; }, 1500); }
+    const w = document.getElementById('monteurWarn'); if (w) w.classList.add('zichtbaar');
+    showToast('Vul eerst een monteur in');
+    return;
+  }
+
+  if (huidig === modus) {
+    delete state.checks[id];
+  } else {
+    state.checks[id] = { status: modus, monteur: monteurNaam, ts: new Date().toISOString() };
+    /* Sequential soft-lock: waarschuw (niet blokkeren) bij afvinken vóór een eerdere fase af is */
+    const eersteOpen = huidigeFaseId();
+    const dezeFase = FASEN.find(f => f.items.some(it => it.id === id));
+    if (eersteOpen && dezeFase && dezeFase.id > eersteOpen) {
+      const ef = FASEN.find(f => f.id === eersteOpen);
+      showToast(`Let op — fase ${eersteOpen} (${ef ? ef.titel : ''}) is nog niet afgerond`);
+    }
+  }
+  slaOp();
+  updateRij(id);
+  updateVoortgang();
+  renderSidebar();
+}
+
+/* Eerste fase met nog open stappen (= huidige bouwfase), of null als alles af */
+function huidigeFaseId() {
+  for (const f of FASEN) {
+    const t = telFase(f);
+    if (t.done + t.nvt < t.totaal) return f.id;
+  }
+  return null;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+function toggleFase(id) {
+  document.getElementById('fase-' + id).classList.toggle('inklap');
+  activeFaseId = id;
+}
+
+function scrollNaarFase(id) {
+  activeFaseId = id;
+  const el = document.getElementById('fase-' + id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  renderSidebar();
+}
+
+function toggleNote(id) {
+  const el = document.getElementById('note-' + id);
+  if (el) el.classList.toggle('open');
+}
+
+function slaNotaOp(id, tekst) {
+  if (tekst.trim()) state.notes[id] = tekst;
+  else delete state.notes[id];
+  slaOp();
+  const btn = document.querySelector(`#row-${id} .bvl-note-btn`);
+  if (btn) btn.classList.toggle('heeft-note', !!tekst.trim());
+}
+
+function resetLijst() {
+  const doReset = () => { state = { checks:{}, notes:{}, refs:{ elektro:{}, hydro:{}, bouten:{}, knoppen:{} } }; slaOp(); renderHoofd(); updateVoortgang(); renderSidebar(); };
+  if (window.BFTDialog) {
+    BFTDialog.confirm('Lijst leegmaken?', 'Alle vinkjes en opmerkingen worden gewist. Niet ongedaan te maken.',
+      { labelOk: 'Leegmaken', labelCancel: 'Annuleren' }).then(ok => { if (ok) doReset(); });
+  } else if (confirm('Alle vinkjes wissen?')) { doReset(); }
+}
+
+/* ================================================================
+   OPSLAAN — MOCK via localStorage
+   Wordt straks: BFTGraph.update('BFT_Checklists', itemId, fields)
+   ================================================================ */
+function slaOp() {
+  if (!huidigProject) return;
+  try { localStorage.setItem('bft_v2_bvl_' + huidigProject, JSON.stringify(state)); } catch (e) {}
+  try {
+    let totaal = 0, gedaan = 0;
+    FASEN.forEach(f => f.items.forEach(it => {
+      totaal++;
+      const s = state.checks[it.id] && state.checks[it.id].status;
+      if (s === 'ok' || s === 'nvt') gedaan++;
+    }));
+    const pct = totaal > 0 ? Math.round(gedaan / totaal * 100) : 0;
+    const hf = huidigeFaseId();
+    const faseTxt = hf ? ('Fase ' + hf + ' — ' + ((FASEN.find(f => f.id === hf) || {}).titel || '')) : (totaal > 0 ? 'Afgerond' : '—');
+    localStorage.setItem('bft_v2_snap_bvl_' + huidigProject,
+      JSON.stringify({ pct, openItems: totaal - gedaan, fase: faseTxt, updated: new Date().toISOString() }));
+  } catch (e) {}
+  const ind = document.getElementById('saveInd');
+  ind.classList.add('zichtbaar');
+  clearTimeout(ind._t);
+  ind._t = setTimeout(() => ind.classList.remove('zichtbaar'), 1800);
+}
+
+/* ================================================================
+   VOORTGANG
+   ================================================================ */
+function telFase(f) {
+  let done = 0, nvt = 0;
+  f.items.forEach(it => {
+    const s = state.checks[it.id] && state.checks[it.id].status;
+    if (s === 'ok') done++;
+    if (s === 'nvt') nvt++;
+  });
+  return { totaal: f.items.length, done, nvt };
+}
+
+function updateVoortgang() {
+  let totaal = 0, gedaan = 0;
+  FASEN.forEach(f => { const t = telFase(f); totaal += t.totaal; gedaan += t.done + t.nvt; });
+  const open = totaal - gedaan;
+  const pct  = totaal > 0 ? Math.round(gedaan / totaal * 100) : 0;
+  const omtrek = 106.8;
+  document.getElementById('progCircle').style.strokeDashoffset = omtrek - (omtrek * pct / 100);
+  document.getElementById('progPct').textContent = pct + '%';
+
+  const btn = document.getElementById('pdfBtn');
+  if (totaal === 0) {
+    document.getElementById('footerStatus').textContent = '0 / 0 stappen afgevinkt';
+    btn.disabled = true; btn.style.opacity = '0.4'; btn.title = '';
+  } else if (open > 0) {
+    document.getElementById('footerStatus').innerHTML =
+      `${gedaan} / ${totaal} stappen afgevinkt &nbsp;·&nbsp; <span style="color:var(--danger);font-weight:600">${open} open — PDF geblokkeerd</span>`;
+    btn.disabled = true; btn.style.opacity = '0.4';
+    btn.title = `Nog ${open} stap${open !== 1 ? 'pen' : ''} open — rond de lijst eerst af`;
+  } else {
+    document.getElementById('footerStatus').textContent = `${gedaan} / ${totaal} stappen afgevinkt — klaar voor export`;
+    btn.disabled = false; btn.style.opacity = '1'; btn.title = '';
+  }
+}
+
+function updateRij(id) {
+  const oudeRij = document.getElementById('row-' + id);
+  if (!oudeRij) return;
+  const fase = FASEN.find(f => f.items.some(it => it.id === id));
+  const item = fase && fase.items.find(it => it.id === id);
+  if (!item) return;
+  const nieuw = document.createElement('div');
+  nieuw.innerHTML = renderRij(item);
+  oudeRij.replaceWith(nieuw.firstElementChild);
+}
+
+/* ================================================================
+   PDF-EXPORT — pdfMake (later: BFTGraph.upload naar SharePoint)
+   ================================================================ */
+function exportPDF() {
+  if (!huidigProject) return;
+
+  let totaal = 0, gedaan = 0;
+  FASEN.forEach(f => { const t = telFase(f); totaal += t.totaal; gedaan += t.done + t.nvt; });
+  if (gedaan < totaal) return; /* veiligheidsnet — knop is al disabled */
+
+  const proj     = BFT_PROJECTEN.find(p => p.id === huidigProject) || {};
+  const datumNu  = new Date();
+  const datumStr = datumNu.toLocaleDateString('nl-NL', { day:'2-digit', month:'2-digit', year:'numeric' });
+  const datumPad = datumNu.toISOString().slice(0, 10);
+  const titelDoc = `Bouwvolgordelijst — ${huidigProject}`;
+  const content  = [];
+
+  /* Info-tabel */
+  const infoRijen = [
+    ['Project',             huidigProject],
+    ['Machine',             proj.naam || (sjabloon && sjabloon.titel) || '—'],
+    ['Klant',               proj.klant || '—'],
+    ['Projectleider',       proj.pl || '—'],
+    ['Geplande oplevering', proj.oplevering || '—'],
+    ['Afgedrukt op',        datumStr],
+    ['Afgedrukt door',      monteurNaam || '—']
+  ];
+  content.push({
+    table: { widths: [140, '*'], body: infoRijen.map(r => [
+      { text: r[0], fontSize: 9, color: '#7a849a', bold: true, margin: [0,3,0,3] },
+      { text: r[1], fontSize: 10, color: '#1a1f2e', margin: [0,3,0,3] }
+    ]) },
+    layout: 'noBorders', margin: [0, 0, 0, 12]
+  });
+
+  const okTel  = Object.values(state.checks).filter(c => c.status === 'ok').length;
+  const nvtTel = Object.values(state.checks).filter(c => c.status === 'nvt').length;
+  content.push({ text: `Voortgang: ${okTel} afgevinkt · ${nvtTel} n.v.t. · ${totaal} stappen totaal`,
+    fontSize: 9, color: '#3d4558', italics: true, margin: [0, 0, 0, 16] });
+
+  /* Fase-tabellen */
+  FASEN.forEach((f, idx) => {
+    const t = telFase(f);
+    const klaar = t.done + t.nvt === t.totaal;
+    content.push({ text: `Fase ${f.id} — ${f.titel}  (${t.done + t.nvt}/${t.totaal})`,
+      fontSize: 11, bold: true, color: klaar ? '#1e9e5e' : '#1a1f2e',
+      margin: [0, idx === 0 ? 0 : 10, 0, 3],
+      pageBreak: idx > 0 && idx % 4 === 0 ? 'before' : undefined });
+    content.push({ canvas: [{ type:'rect', x:0, y:0, w:515, h:2, color:'#e8a000' }], margin:[0,0,0,4] });
+
+    const tblBody = [[
+      { text:'Nr.',         fontSize:8, color:'#7a849a', bold:true, fillColor:'#f8f9fa' },
+      { text:'Stap',        fontSize:8, color:'#7a849a', bold:true, fillColor:'#f8f9fa' },
+      { text:'Monteur',     fontSize:8, color:'#7a849a', bold:true, fillColor:'#f8f9fa', alignment:'center' },
+      { text:'Status',      fontSize:8, color:'#7a849a', bold:true, fillColor:'#f8f9fa', alignment:'center' }
+    ]];
+    f.items.forEach(it => {
+      const check = state.checks[it.id];
+      const stt   = (check && check.status) || '';
+      const icoon = stt === 'ok' ? 'OK' : stt === 'nvt' ? 'N.v.t.' : '-';
+      const kleur = stt === 'ok' ? '#1e9e5e' : stt === 'nvt' ? '#7a849a' : '#d63030';
+      const descParts = [{ text: it.desc, fontSize: 9, color: '#1a1f2e' }];
+      if (state.notes[it.id]) descParts.push({ text: `\nOpmerking: ${state.notes[it.id]}`, fontSize: 8, color: '#7a5a00', italics: true });
+      tblBody.push([
+        { text: it.id, fontSize: 8, color: '#7a849a' },
+        { text: descParts },
+        { text: (check && check.monteur) || '', fontSize: 8, color: '#3d4558', alignment: 'center' },
+        { text: icoon, fontSize: 8, color: kleur, bold: true, alignment: 'center' }
+      ]);
+    });
+    content.push({ table: { widths: [38, '*', 70, 40], body: tblBody }, layout: 'lightHorizontalLines', margin: [0, 0, 0, 4] });
+  });
+
+  /* Specificatie-overzicht (samenvatting per blok) */
+  const specRows = [];
+  [['elektro','Elektrokabels'],['hydro','Hydrauliekslangen'],['bouten','Bouten per montagestap'],['knoppen','Operator-paneel knoppen']].forEach(([type, lbl]) => {
+    const p = specProg(type);
+    if (p.totaal > 0) specRows.push([
+      { text: lbl, fontSize: 9, color: '#1a1f2e' },
+      { text: `${p.done} / ${p.totaal}`, fontSize: 9, color: p.done === p.totaal ? '#1e9e5e' : '#3d4558', alignment: 'center' }
+    ]);
+  });
+  if (specRows.length) {
+    content.push({ text: 'Specificaties — afgevinkt', fontSize: 11, bold: true, margin: [0, 14, 0, 3] });
+    content.push({ canvas: [{ type:'rect', x:0, y:0, w:515, h:2, color:'#e8a000' }], margin:[0,0,0,4] });
+    content.push({ table: { widths: ['*', 70], body: specRows }, layout: 'lightHorizontalLines', margin: [0, 0, 0, 4] });
+  }
+
+  /* Tekeningen-lijst */
+  if (tekeningenLijst && tekeningenLijst.length) {
+    content.push({ text: 'Gekoppelde tekeningen & bestanden', fontSize: 11, bold: true, margin: [0, 14, 0, 3] });
+    content.push({ canvas: [{ type:'rect', x:0, y:0, w:515, h:2, color:'#e8a000' }], margin:[0,0,0,4] });
+    content.push({ ul: tekeningenLijst.map(t => `${t.categorie ? t.categorie + ' · ' : ''}${t.naam}`), fontSize: 9, color: '#3d4558', margin: [0, 0, 0, 4] });
+  }
+
+  /* Handtekeningvak */
+  content.push({ text: 'Akkoord oplevering', fontSize: 11, bold: true, margin: [0, 20, 0, 4] });
+  content.push({ canvas: [{ type:'rect', x:0, y:0, w:515, h:2, color:'#e8a000' }], margin:[0,0,0,10] });
+  content.push({
+    table: { widths: ['*','*','*'], body: [
+      [ { text:'Projectleider', fontSize:9, color:'#7a849a', bold:true, border:[false,false,false,false] },
+        { text:'Datum', fontSize:9, color:'#7a849a', bold:true, border:[false,false,false,false] },
+        { text:'Handtekening', fontSize:9, color:'#7a849a', bold:true, border:[false,false,false,false] } ],
+      [ { text: proj.pl || '________________________', fontSize:10, color:'#1a1f2e', margin:[0,2,0,20], border:[false,false,false,true] },
+        { text: '________________________', fontSize:10, color:'#c8cdd8', margin:[0,2,0,20], border:[false,false,false,true] },
+        { text: '________________________', fontSize:10, color:'#c8cdd8', margin:[0,2,0,20], border:[false,false,false,true] } ]
+    ] }, layout: { defaultBorder: false }
+  });
+
+  const PDF_LOGO = (typeof BFT_PDF_LOGO !== 'undefined') ? BFT_PDF_LOGO : null;
+  const docDef = {
+    pageMargins: [40, 88, 40, 40],
+    defaultStyle: { fontSize: 10, lineHeight: 1.3, color: '#3d4558' },
+    header: (page, pages) => ({ stack: [
+      { table: { widths: [90, '*', 90], body: [[
+        { image: PDF_LOGO, width: 58, margin:[12,7,0,0], border:[false,false,false,false], fillColor:'#000000' },
+        { text: titelDoc, fontSize:11, bold:true, color:'#fff', alignment:'center', margin:[0,16,0,0], border:[false,false,false,false], fillColor:'#000000' },
+        { text: `${page} / ${pages}`, fontSize:9, color:'rgba(255,255,255,0.5)', alignment:'right', margin:[0,20,15,0], border:[false,false,false,false], fillColor:'#000000' }
+      ]] }, layout: { defaultBorder:false } },
+      { canvas:[{ type:'rect', x:0, y:0, w:595, h:3, color:'#e8a000' }] }
+    ] }),
+    footer: (page, pages) => ({ columns: [
+      { text: titelDoc, fontSize:8, color:'#aaa', margin:[40,8,0,0] },
+      { text: `Pagina ${page} / ${pages}`, fontSize:8, color:'#aaa', alignment:'right', margin:[0,8,40,0] }
+    ] }),
+    content
+  };
+
+  const btn = document.getElementById('pdfBtn');
+  btn.disabled = true; btn.textContent = 'Bezig…';
+  try {
+    pdfMake.createPdf(docDef).download(`BFT_Bouwvolgorde_${huidigProject}_${datumPad}.pdf`, () => {
+      btn.disabled = false; btn.textContent = '↓ Download PDF';
+    });
+  } catch (err) {
+    console.error('PDF fout:', err);
+    btn.disabled = false; btn.textContent = '↓ Download PDF';
+  }
+}
+</script>
+
+</body>
+</html>

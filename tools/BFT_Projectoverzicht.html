@@ -439,6 +439,14 @@ function getToolSnapshot(projectId) {
     };
   } catch(e) {}
   try {
+    const snap = JSON.parse(localStorage.getItem('bft_v2_snap_bvl_' + projectId));
+    if (snap) def.bouwvolgorde = {
+      pct: snap.pct || 0,
+      status: snap.pct >= 100 ? 'klaar' : snap.pct > 0 ? 'bezig' : 'open',
+      fase: snap.fase || '—'
+    };
+  } catch(e) {}
+  try {
     const snap = JSON.parse(localStorage.getItem('bft_v2_snap_plan_' + projectId));
     if (snap) def.planning = { startWeek: snap.startWeek || null, eindWeek: snap.eindWeek || null, jaar: snap.jaar || new Date().getFullYear() };
   } catch(e) {}
@@ -604,7 +612,7 @@ const TOOL_URLS = {
   planning:    'BFT_OverallPlanning.html',
   resource:    'BFT_ResourcePlanning.html',
   evaluatie:   'BFT_Projectevaluatie.html',
-  bouwvolgorde: null
+  bouwvolgorde: 'BFT_Bouwvolgordelijst.html'
 };
 
 function toolCard(id, icon, label, pct, badgeStatus, bodyHTML) {
