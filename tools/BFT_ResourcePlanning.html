@@ -6,6 +6,7 @@
   <title>ResourcePlanning — BFT</title>
   <link rel="stylesheet" href="../library/css/bofram-style.css">
   <script src="../library/js/bft-projects.js"></script>
+  <script src="../library/js/bft-medewerkers.js"></script>
   <script src="../library/js/bft-dialog.js" defer></script>
   <style>
     body { overflow-x: hidden; }
@@ -226,12 +227,55 @@ function setUren(input){
 }
 
 function voegMedewerkerToe(){
-  const naam = prompt('Naam medewerker:')?.trim();
+  const reeds = state.medewerkers.map(m => m.naam);
+  const master = (typeof BFT_MEDEWERKERS !== 'undefined') ? BFT_MEDEWERKERS : [];
+  const beschikbaar = master.filter(m => reeds.indexOf(m.naam) === -1);
+
+  /* Geen stamlijst geladen of iedereen al toegevoegd → directe externe-invoer */
+  if (!beschikbaar.length) { voegExterneToe(); return; }
+
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML =
+    '<div style="background:#fff;border-radius:10px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden;font-family:var(--sans)">'
+    + '<div style="background:#000;color:#fff;padding:14px 20px;font-family:var(--mono);font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.02em">Medewerker toevoegen</div>'
+    + '<div style="padding:22px 20px;display:flex;flex-direction:column;gap:10px">'
+    +   '<label style="font-family:var(--mono);font-size:11px;color:var(--muted)">Kies uit de medewerkerslijst</label>'
+    +   '<select id="mp-keuze" style="padding:9px 11px;border:1.5px solid var(--border);border-radius:6px;font-size:14px;width:100%">'
+    +     beschikbaar.map(m => `<option value="${m.naam}" data-disc="${m.discipline}">${m.naam} · ${m.discipline}</option>`).join('')
+    +   '</select>'
+    + '</div>'
+    + '<div style="display:flex;gap:10px;justify-content:space-between;align-items:center;padding:14px 20px;background:#fafbfc;border-top:1px solid var(--border)">'
+    +   '<button id="mp-extern" class="bf-btn bf-btn-ghost" style="font-size:11px">+ Externe (handmatig)</button>'
+    +   '<div style="display:flex;gap:8px"><button id="mp-cancel" class="bf-btn bf-btn-ghost">Annuleer</button><button id="mp-ok" class="bf-btn bf-btn-primary">Toevoegen</button></div>'
+    + '</div>'
+    + '</div>';
+  document.body.appendChild(ov);
+  const sluit = () => { if (ov.parentNode) ov.parentNode.removeChild(ov); };
+  ov.addEventListener('click', e => { if (e.target === ov) sluit(); });
+  ov.querySelector('#mp-cancel').onclick = sluit;
+  ov.querySelector('#mp-extern').onclick = () => { sluit(); voegExterneToe(); };
+  ov.querySelector('#mp-ok').onclick = () => {
+    const sel = ov.querySelector('#mp-keuze');
+    const opt = sel.options[sel.selectedIndex];
+    sluit();
+    if (opt) voegMdwToe(opt.value, opt.getAttribute('data-disc'));
+  };
+}
+
+/* Externe / niet in de stamlijst — handmatige invoer (oude flow) */
+function voegExterneToe(){
+  const naam = prompt('Naam externe medewerker:')?.trim();
   if (!naam) return;
-  if (state.medewerkers.find(m=>m.naam===naam)) { alert('Medewerker bestaat al.'); return; }
   const disc = prompt('Discipline:\n' + DISCIPLINES.map((d,i)=>`${i+1}. ${d}`).join('\n') + '\n\n(typ nummer of naam)') || '1';
   const discipline = DISCIPLINES[parseInt(disc)-1] || disc || 'Overig';
-  state.medewerkers.push({naam, discipline});
+  voegMdwToe(naam, discipline);
+}
+
+function voegMdwToe(naam, discipline){
+  if (!naam) return;
+  if (state.medewerkers.find(m => m.naam === naam)) { alert('Medewerker bestaat al.'); return; }
+  state.medewerkers.push({ naam, discipline: discipline || 'Overig' });
   slaOp();
   renderMdwLijst();
   renderTabel();
