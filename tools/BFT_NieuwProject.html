@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="../library/css/bofram-style.css">
   <script src="../library/js/bft-projects.js"></script>
   <script src="../library/js/bft-medewerkers.js"></script>
+  <script src="../library/js/bft-klanten.js"></script>
   <style>
     .container { max-width:620px;margin:0 auto;padding:28px 20px 80px; }
     .card { background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;box-shadow:var(--shadow-md); }
@@ -74,7 +75,8 @@
       </div>
       <div class="field">
         <label>Klant <span class="req">*</span></label>
-        <input type="text" id="f_klant" placeholder="Naam klant / bedrijf" oninput="updatePreview()">
+        <input type="text" id="f_klant" list="dl_klant" placeholder="Kies of typ klant / bedrijf" oninput="updatePreview()">
+        <datalist id="dl_klant"></datalist>
       </div>
     </div>
     <div class="fg fg2" style="margin-bottom:14px">
@@ -196,6 +198,9 @@ if (typeof bftMedewerkerOptions === 'function') {
   document.getElementById('dl_pl').innerHTML  = bftMedewerkerOptions('Projectleider');
   document.getElementById('dl_eng').innerHTML = bftMedewerkerOptions('Engineering');
   document.getElementById('dl_wvb').innerHTML = bftMedewerkerOptions('WVB');
+}
+if (typeof bftKlantOptions === 'function') {
+  document.getElementById('dl_klant').innerHTML = bftKlantOptions();
 }
 </script>
 </body>
