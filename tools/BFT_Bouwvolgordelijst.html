@@ -28,6 +28,12 @@
     .bvl-proj-select:focus { border-color:var(--accent2); outline:none; }
     .bvl-sb-fasen { flex:1; overflow-y:auto; padding:8px; }
     /* Sidebar-nav-knoppen: CSS komt nu uit bft-checklist.js (.bft-cl-nav*) */
+    /* ── Sprongnav naar specificaties/tekeningen — visueel los van de bouwlijst ── */
+    .bvl-sb-jump { flex-shrink:0; border-top:2px solid var(--border2); background:var(--surface2); padding:10px 8px; display:flex; flex-direction:column; gap:4px; }
+    .bvl-sb-jump-label { font-family:var(--mono); font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--muted); padding:0 4px 4px; }
+    .bvl-jumpbtn { width:100%; text-align:left; display:flex; align-items:center; gap:9px; padding:7px 10px; border:1px solid var(--border); border-radius:6px; background:#fff; cursor:pointer; transition:background .12s; }
+    .bvl-jumpbtn:hover { background:var(--bg2); }
+    .bvl-jumpbtn-titel { flex:1; font-size:12px; color:var(--text); line-height:1.3; }
 
     /* ── Hoofd-paneel ── */
     .bvl-main { flex:1; overflow-y:auto; padding:20px 24px 80px; }
@@ -165,6 +171,7 @@
       <select class="bvl-proj-select" id="projSelect" onchange="laadProject()"></select>
     </div>
     <div class="bvl-sb-fasen" id="sidebarFasen"></div>
+    <div class="bvl-sb-jump" id="sidebarJump"></div>
   </aside>
 
   <main class="bvl-main" id="hoofdPaneel">
@@ -207,6 +214,7 @@ function laadProject() {
     document.getElementById('bvlFooter').style.display = 'none';
     main.innerHTML = '<div class="bvl-empty"><div style="font-size:40px;opacity:0.3">🔧</div><div>Kies een project in de sidebar</div></div>';
     document.getElementById('sidebarFasen').innerHTML = '';
+    document.getElementById('sidebarJump').innerHTML = '';
     return;
   }
 
@@ -222,6 +230,7 @@ function laadProject() {
     FASEN = [];
     document.getElementById('bvlFooter').style.display = 'none';
     document.getElementById('sidebarFasen').innerHTML = '';
+    document.getElementById('sidebarJump').innerHTML = '';
     main.innerHTML = `
       ${BFTToolShell.mockBanner()}
       <div class="bvl-empty" style="height:auto;padding:40px 0">
@@ -314,6 +323,7 @@ function renderHoofd() {
   `;
   if (cl) cl.render();   /* fasen + sidebar (her)vullen, bv. na monteur-wissel */
   loadTekeningen();
+  renderJumpNav();       /* sprongnav naar specs/tekeningen (sibling van fasen-nav) */
 }
 
 /* Deadline-chip o.b.v. geplande oplevering */
@@ -422,6 +432,28 @@ function openSpec(type){
   if (!el) { BFTToolShell.toast('Geen specificaties voor dit blok'); return; }
   el.classList.add('open');
   el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* Sidebar-sprongnav naar specificaties + tekeningen — los van de fasen-nav
+   (die door de engine wordt beheerd/overschreven). Kleur per type via de
+   bestaande .bvl-spec-badge-klassen → duidelijk verschil met de bouwlijst. */
+function renderJumpNav(){
+  const el = document.getElementById('sidebarJump');
+  if (!el) return;
+  if (!huidigProject) { el.innerHTML = ''; return; }
+  const items = [];
+  ['elektro','hydro','bouten','knoppen'].forEach(type => {
+    if (!specItems(type).length) return;
+    const badge = type === 'knoppen' ? 'K' : SPEC_DEFS[type].badge;
+    const titel = type === 'knoppen' ? 'Knoppen' : SPEC_DEFS[type].titel;
+    items.push({ type, badge, titel });
+  });
+  items.push({ type: 'tekeningen', badge: 'T', titel: 'Tekeningen & bestanden' });
+  el.innerHTML = '<div class="bvl-sb-jump-label">Specificaties &amp; tekeningen</div>'
+    + items.map(it => `<button type="button" class="bvl-jumpbtn" onclick="openSpec('${it.type}')">
+        <span class="bvl-spec-badge ${it.type}">${it.badge}</span>
+        <span class="bvl-jumpbtn-titel">${esc(it.titel)}</span>
+      </button>`).join('');
 }
 
 function zetRef(type, idx, status){
