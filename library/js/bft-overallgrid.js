@@ -215,6 +215,21 @@
     document.head.appendChild(st);
   }
 
+  /* Datalist-opties uit de gedeelde stamlijsten (klanten/medewerkers).
+     Degradeert naar gewoon tekstveld als die globals niet geladen zijn.
+     NB: bare referenties met typeof-guard — const-globals hangen niet aan window. */
+  function veldDatalistOpties(veld) {
+    try {
+      if (veld === 'klant' && typeof bftKlantOptions === 'function') return bftKlantOptions();
+      if (typeof bftMedewerkerOptions === 'function') {
+        if (veld === 'pl')  return bftMedewerkerOptions('Projectleider');
+        if (veld === 'eng') return bftMedewerkerOptions('Engineering');
+        if (veld === 'wvb') return bftMedewerkerOptions('WVB');
+      }
+    } catch (e) {}
+    return null;
+  }
+
   function openProjectForm(initial) {
     injectFormCss();
     initial = initial || {};
@@ -223,9 +238,13 @@
       ov.className = 'bft-og-ov open';
       var fieldsHtml = META_KOLOMMEN.map(function (k) {
         var full = (k.veld === 'omschrijving') ? ' full' : '';
+        var opties = veldDatalistOpties(k.veld);
+        var listAttr = opties ? ' list="bft-og-dl-' + k.veld + '"' : '';
+        var datalist = opties ? '<datalist id="bft-og-dl-' + k.veld + '">' + opties + '</datalist>' : '';
         return '<div class="bft-og-field' + full + '">'
           + '<label for="bft-og-' + k.veld + '">' + esc(k.label) + '</label>'
-          + '<input id="bft-og-' + k.veld + '" type="text" value="' + esc(initial[k.veld] || '') + '">'
+          + '<input id="bft-og-' + k.veld + '" type="text"' + listAttr + ' value="' + esc(initial[k.veld] || '') + '">'
+          + datalist
           + '</div>';
       }).join('');
       ov.innerHTML = ''
