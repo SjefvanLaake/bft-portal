@@ -155,7 +155,7 @@ const BFTChecklist = (function (global) {
     function renderFase(f){
       const t = telFase(f);
       const klaar = t.totaal > 0 && t.done + t.nvt === t.totaal;
-      const huidig = f.id === huidigeFaseId();
+      const huidig = seq && f.id === huidigeFaseId();   /* huidige-fase-hint alleen bij sequential */
       return `
     <div class="bft-cl-fase" id="clfase-${f.id}">
       <div class="bft-cl-fase-head" onclick="BFTChecklist.toggleFase(${f.id})">
@@ -174,7 +174,7 @@ const BFTChecklist = (function (global) {
     function renderSidebar(){
       const sidebarEl = _sidebarEl();
       if (!sidebarEl) return;
-      const huidig = huidigeFaseId();
+      const huidig = seq ? huidigeFaseId() : null;
       sidebarEl.innerHTML = fasen.map(f => {
         const t = telFase(f);
         const klaar = t.totaal > 0 && t.done + t.nvt === t.totaal;
@@ -233,12 +233,25 @@ const BFTChecklist = (function (global) {
       if (btn) btn.classList.toggle('heeft-note', !!tekst.trim());
     }
 
+    /* Programmatisch een item zetten (bv. via BFTWizard). modus: 'ok'|'nvt'|'' */
+    function setStatus(id, modus, note){
+      const sh = _shell();
+      if (modus === 'ok' || modus === 'nvt') {
+        checks[id] = { status: modus, monteur: (sh ? sh.monteur.naam() : '') || 'Wizard', ts: new Date().toISOString() };
+      } else {
+        delete checks[id];
+      }
+      if (typeof note === 'string') { if (note.trim()) notes[id] = note; else delete notes[id]; }
+      onChange();
+      updateRij(id); pushProgress(); renderSidebar();
+    }
+
     const inst = {
       render,
       setData(c, n){ checks = c || {}; notes = n || {}; activeFaseId = fasen.length ? fasen[0].id : null; render(); },
       getState(){ return { checks, notes }; },
       reset(){ checks = {}; notes = {}; render(); onChange(); },
-      progress, huidigeFase,
+      progress, huidigeFase, setStatus,
       vink, toggleFase, scrollNaarFase, toggleNote, notitie
     };
     _active = inst;

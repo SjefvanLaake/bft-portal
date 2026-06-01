@@ -9,6 +9,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.min.js"></script>
   <script src="../library/js/bft-projects.js"></script>
   <script src="../library/js/bft-pdf-logo.js"></script>
+  <script src="../library/js/bft-tool-shell.js" defer></script>
+  <script src="../library/js/bft-checklist.js" defer></script>
   <style>
     /* ── Layout ── */
     .mbcl-shell {
@@ -55,50 +57,7 @@
     .mbcl-proj-select:focus { border-color: var(--accent2); outline: none; }
 
     .mbcl-sb-fasen { flex: 1; overflow-y: auto; padding: 8px; }
-    .mbcl-fase-btn {
-      width: 100%;
-      text-align: left;
-      padding: 9px 12px;
-      border: none;
-      border-radius: 6px;
-      background: transparent;
-      cursor: pointer;
-      margin-bottom: 2px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      transition: background 0.12s;
-    }
-    .mbcl-fase-btn:hover { background: var(--bg2); }
-    .mbcl-fase-btn.active { background: rgba(232,160,0,0.10); }
-    .mbcl-fase-num {
-      width: 22px; height: 22px;
-      border-radius: 4px;
-      background: var(--bg2);
-      border: 1.5px solid var(--border);
-      font-family: var(--mono);
-      font-size: 10px;
-      font-weight: 700;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-      color: var(--muted);
-    }
-    .mbcl-fase-btn.done .mbcl-fase-num  { background: var(--success); border-color: var(--success); color: #fff; }
-    .mbcl-fase-btn.active .mbcl-fase-num { background: var(--accent); border-color: var(--accent-dk); color: #fff; }
-    .mbcl-fase-titel {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text2);
-      line-height: 1.3;
-      flex: 1;
-    }
-    .mbcl-fase-pct {
-      font-family: var(--mono);
-      font-size: 10px;
-      color: var(--muted);
-      flex-shrink: 0;
-    }
-    .mbcl-fase-btn.done .mbcl-fase-pct { color: var(--success); }
+    /* Sidebar-nav-knoppen: CSS komt nu uit bft-checklist.js (.bft-cl-nav*) */
 
     /* ── Hoofd-paneel ── */
     .mbcl-main {
@@ -122,202 +81,9 @@
     }
     @media (max-width: 700px) { .mbcl-info { grid-template-columns: 1fr; } }
 
-    /* ── Monteur-balk ── */
-    .mbcl-monteur {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 14px 18px;
-      margin-bottom: 20px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      box-shadow: var(--shadow);
-    }
-    .mbcl-mont-avatar {
-      width: 36px; height: 36px;
-      border-radius: 50%;
-      background: var(--accent);
-      color: #fff;
-      font-family: var(--mono);
-      font-size: 13px;
-      font-weight: 700;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    }
-    .mbcl-mont-avatar.leeg { background: var(--border2); color: var(--muted); }
-    .mbcl-mont-info { flex: 1; }
-    .mbcl-mont-naam { font-size: 13px; font-weight: 600; color: var(--text); }
-    .mbcl-mont-sub  { font-family: var(--mono); font-size: 10px; color: var(--muted); }
-    .mbcl-mont-input {
-      flex: 1;
-      padding: 8px 10px;
-      border: 1.5px solid var(--accent);
-      border-radius: 5px;
-      font-family: var(--mono);
-      font-size: 12px;
-      color: var(--text);
-      background: #fff;
-      outline: none;
-    }
+    /* Monteur-balk + waarschuwingsbanner: CSS uit bft-tool-shell.js (.bft-monteur/.bft-warn) */
 
-    /* ── Waarschuwingsbanner ── */
-    .mbcl-warn {
-      background: rgba(232,160,0,0.08);
-      border: 1px solid rgba(232,160,0,0.3);
-      border-radius: 6px;
-      padding: 10px 16px;
-      margin-bottom: 16px;
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--accent-dk);
-      display: none;
-    }
-    .mbcl-warn.zichtbaar { display: block; }
-
-    /* ── Fase-sectie ── */
-    .mbcl-fase {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      margin-bottom: 12px;
-      overflow: hidden;
-      box-shadow: var(--shadow);
-    }
-    .mbcl-fase-head {
-      padding: 14px 18px;
-      background: var(--surface2);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      cursor: pointer;
-      user-select: none;
-    }
-    .mbcl-fase-head:hover { background: var(--bg2); }
-    .mbcl-fnum {
-      width: 26px; height: 26px;
-      border-radius: 5px;
-      background: var(--accent);
-      color: #fff;
-      font-family: var(--mono);
-      font-size: 11px;
-      font-weight: 700;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    }
-    .mbcl-fnum.klaar { background: var(--success); }
-    .mbcl-ftitel { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; }
-    .mbcl-fprog {
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--muted);
-    }
-    .mbcl-fprog.klaar { color: var(--success); font-weight: 700; }
-    .mbcl-fchev { font-size: 11px; color: var(--muted); transition: transform 0.2s; }
-    .mbcl-fase.inklap .mbcl-fchev { transform: rotate(-90deg); }
-    .mbcl-fase.inklap .mbcl-fase-body { display: none; }
-
-    /* ── Check-tabel: grid met vaste kolommen (zoals origineel) ── */
-    .mbcl-fase-body { padding: 0; }
-
-    /* Kolomkoppen boven elke fase */
-    .mbcl-tbl-head {
-      display: grid;
-      grid-template-columns: 1fr 36px 56px 56px;
-      padding: 5px 18px;
-      background: var(--bg2);
-      border-bottom: 1px solid var(--border);
-    }
-    .mbcl-tbl-head span {
-      font-family: var(--mono); font-size: 9px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted);
-      text-align: center;
-    }
-    .mbcl-tbl-head span:first-child { text-align: left; }
-
-    /* Rij = zelfde grid */
-    .mbcl-row {
-      display: grid;
-      grid-template-columns: 1fr 36px 56px 56px;
-      align-items: center;
-      border-bottom: 1px solid var(--border);
-      transition: background 0.12s;
-      min-height: 46px;
-    }
-    .mbcl-row:last-child { border-bottom: none; }
-    .mbcl-row.is-ok  { background: rgba(30,158,94,0.05); }
-    .mbcl-row.is-nvt { background: rgba(122,132,154,0.06); }
-
-    /* Item-tekst */
-    .mbcl-row-content { padding: 10px 8px 10px 18px; min-width: 0; }
-    .mbcl-desc { font-size: 12px; color: var(--text); line-height: 1.5; }
-    .mbcl-row.is-ok  .mbcl-desc { text-decoration: line-through; color: var(--muted); }
-    .mbcl-row.is-nvt .mbcl-desc { color: var(--muted); font-style: italic; }
-    .mbcl-sub  { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 2px; }
-
-    /* Auditlabel */
-    .mbcl-stempel {
-      font-family: var(--mono); font-size: 9px; color: var(--success);
-      margin-top: 3px; display: none;
-    }
-    .mbcl-row.is-ok .mbcl-stempel { display: block; }
-
-    /* Notitieknop */
-    .mbcl-note-btn {
-      display: flex; align-items: center; justify-content: center;
-      width: 36px; height: 100%; min-height: 46px;
-      border: none; background: transparent;
-      cursor: pointer; font-size: 14px; color: var(--muted);
-      transition: all 0.12s;
-    }
-    .mbcl-note-btn:hover { color: var(--accent-dk); background: rgba(232,160,0,0.07); }
-    .mbcl-note-btn.heeft-note { color: var(--accent-dk); }
-
-    /* Checkboxkolom */
-    .mbcl-chk-col {
-      display: flex; align-items: center; justify-content: center;
-      height: 100%; min-height: 46px;
-      border-left: 1px solid var(--border);
-    }
-
-    /* De checkbox zelf */
-    .mbcl-chk {
-      width: 28px; height: 28px;
-      border-radius: 5px;
-      border: 1.5px solid var(--border);
-      background: #fff;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 14px;
-      transition: all 0.12s;
-      user-select: none;
-      color: transparent;
-      flex-shrink: 0;
-    }
-    .mbcl-chk-ok:hover  { border-color: var(--success); color: var(--success); }
-    .mbcl-chk-nvt:hover { border-color: var(--muted); }
-    .mbcl-chk-ok.actief  {
-      background: var(--success); border-color: var(--success); color: #fff;
-    }
-    .mbcl-chk-nvt.actief {
-      background: var(--muted); border-color: var(--muted); color: #fff;
-      font-size: 14px; font-weight: 700;
-    }
-
-    /* Notitieveld */
-    .mbcl-note-row {
-      max-height: 0; overflow: hidden; transition: max-height 0.2s;
-      padding: 0 18px;
-    }
-    .mbcl-note-row.open { max-height: 120px; padding: 8px 18px; }
-    .mbcl-note-ta {
-      width: 100%; padding: 7px 10px;
-      border: 1.5px solid var(--border); border-radius: 5px;
-      font-family: var(--mono); font-size: 11px; color: var(--text);
-      background: #fff; resize: none; height: 60px; outline: none;
-    }
-    .mbcl-note-ta:focus { border-color: var(--accent2); }
+    /* Fase-sectie + check-tabel + rijen: CSS uit bft-checklist.js (.bft-cl-*) */
 
     /* ── Progress ring in header ── */
     .prog-ring { position: relative; flex-shrink: 0; }
@@ -536,7 +302,7 @@ const FASEN = [
 let huidigProject = null;
 let state = { checks: {}, notes: {} };
 let monteurNaam   = '';
-let activeFaseId  = 1;
+let cl            = null;   // BFTChecklist-instance (fasen-engine)
 
 /* ================================================================
    PROJECT LADEN
@@ -553,93 +319,76 @@ function laadProject() {
     const raw = localStorage.getItem('bft_v2_mbcl_' + id);
     if (raw) state = JSON.parse(raw);
   } catch(e) {}
+  if (!state.checks) state.checks = {};
+  if (!state.notes)  state.notes  = {};
 
-  const proj = BFT_PROJECTEN.find(p => p.id === id);
-  document.getElementById('hdrSub').textContent = proj ? proj.naam : id;
+  const proj = BFTToolShell.getProject(id) || {};
+  document.getElementById('hdrSub').textContent = proj.naam || id;
   document.getElementById('mbclFooter').style.display = '';
 
-  /* Monteur: uit BFTAuth als beschikbaar, anders uit localStorage */
-  if (window.BFTAuth && BFTAuth.isReady()) {
-    monteurNaam = BFTAuth.getUser()?.naam || '';
-  } else {
-    monteurNaam = localStorage.getItem('bft_v2_monteur') || '';
-  }
+  monteurNaam = BFTToolShell.monteur.laad();
 
-  renderSidebar();
-  renderHoofd();
-  updateVoortgang();
+  cl = null;
+  renderHoofd();   /* bouwt #fasenContainer + statische delen */
+  cl = BFTChecklist.register({
+    fasenContainer:   '#fasenContainer',
+    sidebarContainer: '#sidebarFasen',
+    ringCircle: '#progCircle', ringPct: '#progPct',
+    fasen: FASEN,
+    itemLabel: 'Item',
+    itemSub: it => it.sub || '',
+    sequential: false,
+    onChange:   slaOp,
+    onProgress: updateFooter
+  });
+  cl.setData(state.checks, state.notes);
 }
 
 /* ================================================================
    URL-PARAMETER — ?project=201267_BFMR2000EK
    ================================================================ */
 window.addEventListener('load', function () {
+  /* Monteur-state leeft in de shell; spiegel naar lokaal monteurNaam + herrender. */
+  BFTToolShell.monteur.onChange(naam => { monteurNaam = naam; if (huidigProject) renderHoofd(); });
+
   const sel = document.getElementById('projSelect');
-  const param = new URLSearchParams(window.location.search).get('project');
-  sel.innerHTML = bftProjectOptions(param || '');
+  const param = BFTToolShell.leesParam();
+  BFTToolShell.vulSelect(sel, param || '');
   if (param) laadProject();
 
-  /* Auth init */
-  if (window.BFTAuth && BFTAuth.isConfigured()) {
-    BFTAuth.init().then(() => {
-      if (BFTAuth.isReady()) { monteurNaam = BFTAuth.getUser()?.naam || monteurNaam; renderMonteurBalk(); }
-    });
-  }
+  /* Auth + Graph initialiseren (degradeert stil naar mock als niet geladen). */
+  BFTToolShell.initBackend();
 
-  /* Wizard */
-  if (window.BFTWizard) {
+  /* Wizard — dormant tot bft-wizard.js geladen wordt; zet statussen via de engine. */
+  if (typeof BFTWizard !== 'undefined') {
     BFTWizard.register({
       name: 'MachinebouwChecklist',
       getItems: function () {
         const items = [];
+        const es = cl ? cl.getState() : { checks: {}, notes: {} };
         FASEN.forEach(f => f.items.forEach(it => {
-          const s = state.checks[it.id]?.status;
-          if (!s) items.push({ id: it.id, label: it.desc, sub: `Fase ${f.id}: ${f.titel}`, currentStatus: 'open', currentNote: state.notes[it.id] || '' });
+          const s = es.checks[it.id] && es.checks[it.id].status;
+          if (!s) items.push({ id: it.id, label: it.desc, sub: `Fase ${f.id}: ${f.titel}`, currentStatus: 'open', currentNote: es.notes[it.id] || '' });
         }));
         return items;
       },
       setStatus: function (id, status, note) {
-        if (status === 'gedaan') state.checks[id] = { status:'ok', monteur: monteurNaam || 'Wizard', ts: new Date().toISOString() };
-        else if (status === 'nvt') state.checks[id] = { status:'nvt', monteur: monteurNaam || 'Wizard', ts: new Date().toISOString() };
-        else delete state.checks[id];
-        if (typeof note === 'string') { if (note.trim()) state.notes[id] = note; else delete state.notes[id]; }
-        slaOp(); updateRij(id); updateVoortgang(); renderSidebar();
+        const modus = status === 'gedaan' ? 'ok' : status === 'nvt' ? 'nvt' : '';
+        if (cl) cl.setStatus(id, modus, note);
       }
     });
   }
 });
 
 /* ================================================================
-   SIDEBAR RENDEREN
-   ================================================================ */
-function renderSidebar() {
-  const el = document.getElementById('sidebarFasen');
-  el.innerHTML = FASEN.map(f => {
-    const t = telFase(f);
-    const klaar = t.done + t.nvt === t.totaal;
-    const isAct = f.id === activeFaseId;
-    return `
-      <button class="mbcl-fase-btn ${klaar ? 'done' : ''} ${isAct ? 'active' : ''}"
-              onclick="scrollNaarFase(${f.id})">
-        <div class="mbcl-fase-num">${f.id}</div>
-        <div class="mbcl-fase-titel">${f.titel}</div>
-        <div class="mbcl-fase-pct">${t.done + t.nvt}/${t.totaal}</div>
-      </button>
-    `;
-  }).join('');
-}
-
-/* ================================================================
-   HOOFD-PANEEL RENDEREN
+   HOOFD-PANEEL RENDEREN  (fasen/sidebar door BFTChecklist)
    ================================================================ */
 function renderHoofd() {
-  const proj = BFT_PROJECTEN.find(p => p.id === huidigProject) || {};
+  const proj = BFTToolShell.getProject(huidigProject) || {};
   const el   = document.getElementById('hoofdPaneel');
 
   el.innerHTML = `
-    <div class="mock-banner">
-      ⚠ Mock-modus — wijzigingen opgeslagen in browser. Na IT App Registration → automatisch naar SharePoint.
-    </div>
+    ${BFTToolShell.mockBanner()}
 
     <div class="mbcl-info">
       <div class="bf-field"><label>Project</label>
@@ -659,167 +408,22 @@ function renderHoofd() {
       </div>
     </div>
 
-    ${renderMonteurBalk()}
+    ${BFTToolShell.monteur.renderBalk()}
 
-    <div class="mbcl-warn ${!monteurNaam ? 'zichtbaar' : ''}" id="monteurWarn">
-      ⚠ Geen monteur actief — vul naam in voor je begint met afvinken.
-    </div>
-
-    ${FASEN.map(f => renderFase(f)).join('')}
+    <div id="fasenContainer"></div>
   `;
-}
-
-function renderMonteurBalk() {
-  if (monteurNaam) {
-    const ini = monteurNaam.trim().split(/\s+/).map(w => w[0] || '').join('').toUpperCase().slice(0,2);
-    return `
-      <div class="mbcl-monteur">
-        <div class="mbcl-mont-avatar">${ini}</div>
-        <div class="mbcl-mont-info">
-          <div class="mbcl-mont-naam">${monteurNaam}</div>
-          <div class="mbcl-mont-sub">Actieve monteur — stempel wordt gezet bij afvinken</div>
-        </div>
-        <button class="bf-btn bf-btn-ghost" style="font-size:11px" onclick="wisselMonteur()">Wissel</button>
-      </div>
-    `;
-  }
-  return `
-    <div class="mbcl-monteur">
-      <div class="mbcl-mont-avatar leeg">?</div>
-      <input class="mbcl-mont-input" id="monteurInput" type="text"
-        placeholder="Vul naam monteur in voor je begint..."
-        value="${monteurNaam}"
-        onkeydown="if(event.key==='Enter')stelMonteurIn()">
-      <button class="bf-btn bf-btn-primary" style="font-size:11px" onclick="stelMonteurIn()">Bevestigen</button>
-    </div>
-  `;
-}
-
-function stelMonteurIn() {
-  const inp = document.getElementById('monteurInput');
-  if (!inp) return;
-  const naam = inp.value.trim();
-  if (!naam) { inp.focus(); return; }
-  monteurNaam = naam;
-  localStorage.setItem('bft_v2_monteur', naam);
-  renderHoofd();
-  updateVoortgang();
-}
-
-function wisselMonteur() {
-  monteurNaam = '';
-  renderHoofd();
-}
-
-/* ================================================================
-   FASE RENDEREN
-   ================================================================ */
-function renderFase(f) {
-  const t = telFase(f);
-  const klaar = t.done + t.nvt === t.totaal;
-  return `
-    <div class="mbcl-fase" id="fase-${f.id}">
-      <div class="mbcl-fase-head" onclick="toggleFase(${f.id})">
-        <div class="mbcl-fnum ${klaar ? 'klaar' : ''}">${f.id}</div>
-        <div class="mbcl-ftitel">${f.titel}</div>
-        <div class="mbcl-fprog ${klaar ? 'klaar' : ''}">${t.done + t.nvt} / ${t.totaal}</div>
-        <span class="mbcl-fchev">▾</span>
-      </div>
-      <div class="mbcl-fase-body">
-        <div class="mbcl-tbl-head">
-          <span>Item</span><span></span><span>OK</span><span>N.v.t.</span>
-        </div>
-        ${f.items.map(it => renderRij(it)).join('')}
-      </div>
-    </div>
-  `;
-}
-
-function renderRij(it) {
-  const check  = state.checks[it.id];
-  const status = check?.status || '';
-  const mont   = check?.monteur || '';
-  const ts     = check?.ts ? new Date(check.ts).toLocaleString('nl-NL', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
-  const note   = state.notes[it.id] || '';
-  const rijCls = status === 'ok' ? 'is-ok' : status === 'nvt' ? 'is-nvt' : '';
-
-  return `
-    <div class="mbcl-row ${rijCls}" id="row-${it.id}">
-      <div class="mbcl-row-content">
-        <div class="mbcl-desc">${it.desc}</div>
-        ${it.sub ? `<div class="mbcl-sub">${it.sub}</div>` : ''}
-        <div class="mbcl-stempel">${mont ? `✓ ${mont} · ${ts}` : ''}</div>
-      </div>
-      <button class="mbcl-note-btn ${note ? 'heeft-note' : ''}" title="Opmerking toevoegen"
-              onclick="toggleNote('${it.id}')">✎</button>
-      <div class="mbcl-chk-col">
-        <div class="mbcl-chk mbcl-chk-ok ${status === 'ok' ? 'actief' : ''}"
-             title="Gedaan" onclick="vink('${it.id}','ok')">✓</div>
-      </div>
-      <div class="mbcl-chk-col">
-        <div class="mbcl-chk mbcl-chk-nvt ${status === 'nvt' ? 'actief' : ''}"
-             title="Niet van toepassing" onclick="vink('${it.id}','nvt')">—</div>
-      </div>
-    </div>
-    <div class="mbcl-note-row ${note ? 'open' : ''}" id="note-${it.id}">
-      <textarea class="mbcl-note-ta" id="ta-${it.id}"
-        placeholder="Opmerking bij dit item..."
-        oninput="slaNotaOp('${it.id}', this.value)">${note}</textarea>
-    </div>
-  `;
+  if (cl) cl.render();   /* fasen + sidebar (her)vullen, bv. na monteur-wissel */
 }
 
 /* ================================================================
    ACTIES
    ================================================================ */
-function vink(id, modus) {
-  if (!monteurNaam) {
-    const inp = document.getElementById('monteurInput');
-    if (inp) { inp.focus(); inp.style.borderColor = 'var(--danger)'; setTimeout(() => { inp.style.borderColor = ''; }, 1500); }
-    document.getElementById('monteurWarn')?.classList.add('zichtbaar');
-    return;
-  }
-  const huidig = state.checks[id]?.status;
-  if (huidig === modus) {
-    delete state.checks[id];
-  } else {
-    state.checks[id] = { status: modus, monteur: monteurNaam, ts: new Date().toISOString() };
-  }
-  slaOp();
-  updateRij(id);
-  updateVoortgang();
-  renderSidebar();
-}
-
-function toggleFase(id) {
-  document.getElementById('fase-' + id)?.classList.toggle('inklap');
-  activeFaseId = id;
-}
-
-function scrollNaarFase(id) {
-  activeFaseId = id;
-  const el = document.getElementById('fase-' + id);
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  renderSidebar();
-}
-
-function toggleNote(id) {
-  document.getElementById('note-' + id)?.classList.toggle('open');
-}
-
-function slaNotaOp(id, tekst) {
-  if (tekst.trim()) state.notes[id] = tekst;
-  else delete state.notes[id];
-  slaOp();
-  const btn = document.querySelector(`#row-${id} .mbcl-note-btn`);
-  if (btn) btn.classList.toggle('heeft-note', !!tekst.trim());
-}
-
 function resetChecklist() {
-  if (!window.BFTDialog) { if (!confirm('Alle vinkjes wissen?')) return; }
+  const doReset = () => { if (cl) cl.reset(); renderHoofd(); };
+  if (typeof BFTDialog === 'undefined') { if (confirm('Alle vinkjes wissen?')) doReset(); }
   else BFTDialog.confirm('Checklist leegmaken?', 'Alle vinkjes en opmerkingen worden gewist. Niet ongedaan te maken.', {
     labelOk: 'Leegmaken', labelCancel: 'Annuleren'
-  }).then(ok => { if (ok) { state = { checks:{}, notes:{} }; slaOp(); renderHoofd(); updateVoortgang(); renderSidebar(); }});
+  }).then(ok => { if (ok) doReset(); });
 }
 
 /* ================================================================
@@ -828,17 +432,15 @@ function resetChecklist() {
    ================================================================ */
 function slaOp() {
   if (!huidigProject) return;
-  try { localStorage.setItem('bft_v2_mbcl_' + huidigProject, JSON.stringify(state)); } catch(e) {}
+  if (cl) { const es = cl.getState(); state.checks = es.checks; state.notes = es.notes; }
   try {
-    let totaal = 0, gedaan = 0;
-    FASEN.forEach(f => f.items.forEach(it => {
-      totaal++;
-      const s = state.checks[it.id]?.status;
-      if (s === 'ok' || s === 'nvt') gedaan++;
-    }));
-    const pct = totaal > 0 ? Math.round(gedaan / totaal * 100) : 0;
+    localStorage.setItem('bft_v2_mbcl_' + huidigProject,
+      JSON.stringify({ checks: state.checks, notes: state.notes }));
+  } catch(e) {}
+  try {
+    const p = cl ? cl.progress() : { open: 0, pct: 0 };
     localStorage.setItem('bft_v2_snap_mbcl_' + huidigProject,
-      JSON.stringify({ pct, openItems: totaal - gedaan, updated: new Date().toISOString() }));
+      JSON.stringify({ pct: p.pct, openItems: p.open, updated: new Date().toISOString() }));
   } catch(e) {}
   const ind = document.getElementById('saveInd');
   ind.classList.add('zichtbaar');
@@ -847,51 +449,22 @@ function slaOp() {
 }
 
 /* ================================================================
-   VOORTGANG
+   FOOTER / PDF-GATING — gevoed door de engine (onProgress)
    ================================================================ */
-function telFase(f) {
-  let done = 0, nvt = 0;
-  f.items.forEach(it => {
-    const s = state.checks[it.id]?.status;
-    if (s === 'ok') done++;
-    if (s === 'nvt') nvt++;
-  });
-  return { totaal: f.items.length, done, nvt };
-}
-
-function updateVoortgang() {
-  let totaal = 0, gedaan = 0;
-  FASEN.forEach(f => { const t = telFase(f); totaal += t.totaal; gedaan += t.done + t.nvt; });
-  const open = totaal - gedaan;
-  const pct  = totaal > 0 ? Math.round(gedaan / totaal * 100) : 0;
-  const omtrek = 106.8;
-  document.getElementById('progCircle').style.strokeDashoffset = omtrek - (omtrek * pct / 100);
-  document.getElementById('progPct').textContent = pct + '%';
-
+function updateFooter(p) {
   const btn = document.getElementById('pdfBtn');
-  if (open > 0) {
+  if (p.open > 0) {
     document.getElementById('footerStatus').innerHTML =
-      `${gedaan} / ${totaal} items afgevinkt &nbsp;·&nbsp; <span style="color:var(--danger);font-weight:600">${open} open — PDF geblokkeerd</span>`;
+      `${p.gedaan} / ${p.totaal} items afgevinkt &nbsp;·&nbsp; <span style="color:var(--danger);font-weight:600">${p.open} open — PDF geblokkeerd</span>`;
     btn.disabled = true;
     btn.style.opacity = '0.4';
-    btn.title = `Nog ${open} item${open !== 1 ? 's' : ''} open — voltooi de checklist eerst`;
+    btn.title = `Nog ${p.open} item${p.open !== 1 ? 's' : ''} open — voltooi de checklist eerst`;
   } else {
-    document.getElementById('footerStatus').textContent = `${gedaan} / ${totaal} items afgevinkt — klaar voor export`;
+    document.getElementById('footerStatus').textContent = `${p.gedaan} / ${p.totaal} items afgevinkt — klaar voor export`;
     btn.disabled = false;
     btn.style.opacity = '1';
     btn.title = '';
   }
-}
-
-function updateRij(id) {
-  const oudeRij = document.getElementById('row-' + id);
-  if (!oudeRij) return;
-  const fase = FASEN.find(f => f.items.some(it => it.id === id));
-  const item = fase?.items.find(it => it.id === id);
-  if (!item) return;
-  const nieuw = document.createElement('div');
-  nieuw.innerHTML = renderRij(item);
-  oudeRij.replaceWith(nieuw.firstElementChild);
 }
 
 /* ================================================================
@@ -901,12 +474,16 @@ function updateRij(id) {
 function exportPDF() {
   if (!huidigProject) return;
 
+  const es = cl ? cl.getState() : { checks: state.checks, notes: state.notes };
+  const sc = es.checks, sn = es.notes;
+  function telF(f){ let done = 0, nvt = 0; f.items.forEach(it => { const s = sc[it.id] && sc[it.id].status; if (s === 'ok') done++; if (s === 'nvt') nvt++; }); return { totaal: f.items.length, done, nvt }; }
+
   /* Blokkering */
   let totaal = 0, gedaan = 0;
-  FASEN.forEach(f => { const t = telFase(f); totaal += t.totaal; gedaan += t.done + t.nvt; });
+  FASEN.forEach(f => { const t = telF(f); totaal += t.totaal; gedaan += t.done + t.nvt; });
   if (gedaan < totaal) return; /* Knop is al disabled, dit is een veiligheidsnet */
 
-  const proj    = BFT_PROJECTEN.find(p => p.id === huidigProject) || {};
+  const proj    = BFTToolShell.getProject(huidigProject) || {};
   const datumNu = new Date();
   const datumStr = datumNu.toLocaleDateString('nl-NL', { day:'2-digit', month:'2-digit', year:'numeric' });
   const datumPad = datumNu.toISOString().slice(0,10);
@@ -939,8 +516,8 @@ function exportPDF() {
   });
 
   /* Voortgang-samenvatting */
-  const okTel  = Object.values(state.checks).filter(c => c.status === 'ok').length;
-  const nvtTel = Object.values(state.checks).filter(c => c.status === 'nvt').length;
+  const okTel  = Object.values(sc).filter(c => c.status === 'ok').length;
+  const nvtTel = Object.values(sc).filter(c => c.status === 'nvt').length;
   content.push({
     text: `Voortgang: ${okTel} afgevinkt · ${nvtTel} n.v.t. · ${totaal} items totaal`,
     fontSize: 9, color: '#3d4558', italics: true, margin: [0, 0, 0, 16]
@@ -948,7 +525,7 @@ function exportPDF() {
 
   /* ── Fase-tabellen ── */
   FASEN.forEach((f, idx) => {
-    const t      = telFase(f);
+    const t      = telF(f);
     const klaar  = t.done + t.nvt === t.totaal;
 
     content.push({
@@ -970,11 +547,11 @@ function exportPDF() {
     ]];
 
     f.items.forEach(it => {
-      const check  = state.checks[it.id];
+      const check  = sc[it.id];
       const stt    = check?.status || '';
       const icoon  = stt === 'ok' ? 'OK' : stt === 'nvt' ? 'N.v.t.' : '-';
       const kleur  = stt === 'ok' ? '#1e9e5e' : stt === 'nvt' ? '#7a849a' : '#d63030';
-      const note   = state.notes[it.id] ? `\nOpmerking: ${state.notes[it.id]}` : '';
+      const note   = sn[it.id] ? `\nOpmerking: ${sn[it.id]}` : '';
       const descParts = [
         { text: it.desc, fontSize: 9, color: '#1a1f2e' }
       ];
