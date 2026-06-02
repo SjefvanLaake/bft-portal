@@ -14,6 +14,7 @@
   <script src="../library/js/bft-tool-shell.js" defer></script>
   <script src="../library/js/bft-checklist.js" defer></script>
   <script src="../library/js/bft-dialog.js" defer></script>
+  <script src="../library/js/bft-deadline.js" defer></script>
   <!-- Bouwvolgorde-sjablonen per machinetype (één bestand per type) -->
   <script src="../library/data/bouwvolgorde/bfmr2000ek.js"></script>
   <style>
@@ -277,6 +278,31 @@ function laadProject() {
     onProgress: updateFooter
   });
   cl.setData(state.checks, state.notes);   /* rendert fasen + sidebar + voortgang */
+
+  toonDeadline(proj);        /* opleverdatum-waarschuwing bij project-open */
+}
+
+/* ================================================================
+   OPLEVERDATUM-WAARSCHUWING — popup bij project-open (1×, via bft-deadline.js)
+   Open item = stap zonder status 'ok'/'nvt' (zelfde telling als PDF).
+   ================================================================ */
+function bvlOpenCount() {
+  return FASEN.reduce((n, f) => n + f.items.filter(it => {
+    const s = state.checks[it.id] && state.checks[it.id].status;
+    return s !== 'ok' && s !== 'nvt';
+  }).length, 0);
+}
+function bvlTotalCount() {
+  return FASEN.reduce((n, f) => n + f.items.length, 0);
+}
+function toonDeadline(proj) {
+  if (!window.BFTDeadline || !proj || !proj.oplevering) return;
+  BFTDeadline.register({
+    name:          'Bouwvolgordelijst · ' + (proj.naam || huidigProject),
+    getDeadline:   () => proj.oplevering,
+    getOpenCount:  bvlOpenCount,
+    getTotalCount: bvlTotalCount
+  });
 }
 
 /* ================================================================

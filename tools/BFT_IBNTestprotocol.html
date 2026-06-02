@@ -374,6 +374,7 @@
 <script src="../library/js/bft-auth.js" defer></script>
 <script src="../library/js/bft-dialog.js" defer></script>
 <script src="../library/js/bft-wizard.js" defer></script>
+<script src="../library/js/bft-deadline.js" defer></script>
 
 <script>
 /* ================================================================
@@ -664,6 +665,38 @@ function laadProject() {
   monteurNaam = BFTToolShell.monteur.laad();
   renderFaseNav();
   switchFase(actieveFase);
+
+  toonDeadline(proj);        /* opleverdatum-waarschuwing bij project-open */
+}
+
+/* ================================================================
+   OPLEVERDATUM-WAARSCHUWING — popup bij project-open (1×, via bft-deadline.js)
+   Open item = checklist-item zonder status, in fases ≠ info/vrijgave
+   (identiek aan de wizard-getItems-definitie). Gates tellen niet mee.
+   ================================================================ */
+function ibnTelFasen() {
+  return FASEN.filter(f => f.type !== 'info' && f.type !== 'vrijgave');
+}
+function ibnOpenCount() {
+  let n = 0;
+  ibnTelFasen().forEach(f => f.sections.forEach(s => s.items.forEach(it => {
+    if (!state.checks[it.id]?.status) n++;
+  })));
+  return n;
+}
+function ibnTotalCount() {
+  let n = 0;
+  ibnTelFasen().forEach(f => f.sections.forEach(s => { n += s.items.length; }));
+  return n;
+}
+function toonDeadline(proj) {
+  if (!window.BFTDeadline || !proj || !proj.oplevering) return;
+  BFTDeadline.register({
+    name:          'IBN-testprotocol · ' + (proj.naam || huidigProject),
+    getDeadline:   () => proj.oplevering,
+    getOpenCount:  ibnOpenCount,
+    getTotalCount: ibnTotalCount
+  });
 }
 
 window.addEventListener('load', function() {

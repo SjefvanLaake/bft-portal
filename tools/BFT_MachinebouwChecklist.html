@@ -200,6 +200,7 @@
 <script src="../library/js/bft-graph.js" defer></script>
 <script src="../library/js/bft-dialog.js" defer></script>
 <script src="../library/js/bft-wizard.js" defer></script>
+<script src="../library/js/bft-deadline.js" defer></script>
 
 <script>
 /* ================================================================
@@ -342,6 +343,31 @@ function laadProject() {
     onProgress: updateFooter
   });
   cl.setData(state.checks, state.notes);
+
+  toonDeadline(proj);        /* opleverdatum-waarschuwing bij project-open */
+}
+
+/* ================================================================
+   OPLEVERDATUM-WAARSCHUWING — popup bij project-open (1×, via bft-deadline.js)
+   Open item = item zonder status 'ok'/'nvt' (zelfde telling als PDF/footer).
+   ================================================================ */
+function mbclOpenCount() {
+  return FASEN.reduce((n, f) => n + f.items.filter(it => {
+    const s = state.checks[it.id] && state.checks[it.id].status;
+    return s !== 'ok' && s !== 'nvt';
+  }).length, 0);
+}
+function mbclTotalCount() {
+  return FASEN.reduce((n, f) => n + f.items.length, 0);
+}
+function toonDeadline(proj) {
+  if (!window.BFTDeadline || !proj || !proj.oplevering) return;
+  BFTDeadline.register({
+    name:          'Machinebouw-checklist · ' + (proj.naam || huidigProject),
+    getDeadline:   () => proj.oplevering,
+    getOpenCount:  mbclOpenCount,
+    getTotalCount: mbclTotalCount
+  });
 }
 
 /* ================================================================
