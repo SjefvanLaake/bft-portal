@@ -19,33 +19,35 @@
   'use strict';
 
   var injected = false;
+  var shown = {};   // dedup per cfg.key (bv. projectId): 1× per tool-open, niet bij elke projectwissel
 
   function injectStyles() {
     if (injected) return;
     injected = true;
+    /* Kleuren/fonts via de BFT-theme-vars; fallback = oorspronkelijke waarde (uiterlijk identiek waar de var gelijk is, theme-adaptief waar hij afwijkt). */
     var css = ''
-      + '.bft-dl-overlay{position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0.55);display:none;align-items:center;justify-content:center;font-family:"IBM Plex Sans",system-ui,sans-serif;}'
+      + '.bft-dl-overlay{position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0.55);display:none;align-items:center;justify-content:center;font-family:var(--sans,"IBM Plex Sans",sans-serif);}'
       + '.bft-dl-overlay.open{display:flex;}'
       + '.bft-dl-overlay{padding:20px;box-sizing:border-box;}'
       + '.bft-dl-modal{background:#fff;border-radius:10px;box-shadow:0 18px 48px rgba(0,0,0,0.35);max-width:1100px;width:100%;min-height:520px;display:flex;flex-direction:column;overflow:hidden;animation:bft-dl-in .18s ease-out;}'
       + '@keyframes bft-dl-in{from{opacity:0;transform:translateY(8px)scale(.98)}to{opacity:1;transform:none}}'
       + '.bft-dl-top{background:#000;color:#fff;padding:18px 22px;display:flex;align-items:center;gap:12px;}'
-      + '.bft-dl-top .bft-dl-icon{width:30px;height:30px;border-radius:50%;background:#e8a000;display:flex;align-items:center;justify-content:center;color:#000;font-weight:700;font-family:"IBM Plex Mono",monospace;font-size:15px;flex:none;}'
-      + '.bft-dl-top.overdue .bft-dl-icon{background:#d63030;color:#fff;}'
-      + '.bft-dl-top .bft-dl-title{font-size:13px;font-family:"IBM Plex Mono",monospace;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:.08em;}'
+      + '.bft-dl-top .bft-dl-icon{width:30px;height:30px;border-radius:50%;background:var(--accent,#e8a000);display:flex;align-items:center;justify-content:center;color:#000;font-weight:700;font-family:var(--mono,"IBM Plex Mono",monospace);font-size:15px;flex:none;}'
+      + '.bft-dl-top.overdue .bft-dl-icon{background:var(--danger,#d63030);color:#fff;}'
+      + '.bft-dl-top .bft-dl-title{font-size:13px;font-family:var(--mono,"IBM Plex Mono",monospace);color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:.08em;}'
       + '.bft-dl-top .bft-dl-name{font-size:15px;font-weight:600;margin-top:2px;}'
       + '.bft-dl-body{padding:22px;flex:1;}'
-      + '.bft-dl-big{font-size:32px;font-weight:700;color:#1a1f2e;line-height:1;margin-bottom:4px;font-family:"IBM Plex Sans",sans-serif;}'
-      + '.bft-dl-big.overdue{color:#d63030;}'
-      + '.bft-dl-sub{font-size:13px;color:#7a849a;margin-bottom:18px;font-family:"IBM Plex Mono",monospace;}'
+      + '.bft-dl-big{font-size:32px;font-weight:700;color:var(--text,#1a1f2e);line-height:1;margin-bottom:4px;font-family:var(--sans,"IBM Plex Sans",sans-serif);}'
+      + '.bft-dl-big.overdue{color:var(--danger,#d63030);}'
+      + '.bft-dl-sub{font-size:13px;color:var(--muted,#7a849a);margin-bottom:18px;font-family:var(--mono,"IBM Plex Mono",monospace);}'
       + '.bft-dl-rows{border-top:1px solid #e3e6ec;padding-top:14px;display:grid;gap:8px;}'
-      + '.bft-dl-row{display:flex;justify-content:space-between;font-size:13px;color:#3d4558;}'
-      + '.bft-dl-row b{color:#1a1f2e;font-family:"IBM Plex Mono",monospace;}'
+      + '.bft-dl-row{display:flex;justify-content:space-between;font-size:13px;color:var(--text2,#3d4558);}'
+      + '.bft-dl-row b{color:var(--text,#1a1f2e);font-family:var(--mono,"IBM Plex Mono",monospace);}'
       + '.bft-dl-actions{display:flex;gap:8px;padding:14px 22px;background:#fafbfc;border-top:1px solid #e3e6ec;}'
-      + '.bft-dl-btn{flex:1;padding:10px 14px;border:1px solid #c8ccd4;border-radius:6px;background:#fff;color:#1a1f2e;cursor:pointer;font-size:13px;font-family:"IBM Plex Sans",sans-serif;font-weight:500;transition:all .12s;}'
+      + '.bft-dl-btn{flex:1;padding:10px 14px;border:1px solid #c8ccd4;border-radius:6px;background:#fff;color:var(--text,#1a1f2e);cursor:pointer;font-size:13px;font-family:var(--sans,"IBM Plex Sans",sans-serif);font-weight:500;transition:all .12s;}'
       + '.bft-dl-btn:hover{background:#f1f3f6;border-color:#9ca3ad;}'
-      + '.bft-dl-btn.primary{background:#e8a000;color:#000;border-color:#e8a000;}'
-      + '.bft-dl-btn.primary:hover{background:#d49000;border-color:#d49000;}';
+      + '.bft-dl-btn.primary{background:var(--accent,#e8a000);color:#000;border-color:var(--accent,#e8a000);}'
+      + '.bft-dl-btn.primary:hover{background:var(--accent-dk,#d49000);border-color:var(--accent-dk,#d49000);}';
     var st = document.createElement('style');
     st.setAttribute('data-bft-deadline', '1');
     st.textContent = css;
@@ -152,6 +154,10 @@
       var open  = cfg.getOpenCount  ? Number(cfg.getOpenCount())  : 0;
       var total = cfg.getTotalCount ? Number(cfg.getTotalCount()) : 0;
       if (!(open > 0)) return;
+      if (cfg.key != null) {              // 1× per sleutel (projectId) per tool-open
+        if (shown[cfg.key]) return;
+        shown[cfg.key] = true;
+      }
       injectStyles();
       buildOverlay(cfg, deadline, days, open, total);
     } catch (e) {

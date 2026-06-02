@@ -235,6 +235,11 @@ var grid = BFTOverallGrid.register({
   }
 });
 
+/* Bij openen altijd het huidige kalenderjaar tonen (niet het laatst-bewaarde
+   doc.jaar) — voorkomt "waar is mijn planning?" als de view op 2027 bleef staan.
+   De data van alle jaren blijft bewaard; dit is puur de begin-view. */
+grid.setJaar(new Date().getFullYear());
+
 /* ================================================================
    BADGE
    ================================================================ */

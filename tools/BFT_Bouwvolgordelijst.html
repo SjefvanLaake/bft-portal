@@ -299,6 +299,7 @@ function toonDeadline(proj) {
   if (!window.BFTDeadline || !proj || !proj.oplevering) return;
   BFTDeadline.register({
     name:          'Bouwvolgordelijst · ' + (proj.naam || huidigProject),
+    key:           huidigProject,        /* dedup: 1× per project per tool-open */
     getDeadline:   () => proj.oplevering,
     getOpenCount:  bvlOpenCount,
     getTotalCount: bvlTotalCount

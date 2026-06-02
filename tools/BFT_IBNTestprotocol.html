@@ -679,20 +679,21 @@ function ibnTelFasen() {
 }
 function ibnOpenCount() {
   let n = 0;
-  ibnTelFasen().forEach(f => f.sections.forEach(s => s.items.forEach(it => {
+  ibnTelFasen().forEach(f => (f.sections || []).forEach(s => (s.items || []).forEach(it => {
     if (!state.checks[it.id]?.status) n++;
   })));
   return n;
 }
 function ibnTotalCount() {
   let n = 0;
-  ibnTelFasen().forEach(f => f.sections.forEach(s => { n += s.items.length; }));
+  ibnTelFasen().forEach(f => (f.sections || []).forEach(s => { n += (s.items || []).length; }));
   return n;
 }
 function toonDeadline(proj) {
   if (!window.BFTDeadline || !proj || !proj.oplevering) return;
   BFTDeadline.register({
     name:          'IBN-testprotocol · ' + (proj.naam || huidigProject),
+    key:           huidigProject,        /* dedup: 1× per project per tool-open */
     getDeadline:   () => proj.oplevering,
     getOpenCount:  ibnOpenCount,
     getTotalCount: ibnTotalCount

@@ -364,6 +364,7 @@ function toonDeadline(proj) {
   if (!window.BFTDeadline || !proj || !proj.oplevering) return;
   BFTDeadline.register({
     name:          'Machinebouw-checklist · ' + (proj.naam || huidigProject),
+    key:           huidigProject,        /* dedup: 1× per project per tool-open */
     getDeadline:   () => proj.oplevering,
     getOpenCount:  mbclOpenCount,
     getTotalCount: mbclTotalCount
