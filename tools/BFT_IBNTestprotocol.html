@@ -709,6 +709,14 @@ window.addEventListener('load', function() {
   if (typeof BFTWizard !== 'undefined') {
     BFTWizard.register({
       name: 'IBN Testprotocol',
+      canStart: function () {   /* wizard alleen als de tester/monteur is ingevuld (IBN-actor = tester-veld) */
+        const t = (state.machineInfo && state.machineInfo.tester || '').trim();
+        if (t) return true;
+        const inp = document.getElementById('inf-tester');
+        if (inp) { inp.focus(); inp.style.borderColor = 'var(--danger)'; setTimeout(() => { inp.style.borderColor = ''; }, 1500); }
+        BFTToolShell.toast('Vul eerst de tester/monteur in (machinegegevens)');
+        return false;
+      },
       getItems: function () {
         const items = [];
         FASEN.filter(f => f.type !== 'info' && f.type !== 'vrijgave').forEach(f =>
@@ -720,8 +728,11 @@ window.addEventListener('load', function() {
         return items;
       },
       setStatus: function (id, status, note) {
-        if (status === 'gedaan') state.checks[id] = { status:'ok', monteur: monteurNaam || 'Wizard', ts: new Date().toISOString() };
-        else if (status === 'nvt') state.checks[id] = { status:'nvt', monteur: monteurNaam || 'Wizard', ts: new Date().toISOString() };
+        /* tester/monteur verplicht — stempel de tester (IBN-actor), nooit een nep-actor */
+        const m = (state.machineInfo && state.machineInfo.tester || '').trim();
+        if ((status === 'gedaan' || status === 'nvt') && !m) { BFTToolShell.toast('Vul eerst de tester/monteur in (machinegegevens)'); return; }
+        if (status === 'gedaan') state.checks[id] = { status:'ok', monteur: m, ts: new Date().toISOString() };
+        else if (status === 'nvt') state.checks[id] = { status:'nvt', monteur: m, ts: new Date().toISOString() };
         else delete state.checks[id];
         if (typeof note === 'string') { if (note.trim()) state.notes[id] = note; else delete state.notes[id]; }
         slaOp(); updateRij(id); updateVoortgang(); renderSidebar(); renderFaseNav();

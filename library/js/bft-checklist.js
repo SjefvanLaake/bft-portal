@@ -237,7 +237,8 @@ const BFTChecklist = (function (global) {
     function setStatus(id, modus, note){
       const sh = _shell();
       if (modus === 'ok' || modus === 'nvt') {
-        checks[id] = { status: modus, monteur: (sh ? sh.monteur.naam() : '') || 'Wizard', ts: new Date().toISOString() };
+        if (sh && !sh.monteur.eis()) return;   /* monteur verplicht — nooit een nep-actor ('Wizard') stempelen */
+        checks[id] = { status: modus, monteur: sh ? sh.monteur.naam() : '', ts: new Date().toISOString() };
       } else {
         delete checks[id];
       }

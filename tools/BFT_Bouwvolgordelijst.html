@@ -331,6 +331,7 @@ window.addEventListener('load', function () {
   if (typeof BFTWizard !== 'undefined') {
     BFTWizard.register({
       name: 'Bouwvolgordelijst',
+      canStart: function () { return BFTToolShell.monteur.eis(); },   /* wizard alleen door een actieve monteur */
       getItems: function () {
         const items = [];
         const es = cl ? cl.getState() : { checks: {}, notes: {} };

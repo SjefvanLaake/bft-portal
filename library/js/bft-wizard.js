@@ -230,6 +230,9 @@
   // ── Overlay open/sluit ───────────────────────────────────────────
   function open() {
     if (!config) return;
+    /* Startvoorwaarde (bv. actieve monteur verplicht). canStart geeft zelf feedback
+       (focus/toast) en false terug → wizard opent niet. */
+    if (config.canStart && !config.canStart()) return;
     items = loadOpenItems();
     if (!overlay) buildOverlay();
     overlay.classList.add('open');
