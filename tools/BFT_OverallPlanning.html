@@ -585,15 +585,24 @@ function schrijfPlanningSnapshots() {
   doc.projecten.forEach(function (proj) {
     var bftId = proj._bftId;
     if (!bftId) return;
-    /* Bereken startWeek + eindWeek over alle disciplines */
+    /* Vroegste start + laatste eind over de jaargrens heen — geordend op
+       (jaar,week), NIET op het getoonde jaar (doc.jaar). Anders herschrijft
+       een view-wissel de snapshot die Projectoverzicht leest. */
     var alleWeken = Object.values(proj.weken || {}).flatMap(function (arr) { return arr || []; });
     if (!alleWeken.length) return;
-    var starts  = alleWeken.map(function (w) { return w.startWeek || 99; });
-    var einden  = alleWeken.map(function (w) { return w.eindWeek  || 0; });
+    function _jr(w) { return typeof w.jaar === 'number' ? w.jaar : doc.jaar; }
+    var vroegste = alleWeken.reduce(function (a, w) {
+      return (_jr(w) * 100 + (w.startWeek || 99)) < (_jr(a) * 100 + (a.startWeek || 99)) ? w : a;
+    });
+    var laatste = alleWeken.reduce(function (a, w) {
+      return (_jr(w) * 100 + (w.eindWeek || 0)) > (_jr(a) * 100 + (a.eindWeek || 0)) ? w : a;
+    });
     var snap = {
-      startWeek: Math.min.apply(null, starts),
-      eindWeek:  Math.max.apply(null, einden),
-      jaar:      doc.jaar,
+      startWeek: vroegste.startWeek || null,
+      startJaar: _jr(vroegste),
+      eindWeek:  laatste.eindWeek || null,
+      eindJaar:  _jr(laatste),
+      jaar:      _jr(vroegste),   /* back-compat voor oude lezers */
       updated:   new Date().toISOString()
     };
     try { localStorage.setItem('bft_v2_snap_plan_' + bftId, JSON.stringify(snap)); } catch(e) {}

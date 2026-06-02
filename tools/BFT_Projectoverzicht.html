@@ -409,7 +409,7 @@ function getToolSnapshot(projectId) {
     ibn:         { pct: 0, status: 'open', droog: 0, nat: 0 },
     storingslog: { count: 0, openCount: 0, lastDate: null },
     bouwvolgorde:{ pct: 0, status: 'open', fase: '—' },
-    planning:    { startWeek: null, eindWeek: null, jaar: new Date().getFullYear() },
+    planning:    { startWeek: null, startJaar: new Date().getFullYear(), eindWeek: null, eindJaar: new Date().getFullYear() },
     resource:    { uren: 0, disciplines: [] },
     evaluatie:   { score: null, status: 'open' }
   };
@@ -448,7 +448,12 @@ function getToolSnapshot(projectId) {
   } catch(e) {}
   try {
     const snap = JSON.parse(localStorage.getItem('bft_v2_snap_plan_' + projectId));
-    if (snap) def.planning = { startWeek: snap.startWeek || null, eindWeek: snap.eindWeek || null, jaar: snap.jaar || new Date().getFullYear() };
+    if (snap) def.planning = {
+      startWeek: snap.startWeek || null,
+      startJaar: snap.startJaar || snap.jaar || new Date().getFullYear(),
+      eindWeek:  snap.eindWeek || null,
+      eindJaar:  snap.eindJaar || snap.jaar || new Date().getFullYear()
+    };
   } catch(e) {}
   try {
     const snap = JSON.parse(localStorage.getItem('bft_v2_snap_res_' + projectId));
@@ -690,8 +695,8 @@ function toolPlanning(d) {
   const badge = d.startWeek ? 'bezig' : 'open';
   const pct   = d.startWeek ? 50 : 0;
   return toolCard('planning', '📅', 'Overall Planning', pct, badge, `
-    ${kv('Start', d.startWeek ? `Week ${d.startWeek} · ${d.jaar}` : '—', !d.startWeek)}
-    ${kv('Einde', d.eindWeek ? `Week ${d.eindWeek} · ${d.jaar}` : '—', !d.eindWeek)}
+    ${kv('Start', d.startWeek ? `Week ${d.startWeek} · ${d.startJaar}` : '—', !d.startWeek)}
+    ${kv('Einde', d.eindWeek ? `Week ${d.eindWeek} · ${d.eindJaar}` : '—', !d.eindWeek)}
     <div></div><div></div>
   `);
 }
