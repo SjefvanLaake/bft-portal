@@ -68,7 +68,7 @@ const BFT_PROJECTEN = [
     projectnr: '201700',
     naam: 'BFMP750E',
     klant: 'Michels',
-    oplevering: '2026-01-08',
+    oplevering: '2027-01-08',
     pl: 'SL',
     eng: 'SL',
     wvb: 'SL',
