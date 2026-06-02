@@ -178,6 +178,11 @@
     <button class="bf-btn bf-btn-sec"     id="btnSync" title="Importeer actieve projecten uit BFT_PROJECTEN">⟳ Sync projecten</button>
     <button class="bf-btn bf-btn-ghost"   id="btnDisc">⚙ Disciplines</button>
     <button class="bf-btn bf-btn-ghost"   id="btnRes">↔ Week/Maand</button>
+    <span class="op-jaar" title="Toon-jaar wisselen" style="display:inline-flex;align-items:center;gap:2px">
+      <button class="bf-btn bf-btn-ghost" id="btnJaarPrev" title="Vorig jaar">◀</button>
+      <span id="jaarLabel" style="font-family:var(--mono);font-size:12px;font-weight:600;min-width:46px;text-align:center;color:var(--text)">—</span>
+      <button class="bf-btn bf-btn-ghost" id="btnJaarNext" title="Volgend jaar">▶</button>
+    </span>
     <button class="bf-btn bf-btn-ghost"   id="btnCap" title="Toon/verberg capaciteitslaag vanuit ResourcePlanning">⊷ Capaciteit</button>
     <span class="sync-badge" id="syncBadge">BFT_PROJECTEN: ${BFT_PROJECTEN?.length ?? 0} beschikbaar</span>
     <div class="spacer"></div>
@@ -652,6 +657,24 @@ document.getElementById('btnCap').addEventListener('click', function () {
   this.style.borderColor = capaciteitAan ? 'rgba(124,58,237,0.4)' : '';
   injectCapaciteitsRijen();
 });
+
+/* ── Jaar-schakelaar ──────────────────────────────────────────────
+   Wisselt het toon-jaar via grid.setJaar(). Entries van andere jaren
+   blijven bewaard (jaar-gated in de grid-lib); injectors (deadline-
+   markers, capaciteit) volgen automatisch via onRender. */
+function updateJaarLabel() {
+  var lbl = document.getElementById('jaarLabel');
+  if (lbl && grid) lbl.textContent = grid.getJaar();
+}
+function wisselJaar(delta) {
+  if (!grid) return;
+  grid.setJaar(grid.getJaar() + delta);
+  updateJaarLabel();
+  scrollNaarHuidig();
+}
+document.getElementById('btnJaarPrev').addEventListener('click', function () { wisselJaar(-1); });
+document.getElementById('btnJaarNext').addEventListener('click', function () { wisselJaar(1); });
+updateJaarLabel();   /* init: toon het actuele doc-jaar */
 
 document.getElementById('btnExport').addEventListener('click', function () {
   var json = grid.exportJSON();

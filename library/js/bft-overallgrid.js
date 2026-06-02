@@ -452,6 +452,8 @@
       var totColspanMeta = META_KOLOMMEN.length;
       var huidigWeek = isoWeekNummer(new Date());
       var huidigMaand = new Date().getMonth();
+      /* Huidig-week/maand alleen markeren als het getoonde jaar het echte huidige jaar is. */
+      var toonHuidig = doc.jaar === new Date().getFullYear();
 
       function stickyTh(cls, left, minW, bg, label) {
         return '<th class="' + cls + '" style="position:sticky;left:' + left + 'px;min-width:' + minW + 'px;z-index:3;background:' + bg + '">' + (label || '') + '</th>';
@@ -464,7 +466,7 @@
       html += stickyTh('og-th-act', 0, STICKY_ACT, BG_HEAD, '');
       META_KOLOMMEN.forEach(function (k, i) { html += stickyTh('og-th-meta', STICKY_LEFT[i], STICKY_META[i], BG_HEAD, esc(k.label)); });
       kol.forEach(function (c) {
-        var isHuidig = (c.type === 'week' && c.week === huidigWeek) || (c.type === 'maand' && c.maand === huidigMaand);
+        var isHuidig = toonHuidig && ((c.type === 'week' && c.week === huidigWeek) || (c.type === 'maand' && c.maand === huidigMaand));
         html += '<th class="og-th-tijd og-th-' + c.type + (isHuidig ? ' og-th-huidig' : '') + '">' + esc(c.label) + '</th>';
       });
       html += '</tr></thead><tbody>';
@@ -482,7 +484,7 @@
             + '<button class="og-del" data-id="' + esc(p.id) + '" title="Verwijder project">×</button>');
           META_KOLOMMEN.forEach(function (k, i) { html += stickyTd('og-td-meta', STICKY_LEFT[i], STICKY_META[i], BG_ROW, esc(p[k.veld])); });
           kol.forEach(function (c) {
-            var isHuidig = (c.type === 'week' && c.week === huidigWeek) || (c.type === 'maand' && c.maand === huidigMaand);
+            var isHuidig = toonHuidig && ((c.type === 'week' && c.week === huidigWeek) || (c.type === 'maand' && c.maand === huidigMaand));
             var hCls = isHuidig ? ' og-td-huidig' : '';
 
             /* Verzamel disciplines met data in deze kolom */
@@ -522,7 +524,7 @@
                 html += stickyTd('og-td-disc', STICKY_LEFT[i], STICKY_META[i], BG_DISC, content);
               });
               kol.forEach(function (c) {
-                var isHuidig = (c.type === 'week' && c.week === huidigWeek) || (c.type === 'maand' && c.maand === huidigMaand);
+                var isHuidig = toonHuidig && ((c.type === 'week' && c.week === huidigWeek) || (c.type === 'maand' && c.maand === huidigMaand));
                 var hCls = isHuidig ? ' og-td-huidig' : '';
                 if (c.type === 'week') {
                   var on = !!set[c.week];
@@ -639,6 +641,17 @@
     function exportJSON() { return JSON.stringify(doc, null, 2); }
     function importJSON(obj) { doc = migreer(obj, opts.jaar); save(); render(); }
 
+    /* Toon-jaar wisselen. Entries van andere jaren blijven in doc bewaard
+       (weekSetFor/commitSet zijn al jaar-gated), dus dit is puur een view-wissel. */
+    function getJaar() { return doc.jaar; }
+    function setJaar(j) {
+      j = Number(j);
+      if (!j || isNaN(j) || j === doc.jaar) return;
+      doc.jaar = j;
+      save();     /* persisteert doc.jaar + onChange (badge/snapshots) */
+      render();   /* tijd-as + injectors (onRender) opnieuw voor het nieuwe jaar */
+    }
+
     function openDisciplineMgr() {
       return openDisciplineManager(doc.disciplines).then(function (nieuwe) {
         if (!nieuwe) return null;
@@ -672,6 +685,8 @@
       render: render,
       exportJSON: exportJSON,
       importJSON: importJSON,
+      getJaar: getJaar,
+      setJaar: setJaar,
       _opts: opts
     };
   }
