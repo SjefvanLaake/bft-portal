@@ -14,6 +14,7 @@
   <script src="../library/js/bft-tool-shell.js" defer></script>
   <script src="../library/js/bft-checklist.js" defer></script>
   <script src="../library/js/bft-dialog.js" defer></script>
+  <script src="../library/js/bft-wizard.js" defer></script>
   <script src="../library/js/bft-deadline.js" defer></script>
   <!-- Bouwvolgorde-sjablonen per machinetype (één bestand per type) -->
   <script src="../library/data/bouwvolgorde/bfmr2000ek.js"></script>
@@ -321,6 +322,26 @@ window.addEventListener('load', function () {
   /* Auth + Graph initialiseren — pas dán werkt monteur-uit-auth en
      tekeningen-uit-SharePoint. Niet geconfigureerd/mislukt → stil terug op mock. */
   BFTToolShell.initBackend().then(() => { if (huidigProject) loadTekeningen(); });
+
+  /* Wizard — dormant tot bft-wizard.js geladen wordt; zet statussen via de engine. */
+  if (typeof BFTWizard !== 'undefined') {
+    BFTWizard.register({
+      name: 'Bouwvolgordelijst',
+      getItems: function () {
+        const items = [];
+        const es = cl ? cl.getState() : { checks: {}, notes: {} };
+        FASEN.forEach(f => f.items.forEach(it => {
+          const s = es.checks[it.id] && es.checks[it.id].status;
+          if (!s) items.push({ id: it.id, label: it.desc, sub: `Fase ${f.id}: ${f.titel}`, currentStatus: 'open', currentNote: es.notes[it.id] || '' });
+        }));
+        return items;
+      },
+      setStatus: function (id, status, note) {
+        const modus = status === 'gedaan' ? 'ok' : status === 'nvt' ? 'nvt' : '';
+        if (cl) cl.setStatus(id, modus, note);
+      }
+    });
+  }
 });
 
 /* ================================================================
