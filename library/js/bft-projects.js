@@ -49,6 +49,33 @@ const BFT_PROJECTEN = [
     aangemaakt: '2025-09-15',
     status: 'klaar',
     plannerUrl: ''
+  },
+  {
+    id: '201682_MR',
+    projectnr: '201682',
+    naam: 'BFMR1000EK',
+    klant: 'Krafteam',
+    oplevering: '2026-06-16',
+    pl: 'SH',
+    eng: 'SH',
+    wvb: 'SH',
+    machineType: 'MR',
+    aangemaakt: '2026-06-02',
+    status: 'actief',
+    plannerUrl: ''
+  },{
+    id: '201700_MP',
+    projectnr: '201700',
+    naam: 'BFMP750E',
+    klant: 'Michels',
+    oplevering: '2026-01-08',
+    pl: 'SL',
+    eng: 'SL',
+    wvb: 'SL',
+    machineType: 'MP',
+    aangemaakt: '2026-06-02',
+    status: 'actief',
+    plannerUrl: ''
   }
 ];
 
