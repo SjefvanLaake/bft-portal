@@ -427,7 +427,7 @@
    PROJECTEN — uit bft-projects.js, tools uit localStorage-snapshots
    ================================================================ */
 
-/* Leest tool-voortgang uit snapshots geschreven door MBCL en IBN */
+/* Leest tool-voortgang uit snapshots geschreven door MBCL, IBN, Bouwvolgordelijst en Evaluatie */
 function getToolSnapshot(projectId) {
   const proj = bftAlleProjecten().find(p => p.id === projectId) || {};
   const def = {
