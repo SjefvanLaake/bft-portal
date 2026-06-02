@@ -123,6 +123,10 @@
     .bvl-tek-viewer img { display:block; max-width:100%; margin:0 auto; }
     .bvl-tek-ph { padding:34px 20px; text-align:center; color:#aaa; font-family:var(--mono); font-size:12px; line-height:1.7; }
     .bvl-tek-empty { padding:22px 16px; text-align:center; color:var(--muted); font-family:var(--mono); font-size:11px; }
+    .bvl-tek-toolbar { display:flex; align-items:center; gap:10px; padding:9px 14px; border-bottom:1px solid var(--border); background:var(--surface2); }
+    .bvl-tek-add { font-family:var(--mono); font-size:11px; font-weight:700; padding:5px 11px; border:1px solid #4040b8; border-radius:5px; background:rgba(80,80,210,0.08); color:#4040b8; cursor:pointer; flex:none; }
+    .bvl-tek-add:hover { background:rgba(80,80,210,0.16); }
+    .bvl-tek-toolbar-hint { font-family:var(--mono); font-size:10px; color:var(--muted); }
 
     /* Fase-sectie + check-tabel + rijen: CSS komt nu uit bft-checklist.js (.bft-cl-*) */
 
@@ -560,10 +564,12 @@ function updateSpecProg(type){
    Live: BFTGraph.listFiles('<projectId>/tekeningen')
    ================================================================ */
 let tekeningenLijst = [];
+let tekMock = false;   /* lijst-niveau mock-modus (Graph niet live) — bewaard voor re-render na toevoegen */
 
-/* Mock-set zolang Graph/App Registration nog niet live is */
+/* Mock-set zolang Graph/App Registration nog niet live is.
+   `url` (optioneel) = echt bundeld bestand → opent in de viewer i.p.v. placeholder. */
 const TEK_MOCK = [
-  { naam: 'Hydrauliekschema_BFMR2000EK.pdf', categorie: 'Hydrauliek' },
+  { naam: 'Hydrauliekschema_BFMR2000EK.pdf', categorie: 'Hydrauliek', url: '../library/data/tekeningen/demo_hydrauliekschema.pdf' },
   { naam: 'Slangenoverzicht.pdf',            categorie: 'Hydrauliek' },
   { naam: 'Elektroschema_hoofdkast.pdf',     categorie: 'Elektro' },
   { naam: 'Kabellijst.pdf',                  categorie: 'Elektro' },
@@ -603,17 +609,24 @@ async function loadTekeningen(){
       mock = false;
     }
   } catch (e) { lijst = null; }
-  if (!lijst) lijst = TEK_MOCK.map(t => ({ naam: t.naam, categorie: t.categorie, ext: tekExt(t.naam), mock: true }));
+  if (!lijst) lijst = TEK_MOCK.map(t => ({ naam: t.naam, categorie: t.categorie, ext: tekExt(t.naam), mock: !t.url, webUrl: t.url || null }));
 
+  tekMock = mock;
   tekeningenLijst = lijst;
   body.innerHTML = renderTekeningen(lijst, mock);
   updateTekProg(lijst.length);
 }
 
 function renderTekeningen(lijst, mock){
-  if (!lijst.length) return '<div class="bvl-tek-empty">Geen tekeningen gekoppeld voor dit project.</div>';
   let html = '<div id="tekViewer"></div>';
-  if (mock) html += '<div class="bvl-tek-mock">⚠ Mock — voorbeeldlijst. Na SharePoint-koppeling tonen we de echte bestanden uit de project-bibliotheek.</div>';
+  html += `
+    <div class="bvl-tek-toolbar">
+      <input type="file" id="tekFileInput" accept="application/pdf,image/*" style="display:none" onchange="voegBestandToe(this)">
+      <button type="button" class="bvl-tek-add" onclick="document.getElementById('tekFileInput').click()">+ Bestand toevoegen</button>
+      <span class="bvl-tek-toolbar-hint">PDF of afbeelding · alleen deze sessie (nog niet bewaard)</span>
+    </div>`;
+  if (mock) html += '<div class="bvl-tek-mock">⚠ Mock — voorbeeldlijst. Na SharePoint-koppeling tonen we de echte bestanden uit de project-bibliotheek. (De demo-PDF en zelf toegevoegde bestanden werken al wél.)</div>';
+  if (!lijst.length) return html + '<div class="bvl-tek-empty">Nog geen tekeningen gekoppeld — voeg er een toe met de knop hierboven.</div>';
   let laatsteCat = null;
   lijst.forEach((t, i) => {
     if (t.categorie !== laatsteCat) { laatsteCat = t.categorie; html += `<div class="bvl-tek-groep">${esc(t.categorie || 'Overig')}</div>`; }
@@ -655,6 +668,21 @@ function openTekening(i){
 }
 
 function sluitTekening(){ const v = document.getElementById('tekViewer'); if (v) v.innerHTML = ''; }
+
+/* Lokaal bestand toevoegen (client-side, geen backend) — werkt nu al in de mock-fase.
+   Sessie-only: object-URL leeft tot herladen; nog niet naar SharePoint geschreven. */
+function voegBestandToe(input){
+  const f = input.files && input.files[0];
+  if (!f) return;
+  const ext = tekExt(f.name);
+  const url = URL.createObjectURL(f);
+  tekeningenLijst.push({ naam: f.name, categorie: 'Toegevoegd (deze sessie)', ext, mock: false, webUrl: url, lokaal: true });
+  const body = document.getElementById('specbody-tekeningen');
+  if (body) body.innerHTML = renderTekeningen(tekeningenLijst, tekMock);
+  updateTekProg(tekeningenLijst.length);
+  openTekening(tekeningenLijst.length - 1);   /* direct tonen — handig tijdens presentatie */
+  input.value = '';
+}
 
 function updateTekProg(n){
   const el = document.getElementById('specprog-tekeningen');

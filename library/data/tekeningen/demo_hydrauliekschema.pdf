@@ -1,0 +1,64 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 876 >>
+stream
+0.16 0.16 0.13 RG
+1.2 w
+20 20 802 555 re S
+BT /F1 20 Tf 40 540 Td (Hydrauliekschema - BFMR2000EK) Tj ET
+0.45 0.45 0.45 rg
+BT /F1 10 Tf 40 523 Td (DEMO-tekening - Bofram Techniek - geen echte schemadata) Tj ET
+0 0 0 rg
+70 360 130 70 re S
+BT /F1 11 Tf 80 410 Td (Pomp P1) Tj ET
+330 360 130 70 re S
+BT /F1 11 Tf 340 410 Td (Ventiel V1) Tj ET
+590 360 150 70 re S
+BT /F1 11 Tf 600 410 Td (Cilinder C1) Tj ET
+70 170 130 70 re S
+BT /F1 11 Tf 80 220 Td (Tank T1) Tj ET
+0.20 0.20 0.55 RG
+1.6 w
+200 395 m 330 395 l S
+460 395 m 590 395 l S
+135 360 m 135 240 l S
+135 240 m 70 240 l S
+0.16 0.16 0.13 RG
+1 w
+600 35 200 95 re S
+600 95 m 800 95 l S
+700 35 m 700 95 l S
+BT /F1 9 Tf 610 110 Td (BFT-V2 Projectoverzicht) Tj ET
+BT /F1 8 Tf 610 75 Td (Schaal: n.v.t.) Tj ET
+BT /F1 8 Tf 610 55 Td (Get.: Bofram) Tj ET
+BT /F1 8 Tf 710 75 Td (Rev.: DEMO) Tj ET
+BT /F1 8 Tf 710 55 Td (Blad 1/1) Tj ET
+
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000121 00000 n 
+0000000247 00000 n 
+0000001174 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1244
+%%EOF
