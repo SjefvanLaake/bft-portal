@@ -337,9 +337,31 @@
       color: var(--muted);
     }
 
+    /* ── Planning-tools in de header (cross-project, geen per-project voortgang) ── */
+    .bf-header-right { display: flex; align-items: center; gap: 10px; }
+    .po-hdr-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 5px;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+      color: #fff;
+      text-decoration: none;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      transition: all 0.12s;
+      white-space: nowrap;
+    }
+    .po-hdr-link:hover { background: rgba(232,160,0,0.20); border-color: var(--accent); color: var(--accent); }
+
     @media (max-width: 700px) {
       .po-shell { flex-direction: column; height: auto; }
       .po-list { width: 100%; height: 260px; border-right: none; border-bottom: 1px solid var(--border); }
+      .po-hdr-link { padding: 6px 9px; }
+      .po-hdr-link .po-hdr-txt { display: none; }
     }
   </style>
 </head>
@@ -359,7 +381,11 @@
       <p>BFT Dashboard · alle projecten</p>
     </div>
   </div>
-  <span class="bf-badge" id="hdrBadge">—</span>
+  <div class="bf-header-right">
+    <a class="po-hdr-link" href="BFT_OverallPlanning.html" title="Overall Planning — Gantt over alle projecten">📅 <span class="po-hdr-txt">Overall Planning</span></a>
+    <a class="po-hdr-link" href="BFT_ResourcePlanning.html" title="Resource Planning — capaciteit per medewerker">👷 <span class="po-hdr-txt">Resource Planning</span></a>
+    <span class="bf-badge" id="hdrBadge">—</span>
+  </div>
 </div>
 
 <!-- Split-view shell -->
@@ -407,10 +433,7 @@ function getToolSnapshot(projectId) {
   const def = {
     mbcl:        { pct: 0, status: 'open', openItems: '—', oplevering: proj.oplevering || null },
     ibn:         { pct: 0, status: 'open', droog: 0, nat: 0 },
-    storingslog: { count: 0, openCount: 0, lastDate: null },
     bouwvolgorde:{ pct: 0, status: 'open', fase: '—' },
-    planning:    { startWeek: null, startJaar: new Date().getFullYear(), eindWeek: null, eindJaar: new Date().getFullYear() },
-    resource:    { uren: 0, disciplines: [] },
     evaluatie:   { score: null, status: 'open' }
   };
   try {
@@ -431,33 +454,12 @@ function getToolSnapshot(projectId) {
     };
   } catch(e) {}
   try {
-    const snap = JSON.parse(localStorage.getItem('bft_v2_snap_str_' + projectId));
-    if (snap) def.storingslog = {
-      count:     snap.count     || 0,
-      openCount: snap.openCount || 0,
-      lastDate:  snap.lastDate  || null
-    };
-  } catch(e) {}
-  try {
     const snap = JSON.parse(localStorage.getItem('bft_v2_snap_bvl_' + projectId));
     if (snap) def.bouwvolgorde = {
       pct: snap.pct || 0,
       status: snap.pct >= 100 ? 'klaar' : snap.pct > 0 ? 'bezig' : 'open',
       fase: snap.fase || '—'
     };
-  } catch(e) {}
-  try {
-    const snap = JSON.parse(localStorage.getItem('bft_v2_snap_plan_' + projectId));
-    if (snap) def.planning = {
-      startWeek: snap.startWeek || null,
-      startJaar: snap.startJaar || snap.jaar || new Date().getFullYear(),
-      eindWeek:  snap.eindWeek || null,
-      eindJaar:  snap.eindJaar || snap.jaar || new Date().getFullYear()
-    };
-  } catch(e) {}
-  try {
-    const snap = JSON.parse(localStorage.getItem('bft_v2_snap_res_' + projectId));
-    if (snap) def.resource = { uren: snap.uren || 0, disciplines: snap.disciplines || [] };
   } catch(e) {}
   try {
     const snap = JSON.parse(localStorage.getItem('bft_v2_snap_eval_' + projectId));
@@ -602,9 +604,6 @@ function renderDetail() {
       ${toolMBCL(p.tools.mbcl)}
       ${toolIBN(p.tools.ibn)}
       ${toolBouwvolgorde(p.tools.bouwvolgorde)}
-      ${toolStoringslog(p.tools.storingslog)}
-      ${toolPlanning(p.tools.planning)}
-      ${toolResource(p.tools.resource)}
       ${toolEvaluatie(p.tools.evaluatie)}
     </div>
   `;
@@ -616,9 +615,6 @@ function renderDetail() {
 const TOOL_URLS = {
   mbcl:        'BFT_MachinebouwChecklist.html',
   ibn:         'BFT_IBNTestprotocol.html',
-  storingslog: 'BFT_Storingslog.html',
-  planning:    'BFT_OverallPlanning.html',
-  resource:    'BFT_ResourcePlanning.html',
   evaluatie:   'BFT_Projectevaluatie.html',
   bouwvolgorde: 'BFT_Bouwvolgordelijst.html'
 };
@@ -680,36 +676,9 @@ function toolBouwvolgorde(d) {
   `);
 }
 
-function toolStoringslog(d) {
-  const badge = d.openCount > 0 ? 'bezig' : d.count > 0 ? 'klaar' : 'open';
-  const pct   = d.count > 0 ? (d.openCount === 0 ? 100 : Math.round((1 - d.openCount / d.count) * 100)) : 0;
-  return toolCard('storingslog', '⚠️', 'Storingslog', pct, badge, `
-    ${kv('Totaal meldingen', d.count || '—', !d.count)}
-    ${kv('Open meldingen', d.openCount > 0 ? `${d.openCount}` : '—', !d.openCount)}
-    ${kv('Laatste melding', fmtDatum(d.lastDate), !d.lastDate)}
-    <div></div>
-  `);
-}
-
-function toolPlanning(d) {
-  const badge = d.startWeek ? 'bezig' : 'open';
-  const pct   = d.startWeek ? 50 : 0;
-  return toolCard('planning', '📅', 'Overall Planning', pct, badge, `
-    ${kv('Start', d.startWeek ? `Week ${d.startWeek} · ${d.startJaar}` : '—', !d.startWeek)}
-    ${kv('Einde', d.eindWeek ? `Week ${d.eindWeek} · ${d.eindJaar}` : '—', !d.eindWeek)}
-    <div></div><div></div>
-  `);
-}
-
-function toolResource(d) {
-  const badge = d.uren > 0 ? 'bezig' : 'open';
-  const pct   = d.uren > 0 ? 50 : 0;
-  return toolCard('resource', '👷', 'Resource Planning', pct, badge, `
-    ${kv('Ingepland', d.uren > 0 ? `${d.uren} uur` : '—', !d.uren)}
-    ${kv('Disciplines', d.disciplines?.length ? d.disciplines.join(', ') : '—', !d.disciplines?.length)}
-    <div></div><div></div>
-  `);
-}
+/* Storingslog, Overall Planning en Resource Planning zijn bewust GEEN tool-secties
+   meer (2026-06-02): geen relevante per-project voortgang. Storingslog is reactief;
+   Planning/Resource zijn cross-project en staan nu als knoppen in de header. */
 
 function toolEvaluatie(d) {
   const badge = d.status === 'klaar' ? 'klaar' : 'open';
