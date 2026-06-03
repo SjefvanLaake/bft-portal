@@ -234,6 +234,7 @@
     <button class="bf-btn bf-btn-sec"     id="btnSync" title="Importeer actieve projecten uit BFT_PROJECTEN">⟳ Sync projecten</button>
     <button class="bf-btn bf-btn-ghost"   id="btnDisc">⚙ Disciplines</button>
     <button class="bf-btn bf-btn-ghost"   id="btnRes">↔ Week/Maand</button>
+    <button class="bf-btn bf-btn-ghost"   id="btnHeelJaar" title="Toon het hele jaar i.p.v. focus vanaf huidige week/maand −1">⟲ Heel jaar</button>
     <span class="op-jaar" title="Toon-jaar wisselen" style="display:inline-flex;align-items:center;gap:2px">
       <button class="bf-btn bf-btn-ghost" id="btnJaarPrev" title="Vorig jaar">◀</button>
       <span id="jaarLabel" style="font-family:var(--mono);font-size:12px;font-weight:600;min-width:46px;text-align:center;color:var(--text)">—</span>
@@ -823,6 +824,18 @@ document.getElementById('btnDisc').addEventListener('click', function () {
 document.getElementById('btnRes').addEventListener('click', function () {
   grid.toggleResolutie();
   scrollNaarHuidig();
+});
+
+/* "Heel jaar"-toggle: vanafHuidig uit = heel jaar zichtbaar; aan = focus vanaf
+   huidige week/maand −1. Default = focus (knop niet actief). */
+var heelJaar = false;
+document.getElementById('btnHeelJaar').addEventListener('click', function () {
+  heelJaar = !heelJaar;
+  grid.setVanafHuidig(!heelJaar);
+  this.style.background  = heelJaar ? 'rgba(232,160,0,0.12)' : '';
+  this.style.color       = heelJaar ? 'var(--accent-dk)' : '';
+  this.style.borderColor = heelJaar ? 'var(--accent)' : '';
+  scrollNaarHuidig();   /* heel jaar: scroll alsnog naar 'nu'; focus: al links */
 });
 
 document.getElementById('btnCap').addEventListener('click', function () {

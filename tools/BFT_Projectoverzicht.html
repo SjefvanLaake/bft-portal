@@ -661,6 +661,7 @@ function renderDetail() {
    PLANNING-EDITOR (Fase 2) — per-project schilderen via het Overall-grid
    ================================================================ */
 let planGrid = null;   /* één instance; bij projectwissel enkel herscopen */
+let planHeelJaar = false;   /* false = focus vanaf huidige −1; true = heel jaar */
 
 /* Bouw de editor-kaart + grid-instance één keer; daarna alleen setFilterProject. */
 function ensurePlanEditor() {
@@ -676,6 +677,7 @@ function ensurePlanEditor() {
             <span class="po-plan-jaar" id="planJaarLbl">—</span>
             <button class="po-plan-btn" id="planJaarNext" title="Volgend jaar">▶</button>
             <button class="po-plan-btn" id="planResBtn" title="Wissel week/maand">↔ Week/Maand</button>
+            <button class="po-plan-btn" id="planHeelJaarBtn" title="Toon het hele jaar i.p.v. focus vanaf huidige week/maand −1">⟲ Heel jaar</button>
           </div>
         </div>
         <div class="po-plan-body">
@@ -705,6 +707,13 @@ function ensurePlanEditor() {
   /* Controls */
   document.getElementById('planResBtn').addEventListener('click', function () {
     planGrid.toggleResolutie();
+  });
+  document.getElementById('planHeelJaarBtn').addEventListener('click', function () {
+    planHeelJaar = !planHeelJaar;
+    planGrid.setVanafHuidig(!planHeelJaar);
+    this.style.background  = planHeelJaar ? 'rgba(232,160,0,0.12)' : '';
+    this.style.color       = planHeelJaar ? 'var(--accent-dk)' : '';
+    this.style.borderColor = planHeelJaar ? 'var(--accent2)' : '';
   });
   document.getElementById('planJaarPrev').addEventListener('click', function () {
     planGrid.setJaar(planGrid.getJaar() - 1); updatePlanJaarLbl();

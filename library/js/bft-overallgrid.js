@@ -952,6 +952,9 @@
     /* Status/feiten-kolom aan/uit (cfg={label} of null). Re-rendert → de tool
        vult de cellen in z'n onRender-hook. */
     function setStatusKolom(cfg) { opts.statusKolom = cfg || null; render(); }
+    /* Tijd-as-focus wisselen: true = huidig jaar start bij week/maand −1; false = heel jaar. */
+    function setVanafHuidig(v) { opts.vanafHuidig = !!v; render(); }
+    function getVanafHuidig() { return !!opts.vanafHuidig; }
     function getJaar() { return doc.jaar; }
     function setJaar(j) {
       j = Number(j);
@@ -1005,6 +1008,8 @@
       setJaar: setJaar,
       setFilterProject: setFilterProject,
       setStatusKolom: setStatusKolom,
+      setVanafHuidig: setVanafHuidig,
+      getVanafHuidig: getVanafHuidig,
       _opts: opts
     };
   }
