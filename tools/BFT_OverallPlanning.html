@@ -153,15 +153,14 @@
     tr.cap-rij td { font-family: var(--mono); font-size: 10px; font-weight: 700; text-align: center; min-height: 30px; }
     tr.cap-rij .cap-naam { text-align: left; padding: 4px 8px; color: var(--muted); font-size: 10px; }
 
-    /* ── Feitenlaag: werkelijke status (MBCL + Bouwvolgorde) in het projectlabel ──
-       Feiten zijn scalair-nu (geen tijd-as), dus ze horen in de omschrijving-cel,
-       NIET in de tijdkolommen — die blijven voor het plan (geschilderde balken). */
-    .og-omschr-wrap { display:flex; align-items:center; gap:6px; min-width:0; }
-    .og-omschr-txt {
-      flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-    }
+    /* ── Feitenlaag: werkelijke status (MBCL + Bouwvolgorde) in een eigen kolom ──
+       Feiten zijn scalair-nu (geen tijd-as); ze staan in de gereserveerde
+       Status-kolom (.og-td-status, ná WVB, in het bevroren blok) — NIET in de
+       tijdkolommen die voor het plan (geschilderde balken) zijn. */
+    .og-th-status, .og-td-status { text-align:center; }
+    .og-td-status { padding:2px 4px !important; }
     .og-feit-chip {
-      flex:none; display:inline-flex; align-items:center; gap:3px;
+      display:inline-flex; align-items:center; gap:3px;
       font-family:var(--mono); font-size:9px; font-weight:700; line-height:1.6;
       padding:0 5px; border-radius:9px; cursor:default;
       background:var(--bg2,#eef1f5); border:1px solid var(--border,#e1e4e8);
@@ -262,7 +261,7 @@
     <strong>Week-modus</strong>: sleep om weken te schilderen per discipline ·
     <strong>👤 per discipline</strong>: wijs personen toe — het aantal verschijnt IN de gekleurde cellen ·
     <strong>Maand-modus</strong>: gekleurde balkjes = disciplines met ingeplande weken ·
-    <strong>◑ Feiten</strong>: de pill achter de projectnaam toont de wérkelijke status (checklist % · bouwvolgorde-fase) naast het plan ·
+    <strong>◑ Feiten</strong>: de Status-kolom toont de wérkelijke status (checklist % · bouwvolgorde-fase) naast het plan ·
     Details/Resource opent in één vast venster
   </p>
 
@@ -280,6 +279,8 @@ var grid = BFTOverallGrid.register({
   container: document.getElementById('og-grid'),
   jaar:       new Date().getFullYear(),
   accordion:  true,
+  vanafHuidig: true,                       /* tijd-as begint in dit jaar bij huidige −1 */
+  statusKolom: { label: 'Status' },        /* eigen kolom voor de feiten-pill (feitenAan = true) */
   onChange: function () {
     /* Data-event: alleen state-afgeleide zaken. DOM-injectors draaien in onRender. */
     updateBadge();
@@ -444,28 +445,22 @@ function _faseKort(faseTxt) {
   return { kort: faseTxt.slice(0, 6), vol: faseTxt };
 }
 
+/* Vult de eigen Status-kolom (.og-td-status, gereserveerd door de grid-lib via
+   statusKolom) met de feiten-pill per project. Geen kolom (feiten uit) → niets
+   te doen. Draait in de onRender-hook op de verse DOM. */
 function injectFeitenStatus() {
   var tabel = document.querySelector('table.og-tbl');
   if (!tabel) return;
 
   tabel.querySelectorAll('tr.og-row-project').forEach(function (tr) {
-    var metaCellen = tr.querySelectorAll('.og-td-meta');
-    var omschrCel = metaCellen[1];   /* index 1 = omschrijving (zie META_KOLOMMEN) */
-    if (!omschrCel) return;
-
-    /* Render-DOM is vers per render; reconstrueer de cel altijd schoon. */
-    var naam = omschrCel.querySelector('.og-omschr-txt')
-      ? omschrCel.querySelector('.og-omschr-txt').textContent
-      : omschrCel.textContent;
-
-    if (!feitenAan) { omschrCel.textContent = naam; return; }
+    var cel = tr.querySelector('.og-td-status');
+    if (!cel) return;                 /* statuskolom uit */
 
     var bftId = vindBftId(tr);
     var mbcl = bftId ? _leesSnap('bft_v2_snap_mbcl_' + bftId) : null;
     var bvl  = bftId ? _leesSnap('bft_v2_snap_bvl_'  + bftId) : null;
 
-    /* Geen enkel feit bekend → laat de cel met rust (geen ruis). */
-    if (!mbcl && !bvl) { omschrCel.textContent = naam; return; }
+    if (!mbcl && !bvl) { cel.innerHTML = ''; return; }   /* geen feiten → leeg */
 
     var segs = [];
     var tipDelen = [];
@@ -484,15 +479,8 @@ function injectFeitenStatus() {
       tipDelen.push('Bouwvolgorde ' + pb + '%' + (fase ? ' — ' + fase.vol : ''));
     }
 
-    /* Pill VÓÓR de naam → staat ver links (direct na de klant-kolom), dus ook
-       op smalle schermen zichtbaar zonder horizontaal te scrollen. */
-    omschrCel.innerHTML =
-      '<span class="og-omschr-wrap">'
-      +   '<span class="og-feit-chip" title="' + _escAttr(tipDelen.join('\n')) + '">'
-      +     segs.join('')
-      +   '</span>'
-      +   '<span class="og-omschr-txt">' + _escHtml(naam) + '</span>'
-      + '</span>';
+    cel.innerHTML = '<span class="og-feit-chip" title="' + _escAttr(tipDelen.join('\n')) + '">'
+      + segs.join('') + '</span>';
   });
 }
 
@@ -850,7 +838,8 @@ document.getElementById('btnFeit').addEventListener('click', function () {
   this.style.background  = feitenAan ? 'rgba(232,160,0,0.12)' : '';
   this.style.color       = feitenAan ? 'var(--accent-dk)' : '';
   this.style.borderColor = feitenAan ? 'var(--accent)' : '';
-  injectFeitenStatus();   /* alleen de label-cellen herschrijven; geen full render nodig */
+  /* Voeg de status-kolom toe/verwijder 'm → re-render → onRender vult de cellen. */
+  grid.setStatusKolom(feitenAan ? { label: 'Status' } : null);
 });
 
 /* ── Jaar-schakelaar ──────────────────────────────────────────────

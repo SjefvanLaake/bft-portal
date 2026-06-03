@@ -74,7 +74,12 @@
     /* filterProject: toon slechts één project (geforceerd uitgeklapt) — voor de
        per-project schilder-editor in Projectoverzicht. Match op { bftId }
        (voorkeur), { servnr } en/of { id }. null = alle projecten. */
-    filterProject: null
+    filterProject: null,
+    /* vanafHuidig: in het huidige jaar de tijd-as bij week/maand −1 laten beginnen. */
+    vanafHuidig: false,
+    /* statusKolom: { label } → reserveer één extra sticky kolom ná WVB die de
+       tool zelf vult (bv. de feiten-pill). null = geen kolom. */
+    statusKolom: null
   };
 
   // ── utils ──────────────────────────────────────────────────────────────
@@ -144,6 +149,7 @@
   var STICKY_META = [90, 130, 56, 64, 30, 30, 36];
   var STICKY_LEFT = [STICKY_ACT];                     // cumulatieve left-offset per meta-kolom
   STICKY_META.forEach(function (w, i) { STICKY_LEFT.push(STICKY_LEFT[i] + STICKY_META[i]); });
+  var STATUS_W = 78;   // breedte van de optionele status/feiten-kolom (ná WVB)
   var BG_HEAD  = 'var(--accent-dk,#00509e)';
   var BG_ROW   = '#fff';
   var BG_DISC  = 'var(--surface,#fbfcfe)';
@@ -609,13 +615,21 @@
     function getState() { return doc; }
 
     // ── tijd-as kolommen (maand of week, afhankelijk van resolutie) ─────────
+    /* opts.vanafHuidig: in het HUIDIGE jaar begint de as bij week/maand −1 i.p.v.
+       w1/jan, zodat het uiterst-linkse (volledig uitgescrolld) de huidige −1 is.
+       Andere jaren tonen het hele jaar (historie/vooruit). */
     function tijdKoppen() {
+      var nu = new Date();
+      var ditJaar = doc.jaar === nu.getFullYear();
       if (ui.resolutie === 'week') {
         var n = isoWeeksInYear(doc.jaar), arr = [];
-        for (var w = 1; w <= n; w++) arr.push({ type: 'week', week: w, label: 'w' + w });
+        var startW = (opts.vanafHuidig && ditJaar) ? Math.max(1, isoWeekNummer(nu) - 1) : 1;
+        for (var w = startW; w <= n; w++) arr.push({ type: 'week', week: w, label: 'w' + w });
         return arr;
       }
-      return MAANDEN.map(function (m, idx) { return { type: 'maand', maand: idx, label: m + ' ' + String(doc.jaar).slice(2) }; });
+      var maanden = MAANDEN.map(function (m, idx) { return { type: 'maand', maand: idx, label: m + ' ' + String(doc.jaar).slice(2) }; });
+      if (opts.vanafHuidig && ditJaar) maanden = maanden.slice(Math.max(0, nu.getMonth() - 1));
+      return maanden;
     }
 
     // ── schilder-data helpers (week-ranges <-> set) ─────────────────────────
@@ -672,9 +686,14 @@
         return '<td class="' + cls + '" style="position:sticky;left:' + left + 'px;min-width:' + minW + 'px;z-index:2;background:' + bg + '"' + (extra || '') + '>' + (content || '') + '</td>';
       }
 
+      /* Linkeroffset + classes voor de optionele status/feiten-kolom (ná WVB).
+         og-th-meta-class zodat sticky-breedte + capaciteitsinjector 'm meenemen. */
+      var statusLeft = STICKY_LEFT[META_KOLOMMEN.length];
+
       var html = '<table class="og-tbl og-res-' + ui.resolutie + '"><thead><tr>';
       html += stickyTh('og-th-act', 0, STICKY_ACT, BG_HEAD, '');
       META_KOLOMMEN.forEach(function (k, i) { html += stickyTh('og-th-meta', STICKY_LEFT[i], STICKY_META[i], BG_HEAD, esc(k.label)); });
+      if (opts.statusKolom) html += stickyTh('og-th-meta og-th-status', statusLeft, STATUS_W, BG_HEAD, esc(opts.statusKolom.label || 'Status'));
       kol.forEach(function (c) {
         var isHuidig = toonHuidig && ((c.type === 'week' && c.week === huidigWeek) || (c.type === 'maand' && c.maand === huidigMaand));
         html += '<th class="og-th-tijd og-th-' + c.type + (isHuidig ? ' og-th-huidig' : '') + '">' + esc(c.label) + '</th>';
@@ -695,7 +714,7 @@
       }
 
       if (!zichtbaar.length) {
-        var span = 1 + META_KOLOMMEN.length + kol.length;
+        var span = 1 + META_KOLOMMEN.length + (opts.statusKolom ? 1 : 0) + kol.length;
         html += '<tr><td class="og-empty" colspan="' + span + '">'
           + (opts.filterProject
               ? 'Dit project staat nog niet in de planning. Gebruik “⟳ Sync” in de Overall Planning.'
@@ -710,6 +729,8 @@
             '<button class="og-caret" data-id="' + esc(p.id) + '" title="Uit-/inklappen">' + (open ? '▼' : '▶') + '</button>'
             + '<button class="og-del" data-id="' + esc(p.id) + '" title="Verwijder project">×</button>');
           META_KOLOMMEN.forEach(function (k, i) { html += stickyTd('og-td-meta', STICKY_LEFT[i], STICKY_META[i], BG_ROW, esc(p[k.veld])); });
+          /* Lege status-cel — de tool vult 'm (injectFeitenStatus). */
+          if (opts.statusKolom) html += stickyTd('og-td-meta og-td-status', statusLeft, STATUS_W, BG_ROW, '');
           kol.forEach(function (c) {
             var isHuidig = toonHuidig && ((c.type === 'week' && c.week === huidigWeek) || (c.type === 'maand' && c.maand === huidigMaand));
             var hCls = isHuidig ? ' og-td-huidig' : '';
@@ -763,6 +784,7 @@
                 }
                 html += stickyTd('og-td-disc', STICKY_LEFT[i], STICKY_META[i], BG_DISC, content);
               });
+              if (opts.statusKolom) html += stickyTd('og-td-disc og-td-status', statusLeft, STATUS_W, BG_DISC, '');
               var persLabel = nPers > 0 ? '<span class="og-pers">' + nPers + '</span>' : '';
               kol.forEach(function (c) {
                 var isHuidig = toonHuidig && ((c.type === 'week' && c.week === huidigWeek) || (c.type === 'maand' && c.maand === huidigMaand));
@@ -927,6 +949,9 @@
        per-project editor om bij projectwissel te herscopen zonder de instance
        (en z'n listeners) opnieuw aan te maken. */
     function setFilterProject(f) { opts.filterProject = f || null; render(); }
+    /* Status/feiten-kolom aan/uit (cfg={label} of null). Re-rendert → de tool
+       vult de cellen in z'n onRender-hook. */
+    function setStatusKolom(cfg) { opts.statusKolom = cfg || null; render(); }
     function getJaar() { return doc.jaar; }
     function setJaar(j) {
       j = Number(j);
@@ -979,6 +1004,7 @@
       getJaar: getJaar,
       setJaar: setJaar,
       setFilterProject: setFilterProject,
+      setStatusKolom: setStatusKolom,
       _opts: opts
     };
   }
