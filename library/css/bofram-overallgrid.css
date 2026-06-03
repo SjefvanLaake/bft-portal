@@ -1,0 +1,97 @@
+/* ────────────────────────────────────────────────────────────────────────
+   bofram-overallgrid.css — structurele stijl voor het BFTOverallGrid-tabel.
+   Bedoeld voor pagina's die het grid embedden (bv. de per-project schilder-
+   editor in Projectoverzicht). De Overall Planning-pagina heeft historisch een
+   eigen, rijkere inline-kopie; deze file is de minimale structurele subset zodat
+   een embed er correct uitziet. Houd ze visueel in lijn bij wijzigingen.
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* Scroll-wrapper — horizontaal scrollbaar, sticky linkerkolommen blijven staan */
+.og-wrap {
+  overflow: auto;
+  width: 100%;
+  border: 1px solid var(--border, #e1e4e8);
+  border-radius: 6px;
+  background: #fff;
+}
+
+table.og-tbl { border-collapse: separate; border-spacing: 0; font-size: 12px; width: max-content; }
+table.og-tbl th, table.og-tbl td {
+  border-right: 1px solid var(--border, #e1e4e8);
+  border-bottom: 1px solid var(--border, #e1e4e8);
+  padding: 4px 6px; text-align: left; white-space: nowrap;
+}
+table.og-tbl thead th {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--accent-dk, #00509e); color: #fff;
+  font-family: var(--mono, monospace); font-size: 11px; font-weight: 600;
+}
+
+.og-th-tijd, .og-td-tijd { text-align: center; min-width: 46px; }
+table.og-tbl.og-res-week .og-th-tijd,
+table.og-tbl.og-res-week .og-td-tijd {
+  min-width: var(--wk-w, 56px); width: var(--wk-w, 56px);
+  padding: 4px 2px; font-size: 10px;
+}
+table.og-tbl.og-res-maand .og-th-tijd,
+table.og-tbl.og-res-maand .og-td-tijd {
+  min-width: var(--mnd-w, 90px); width: var(--mnd-w, 90px);
+}
+table.og-tbl.og-res-week { user-select: none; }
+
+.og-th-act, .og-td-act { width: 52px; text-align: center; padding: 2px; white-space: nowrap; }
+.og-td-meta { color: var(--text, #1a1f2e); }
+
+/* Huidig week/maand — kop getint */
+.og-th-huidig {
+  background: rgba(232,160,0,0.25) !important; color: #000 !important;
+  font-weight: 700 !important; border-bottom: 2px solid var(--accent, #e8a000) !important;
+}
+.og-td-huidig:not(.painted):not(.filled) { background: rgba(232,160,0,0.06); }
+
+/* Projectrij + disciplinerijen */
+tr.og-row-project td { background: #fff; }
+tr.og-row-project.open td { background: #f5d48c !important; font-weight: 700; }
+tr.og-row-disc td { background: var(--surface, #fbfcfe); }
+tr.og-row-disc .og-td-act, tr.og-row-disc .og-td-disc { background: #fdf3df !important; }
+.og-td-disc { padding-left: 22px !important; }
+
+.og-disc-sw {
+  display: inline-block; width: 13px; height: 13px; border-radius: 3px;
+  border: 1px solid rgba(0,0,0,0.2); vertical-align: middle; margin-right: 8px;
+}
+.og-disc-label { font-family: var(--mono, monospace); font-size: 11px; color: var(--text2, #3d4558); }
+
+/* Schilder-cellen */
+.og-paint-cell { cursor: crosshair; }
+.og-paint-cell:hover { box-shadow: inset 0 0 0 1px var(--accent, #e8a000); }
+
+/* Personen-tellingen */
+.og-cnt {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 10px; font-weight: 700; color: #3d4558;
+  text-shadow: 0 0 2px rgba(255,255,255,0.9); pointer-events: none;
+}
+.og-pers {
+  display: block; text-align: center; font-family: var(--mono); font-size: 10px;
+  font-weight: 700; color: #1a1f2e; text-shadow: 0 0 2px rgba(255,255,255,0.9); pointer-events: none;
+}
+.og-pers-btn {
+  margin-left: 6px; border: 1px solid rgba(124,58,237,0.35);
+  background: rgba(124,58,237,0.06); color: #7c3aed;
+  border-radius: 10px; padding: 0 6px; font-family: var(--mono); font-size: 9px;
+  font-weight: 700; cursor: pointer; line-height: 1.5; vertical-align: middle;
+}
+.og-pers-btn:hover { background: #7c3aed; color: #fff; border-color: #7c3aed; }
+
+/* Caret / verwijderen / leeg */
+.og-caret {
+  border: none; background: transparent; color: var(--muted, #8a909c);
+  cursor: pointer; font-size: 9px; line-height: 1; padding: 2px 3px;
+}
+.og-del {
+  border: 1px solid transparent; background: transparent; color: var(--muted, #8a909c);
+  cursor: pointer; font-size: 15px; line-height: 1; border-radius: 4px; padding: 1px 5px;
+}
+.og-del:hover { background: #d63030; color: #fff; }
+.og-empty { text-align: center; color: var(--muted, #8a909c); padding: 28px !important; font-style: italic; }

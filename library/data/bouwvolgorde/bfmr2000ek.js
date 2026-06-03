@@ -17,7 +17,7 @@
   var REG = global.BFT_BOUWVOLGORDE = global.BFT_BOUWVOLGORDE || {};
 
   REG['BFMR2000EK'] = {
-    titel: 'Mix Recycler BFMR2000EK',
+    titel: 'BFMR2000EK',
     machineType: 'BFMR2000EK',
     fasen: [
       { id: 1, titel: 'Bovenbak', items: [

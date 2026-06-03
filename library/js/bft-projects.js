@@ -11,7 +11,7 @@ const BFT_PROJECTEN = [
   {
     id: '201267_BFMR2000EK',
     projectnr: '201267',
-    naam: 'Mix Recycler BFMR2000EK',
+    naam: 'BFMR2000EK',
     klant: 'Demo Klant BV',
     oplevering: '2026-08-15',
     pl: 'J. de Vries',
@@ -25,7 +25,7 @@ const BFT_PROJECTEN = [
   {
     id: '201268_BFR500',
     projectnr: '201268',
-    naam: 'Recycler BFR500',
+    naam: 'BFR500',
     klant: 'Ander Bedrijf NV',
     oplevering: '2026-10-01',
     pl: 'P. Jansen',
@@ -39,7 +39,7 @@ const BFT_PROJECTEN = [
   {
     id: '201250_BFM800',
     projectnr: '201250',
-    naam: 'Mixer BFM800',
+    naam: 'BFM800',
     klant: 'Klant C Holding',
     oplevering: '2026-03-01',
     pl: 'M. Bakker',

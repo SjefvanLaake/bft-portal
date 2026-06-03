@@ -228,7 +228,8 @@ function setUren(input){
 
 function voegMedewerkerToe(){
   const reeds = state.medewerkers.map(m => m.naam);
-  const master = (typeof BFT_MEDEWERKERS !== 'undefined') ? BFT_MEDEWERKERS : [];
+  const master = (typeof bftAlleMedewerkers === 'function') ? bftAlleMedewerkers()
+    : ((typeof BFT_MEDEWERKERS !== 'undefined') ? BFT_MEDEWERKERS : []);
   const beschikbaar = master.filter(m => reeds.indexOf(m.naam) === -1);
 
   /* Geen stamlijst geladen of iedereen al toegevoegd → directe externe-invoer */

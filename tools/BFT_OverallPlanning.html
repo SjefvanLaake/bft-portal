@@ -29,18 +29,19 @@
       max-height: calc(100vh - 160px);
     }
 
-    /* Huidig week/maand markering */
+    /* Huidig week/maand markering — alléén de kop houdt de tint (= het label).
+       In de body geen verticale lijn meer (was te opdringerig); lege huidig-
+       cellen krijgen hooguit een zweem tint. Geschilderde cellen behouden hun
+       discipline-kleur (inline style wint, geen !important). */
     .og-th-huidig {
       background: rgba(232,160,0,0.25) !important;
       color: #000 !important;
       font-weight: 700 !important;
       border-bottom: 2px solid var(--accent) !important;
     }
-    .og-td-huidig {
-      background: rgba(232,160,0,0.07) !important;
+    .og-td-huidig:not(.painted):not(.filled) {
+      background: rgba(232,160,0,0.06);
     }
-    /* Zorg dat painted cells de huidig-markering overrulen */
-    .og-paint-cell.painted.og-td-huidig { background: inherit !important; }
     table.og-tbl { border-collapse:separate; border-spacing:0; font-size:12px; }
     table.og-tbl th, table.og-tbl td {
       border-right:1px solid var(--border,#e1e4e8);
@@ -53,8 +54,19 @@
       font-family:var(--mono,monospace); font-size:11px; font-weight:600;
     }
     .og-th-tijd,.og-td-tijd { text-align:center; min-width:46px; }
+    /* Breedte wordt dynamisch gezet (--wk-w) zodat ±8 weken in beeld passen;
+       de rest scrolt horizontaal. Fallback 64px als JS (nog) niet draaide. */
     table.og-tbl.og-res-week .og-th-tijd,
-    table.og-tbl.og-res-week .og-td-tijd { min-width:24px; padding:4px 2px; font-size:10px; }
+    table.og-tbl.og-res-week .og-td-tijd {
+      min-width: var(--wk-w, 64px); width: var(--wk-w, 64px);
+      padding:4px 2px; font-size:10px;
+    }
+    /* Maand-modus: breed genoeg zodat ±7 maanden (huidige −1 t/m +5) in beeld
+       passen; rest scrolt. Fallback 90px. */
+    table.og-tbl.og-res-maand .og-th-tijd,
+    table.og-tbl.og-res-maand .og-td-tijd {
+      min-width: var(--mnd-w, 90px); width: var(--mnd-w, 90px);
+    }
     table.og-tbl.og-res-week { user-select:none; }
     .og-th-act,.og-td-act { width:52px; text-align:center; padding:2px; white-space:nowrap; }
     .og-nav-btn {
@@ -67,8 +79,16 @@
     tr.og-row-project { cursor:pointer; }
     tr.og-row-project td { background:#fff; }
     tr.og-row-project:hover td { background:rgba(232,160,0,0.10); }
-    tr.og-row-project.open td { background:var(--surface2,#eef1f5); font-weight:600; }
+    /* Open project = de héle rij duidelijk donkerder gekleurd (geen storende
+       accent-lijnen). !important + opake kleur is nodig omdat de sticky cellen
+       een inline witte achtergrond krijgen — opaak zodat de scrollende tijdlijn
+       er niet doorheen schemert. */
+    tr.og-row-project.open td { background:#f5d48c !important; font-weight:700; }
     tr.og-row-disc td { background:var(--surface,#fbfcfe); }
+    /* Subtiele tint op het label-deel van de disciplinerijen zodat ze visueel
+       bij de open project-rij horen; geschilderde tijdcellen behouden hun
+       discipline-kleur (alleen de sticky label/actie-cellen). */
+    tr.og-row-disc .og-td-act, tr.og-row-disc .og-td-disc { background:#fdf3df !important; }
     .og-td-disc { padding-left:22px !important; }
     .og-disc-sw {
       display:inline-block; width:13px; height:13px; border-radius:3px;
@@ -77,6 +97,26 @@
     .og-disc-label { font-family:var(--mono,monospace); font-size:11px; color:var(--text2,#3d4558); }
     .og-paint-cell { cursor:crosshair; }
     .og-paint-cell:hover { box-shadow:inset 0 0 0 1px var(--accent,#e8a000); }
+
+    /* Aantal toegewezen personen, getoond IN de geschilderde cellen */
+    .og-cnt {  /* ingeklapte projectrij: totaal over actieve disciplines */
+      position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+      font-family:var(--mono); font-size:10px; font-weight:700; color:#3d4558;
+      text-shadow:0 0 2px rgba(255,255,255,0.9); pointer-events:none;
+    }
+    .og-pers {  /* uitgeklapte disciplinerij: aantal per discipline-cel */
+      display:block; text-align:center; font-family:var(--mono); font-size:10px;
+      font-weight:700; color:#1a1f2e; text-shadow:0 0 2px rgba(255,255,255,0.9);
+      pointer-events:none;
+    }
+    /* Personen-knop in het discipline-label */
+    .og-pers-btn {
+      margin-left:6px; border:1px solid rgba(124,58,237,0.35);
+      background:rgba(124,58,237,0.06); color:#7c3aed;
+      border-radius:10px; padding:0 6px; font-family:var(--mono); font-size:9px;
+      font-weight:700; cursor:pointer; line-height:1.5; vertical-align:middle;
+    }
+    .og-pers-btn:hover { background:#7c3aed; color:#fff; border-color:#7c3aed; }
     .og-empty { text-align:center; color:var(--muted,#8a909c); padding:28px !important; font-style:italic; }
     .og-caret {
       border:none; background:transparent; color:var(--muted,#8a909c);
@@ -112,6 +152,23 @@
     tr.cap-sep td { background: var(--bg2); border-top: 2px solid var(--border2); padding: 3px 16px; font-family: var(--mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
     tr.cap-rij td { font-family: var(--mono); font-size: 10px; font-weight: 700; text-align: center; min-height: 30px; }
     tr.cap-rij .cap-naam { text-align: left; padding: 4px 8px; color: var(--muted); font-size: 10px; }
+
+    /* ── Feitenlaag: werkelijke status (MBCL + Bouwvolgorde) in het projectlabel ──
+       Feiten zijn scalair-nu (geen tijd-as), dus ze horen in de omschrijving-cel,
+       NIET in de tijdkolommen — die blijven voor het plan (geschilderde balken). */
+    .og-omschr-wrap { display:flex; align-items:center; gap:6px; min-width:0; }
+    .og-omschr-txt {
+      flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    }
+    .og-feit-chip {
+      flex:none; display:inline-flex; align-items:center; gap:3px;
+      font-family:var(--mono); font-size:9px; font-weight:700; line-height:1.6;
+      padding:0 5px; border-radius:9px; cursor:default;
+      background:var(--bg2,#eef1f5); border:1px solid var(--border,#e1e4e8);
+    }
+    .og-feit-seg { white-space:nowrap; }
+    .og-feit-sep { color:var(--border2,#c8ccd4); font-weight:400; }
+    .og-feit-dim { color:var(--muted,#8a909c); }
 
     /* Deadline-markering */
     .og-td-deadline {
@@ -183,7 +240,8 @@
       <span id="jaarLabel" style="font-family:var(--mono);font-size:12px;font-weight:600;min-width:46px;text-align:center;color:var(--text)">—</span>
       <button class="bf-btn bf-btn-ghost" id="btnJaarNext" title="Volgend jaar">▶</button>
     </span>
-    <button class="bf-btn bf-btn-ghost"   id="btnCap" title="Toon/verberg capaciteitslaag vanuit ResourcePlanning">⊷ Capaciteit</button>
+    <button class="bf-btn bf-btn-ghost"   id="btnCap" title="Toon/verberg capaciteit — bezetting over alle projecten vs beschikbaar">⊷ Capaciteit</button>
+    <button class="bf-btn bf-btn-ghost"   id="btnFeit" title="Toon/verberg werkelijke status per project — Machinebouwchecklist % en Bouwvolgorde-fase (de feiten, naast het plan)">◑ Feiten</button>
     <span class="sync-badge" id="syncBadge">BFT_PROJECTEN: ${BFT_PROJECTEN?.length ?? 0} beschikbaar</span>
     <div class="spacer"></div>
     <button class="bf-btn bf-btn-ghost" id="btnExport">⤓ JSON</button>
@@ -202,8 +260,9 @@
   <p style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:10px;line-height:1.7">
     <strong>▶ Klik op een rij</strong> om disciplines uit te klappen ·
     <strong>Week-modus</strong>: sleep om weken te schilderen per discipline ·
+    <strong>👤 per discipline</strong>: wijs personen toe — het aantal verschijnt IN de gekleurde cellen ·
     <strong>Maand-modus</strong>: gekleurde balkjes = disciplines met ingeplande weken ·
-    <strong>⊷ Capaciteit</strong>: uren vanuit ResourcePlanning per week ·
+    <strong>◑ Feiten</strong>: de pill achter de projectnaam toont de wérkelijke status (checklist % · bouwvolgorde-fase) naast het plan ·
     Details/Resource opent in één vast venster
   </p>
 
@@ -230,8 +289,11 @@ var grid = BFTOverallGrid.register({
     /* Draait synchroon ná elke render, op de verse DOM — geen MutationObserver-loop. */
     injectDetailKnoppen();
     injectDeadlineMarkers();
+    injectFeitenStatus();      /* werkelijke status (MBCL + Bouwvolgorde) in het label */
     injectCapaciteitsRijen();
-    injectResourceRijen();
+    pasKolomBreedteAan();  /* kolommen breed genoeg voor de focus (week ±8 / maand ±7) */
+    /* injectResourceRijen() vervalt — bezetting (personen) wordt nu native in het
+       grid getoond als aantal IN de geschilderde discipline-cellen. */
   }
 });
 
@@ -266,23 +328,14 @@ function injectDetailKnoppen() {
       if (bftId) window.open('BFT_Projectoverzicht.html?project=' + encodeURIComponent(bftId), 'bft-tool');
       else showToast('Geen BFT-project gekoppeld — gebruik Sync', 'var(--warn)');
     }
-    function openResource(e) {
-      e.stopPropagation();
-      if (bftId) window.open('BFT_ResourcePlanning.html?project=' + encodeURIComponent(bftId), 'bft-tool');
-      else showToast('Geen BFT-project gekoppeld — gebruik Sync', 'var(--warn)');
-    }
 
     if (isOpen) {
-      /* Uitgeklapt: volledige knoppen */
-      var btnRes = document.createElement('button');
-      btnRes.className = 'og-res-btn'; btnRes.textContent = 'Resource →';
-      btnRes.title = 'Open ResourcePlanning'; btnRes.onclick = openResource;
-
+      /* Uitgeklapt: Details-knop (ResourcePlanning uitgefaseerd — capaciteit
+         komt nu uit bezetting, zie ⊷ Capaciteit). */
       var btnDet = document.createElement('button');
       btnDet.className = 'og-det-btn'; btnDet.textContent = 'Details →';
       btnDet.title = 'Open Projectoverzicht'; btnDet.onclick = openDetails;
 
-      actieCell.insertBefore(btnRes, actieCell.firstChild);
       actieCell.insertBefore(btnDet, actieCell.firstChild);
     } else {
       /* Ingeklapt: compact navigatie-icoontje */
@@ -363,6 +416,92 @@ function injectDeadlineMarkers() {
   });
 }
 
+/* ── Feitenlaag: werkelijke status per project in het label ──────────
+   Leest de snapshots die de MachinebouwChecklist (snap_mbcl) en de
+   Bouwvolgordelijst (snap_bvl) wegschrijven en toont ze als compacte
+   pill in de omschrijving-cel. Dit is de WERKELIJKHEID naast het PLAN
+   (de geschilderde balken) — niet in de tijdkolommen, want feiten zijn
+   een momentopname zonder tijd-as. */
+var feitenAan = true;
+
+function _leesSnap(key) {
+  try { return JSON.parse(localStorage.getItem(key)); } catch (e) { return null; }
+}
+
+/* pct → kleur, zelfde drempels als elders (rood<start, amber bezig, groen klaar) */
+function _feitKleur(pct) {
+  if (pct >= 100) return 'var(--success,#1e9e5e)';
+  if (pct > 0)    return 'var(--accent-dk,#b87d00)';
+  return 'var(--muted,#8a909c)';
+}
+
+/* "Fase 3 — Montage" → { kort:'F3', vol:'Fase 3 — Montage' } */
+function _faseKort(faseTxt) {
+  if (!faseTxt || faseTxt === '—') return null;
+  var m = /fase\s+(\d+)/i.exec(faseTxt);
+  if (m) return { kort: 'F' + m[1], vol: faseTxt };
+  if (/afgerond/i.test(faseTxt)) return { kort: '✓', vol: faseTxt };
+  return { kort: faseTxt.slice(0, 6), vol: faseTxt };
+}
+
+function injectFeitenStatus() {
+  var tabel = document.querySelector('table.og-tbl');
+  if (!tabel) return;
+
+  tabel.querySelectorAll('tr.og-row-project').forEach(function (tr) {
+    var metaCellen = tr.querySelectorAll('.og-td-meta');
+    var omschrCel = metaCellen[1];   /* index 1 = omschrijving (zie META_KOLOMMEN) */
+    if (!omschrCel) return;
+
+    /* Render-DOM is vers per render; reconstrueer de cel altijd schoon. */
+    var naam = omschrCel.querySelector('.og-omschr-txt')
+      ? omschrCel.querySelector('.og-omschr-txt').textContent
+      : omschrCel.textContent;
+
+    if (!feitenAan) { omschrCel.textContent = naam; return; }
+
+    var bftId = vindBftId(tr);
+    var mbcl = bftId ? _leesSnap('bft_v2_snap_mbcl_' + bftId) : null;
+    var bvl  = bftId ? _leesSnap('bft_v2_snap_bvl_'  + bftId) : null;
+
+    /* Geen enkel feit bekend → laat de cel met rust (geen ruis). */
+    if (!mbcl && !bvl) { omschrCel.textContent = naam; return; }
+
+    var segs = [];
+    var tipDelen = [];
+    if (mbcl) {
+      var p = mbcl.pct || 0;
+      segs.push('<span class="og-feit-seg" style="color:' + _feitKleur(p) + '">M ' + p + '%</span>');
+      tipDelen.push('Machinebouwchecklist ' + p + '%'
+        + (mbcl.openItems != null ? ' · ' + mbcl.openItems + ' open' : ''));
+    }
+    var fase = bvl ? _faseKort(bvl.fase) : null;
+    if (bvl) {
+      var pb = bvl.pct || 0;
+      if (mbcl) segs.push('<span class="og-feit-sep">·</span>');
+      segs.push('<span class="og-feit-seg" style="color:' + _feitKleur(pb) + '">'
+        + (fase ? fase.kort : (pb + '%')) + '</span>');
+      tipDelen.push('Bouwvolgorde ' + pb + '%' + (fase ? ' — ' + fase.vol : ''));
+    }
+
+    /* Pill VÓÓR de naam → staat ver links (direct na de klant-kolom), dus ook
+       op smalle schermen zichtbaar zonder horizontaal te scrollen. */
+    omschrCel.innerHTML =
+      '<span class="og-omschr-wrap">'
+      +   '<span class="og-feit-chip" title="' + _escAttr(tipDelen.join('\n')) + '">'
+      +     segs.join('')
+      +   '</span>'
+      +   '<span class="og-omschr-txt">' + _escHtml(naam) + '</span>'
+      + '</span>';
+  });
+}
+
+function _escHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function _escAttr(s) { return _escHtml(s).replace(/"/g, '&quot;'); }
+
 /* ── Optie B: Capaciteitslaag ── */
 var capaciteitAan = false;
 
@@ -372,6 +511,27 @@ function maandVanWeekLocaal(jaar, week) {
   var mon = new Date(jan4);
   mon.setUTCDate(jan4.getUTCDate() - day + 1 + (week - 1) * 7 + 3);
   return mon.getUTCMonth();
+}
+
+/* Per-week ingezette mensen (toewijzingen) voor het getoonde jaar, afgeleid uit
+   bezetting: voor elke discipline met personen, tel die personen mee in elke
+   week waarin de discipline geschilderd is. Som over alle projecten/disciplines.
+   NB: telt toewijzingen — iemand die in twee disciplines/projecten zit telt
+   meervoudig (= werklast/overboeking-signaal, niet uniek hoofdtal). */
+function bezettingPerWeek(doc) {
+  var perWeek = {};
+  (doc.projecten || []).forEach(function (p) {
+    var bz = p.bezetting || {};
+    Object.keys(bz).forEach(function (key) {
+      var n = (bz[key] || []).length;
+      if (!n) return;
+      ((p.weken && p.weken[key]) || []).forEach(function (r) {
+        if (r.jaar !== doc.jaar) return;
+        for (var w = r.startWeek; w <= r.eindWeek; w++) perWeek[w] = (perWeek[w] || 0) + n;
+      });
+    });
+  });
+  return perWeek;
 }
 
 function injectCapaciteitsRijen() {
@@ -385,28 +545,17 @@ function injectCapaciteitsRijen() {
   var tijdThs = ths.filter(function(th){ return th.classList.contains('og-th-week') || th.classList.contains('og-th-maand'); });
   if (!tijdThs.length) return;
 
-  /* Lees ALLE resource-data uit localStorage (alle bft_v2_res_* keys) */
-  var weekTotalen = {};
-  for (var i = 0; i < localStorage.length; i++) {
-    var lsKey = localStorage.key(i);
-    if (!lsKey || !lsKey.startsWith('bft_v2_res_')) continue;
-    try {
-      var resState = JSON.parse(localStorage.getItem(lsKey));
-      if (!resState || !resState.uren) continue;
-      Object.values(resState.uren).forEach(function(mdwUren) {
-        Object.keys(mdwUren).forEach(function(weekKey) {
-          weekTotalen[weekKey] = (weekTotalen[weekKey] || 0) + (mdwUren[weekKey] || 0);
-        });
-      });
-    } catch(e) {}
-  }
+  var perWeek = bezettingPerWeek(doc);
+  /* Beschikbaar = personeelslijst (plafond voor over-/onderboeking). */
+  var headcount = (typeof bftAlleMedewerkers === 'function') ? bftAlleMedewerkers().length : 0;
 
   /* Scheidingsrij */
   var sep = document.createElement('tr');
   sep.className = 'cap-sep';
   var sepTd = document.createElement('td');
   sepTd.colSpan = ths.length;
-  sepTd.textContent = 'Capaciteit — totaal ingeplande uren alle projecten (ResourcePlanning)';
+  sepTd.textContent = 'Capaciteit — bezetting over alle projecten'
+    + (headcount ? ' · ' + headcount + ' beschikbaar' : '');
   sep.appendChild(sepTd);
 
   /* Capaciteitsrij */
@@ -423,28 +572,26 @@ function injectCapaciteitsRijen() {
 
   hdrMeta.forEach(function(hth, i) {
     var td = document.createElement('td');
-    if (i === 0) { td.className = 'cap-naam'; td.textContent = 'Ingepland (u)'; }
+    if (i === 0) { td.className = 'cap-naam'; td.textContent = 'Bezetting'; }
     td.style.cssText = 'position:sticky;left:' + hth.style.left + ';z-index:2;background:var(--surface2);min-width:' + hth.style.minWidth;
     tr.appendChild(td);
   });
 
-  /* Tijdkolommen */
+  /* Tijdkolommen — week = die week; maand = piek (max) over de weken erin. */
   tijdThs.forEach(function(th) {
-    var uren = 0;
+    var val = 0;
     if (th.classList.contains('og-th-week')) {
       var weekNr = parseInt(th.textContent.trim().replace('w',''), 10);
-      var key = 'w' + doc.jaar + '_' + weekNr;
-      uren = weekTotalen[key] || 0;
+      val = perWeek[weekNr] || 0;
     } else {
       var maanden = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
       var label = th.textContent.trim().toLowerCase();
       var maandIdx = maanden.findIndex(function(m){ return label.startsWith(m); });
       if (maandIdx >= 0) {
-        /* Som alle weken in deze maand op */
-        var n = isoWeeksInYear ? isoWeeksInYear(doc.jaar) : 52;
+        var n = _isoWeeksInYear(doc.jaar);
         for (var w = 1; w <= n; w++) {
           if (maandVanWeekLocaal(doc.jaar, w) === maandIdx) {
-            uren += weekTotalen['w' + doc.jaar + '_' + w] || 0;
+            val = Math.max(val, perWeek[w] || 0);   /* piekbezetting deze maand */
           }
         }
       }
@@ -452,10 +599,15 @@ function injectCapaciteitsRijen() {
 
     var td = document.createElement('td');
     td.className = th.classList.contains('og-th-huidig') ? 'og-td-huidig' : '';
-    if (uren > 0) {
-      var kleur = uren <= 32 ? '#1e9e5e' : uren <= 48 ? '#e8a000' : '#d63030';
-      td.style.cssText = 'color:' + kleur + ';background:' + kleur + '1a';
-      td.textContent = uren;
+    if (val > 0) {
+      var kleur;
+      if (!headcount)               kleur = 'var(--accent-dk)';
+      else if (val > headcount)     kleur = '#d63030';   /* overboekt */
+      else if (val >= headcount*0.8) kleur = '#e8a000';  /* bijna vol */
+      else                          kleur = '#1e9e5e';
+      td.style.cssText = 'color:' + kleur + (headcount && val > headcount ? ';background:#d630301a' : '');
+      td.textContent = val;
+      td.title = val + ' bezet' + (headcount ? ' van ' + headcount : '');
     } else {
       td.style.color = 'var(--border2)';
       td.textContent = '—';
@@ -468,7 +620,10 @@ function injectCapaciteitsRijen() {
   tbody.appendChild(tr);
 }
 
-/* ── Resource-panel: employee-rijen per uitgeklapt project ── */
+/* ── [VERVALLEN] Resource-panel: employee-uren-rijen per uitgeklapt project ──
+   Niet meer aangeroepen sinds bezetting (personen) native in het grid wordt
+   getoond als aantal IN de geschilderde discipline-cellen (zie bft-overallgrid
+   bezetting + .og-pers). Bewaard voor eventuele toekomstige uren-detailweergave. */
 function injectResourceRijen() {
   var tabel = document.querySelector('table.og-tbl');
   if (!tabel) return;
@@ -588,28 +743,13 @@ function schrijfPlanningSnapshots() {
   if (!grid) return;
   var doc = grid.getState();
   doc.projecten.forEach(function (proj) {
-    var bftId = proj._bftId;
+    /* bftId = servnr (gevalideerd tegen BFT_PROJECTEN), niet proj._bftId — dat
+       veld bestond niet, waardoor de snapshot nooit werd geschreven. Snapshot-
+       berekening zit nu in de gedeelde BFTOverallGrid.planSnapshot (één bron). */
+    var bftId = vindBftIdVanProj(proj);
     if (!bftId) return;
-    /* Vroegste start + laatste eind over de jaargrens heen — geordend op
-       (jaar,week), NIET op het getoonde jaar (doc.jaar). Anders herschrijft
-       een view-wissel de snapshot die Projectoverzicht leest. */
-    var alleWeken = Object.values(proj.weken || {}).flatMap(function (arr) { return arr || []; });
-    if (!alleWeken.length) return;
-    function _jr(w) { return typeof w.jaar === 'number' ? w.jaar : doc.jaar; }
-    var vroegste = alleWeken.reduce(function (a, w) {
-      return (_jr(w) * 100 + (w.startWeek || 99)) < (_jr(a) * 100 + (a.startWeek || 99)) ? w : a;
-    });
-    var laatste = alleWeken.reduce(function (a, w) {
-      return (_jr(w) * 100 + (w.eindWeek || 0)) > (_jr(a) * 100 + (a.eindWeek || 0)) ? w : a;
-    });
-    var snap = {
-      startWeek: vroegste.startWeek || null,
-      startJaar: _jr(vroegste),
-      eindWeek:  laatste.eindWeek || null,
-      eindJaar:  _jr(laatste),
-      jaar:      _jr(vroegste),   /* back-compat voor oude lezers */
-      updated:   new Date().toISOString()
-    };
+    var snap = BFTOverallGrid.planSnapshot(proj, doc.jaar);
+    if (!snap) return;
     try { localStorage.setItem('bft_v2_snap_plan_' + bftId, JSON.stringify(snap)); } catch(e) {}
   });
 }
@@ -670,6 +810,14 @@ document.getElementById('btnCap').addEventListener('click', function () {
   this.style.color       = capaciteitAan ? '#7c3aed' : '';
   this.style.borderColor = capaciteitAan ? 'rgba(124,58,237,0.4)' : '';
   injectCapaciteitsRijen();
+});
+
+document.getElementById('btnFeit').addEventListener('click', function () {
+  feitenAan = !feitenAan;
+  this.style.background  = feitenAan ? 'rgba(232,160,0,0.12)' : '';
+  this.style.color       = feitenAan ? 'var(--accent-dk)' : '';
+  this.style.borderColor = feitenAan ? 'var(--accent)' : '';
+  injectFeitenStatus();   /* alleen de label-cellen herschrijven; geen full render nodig */
 });
 
 /* ── Jaar-schakelaar ──────────────────────────────────────────────
@@ -734,24 +882,78 @@ function showToast(msg, bg) {
 /* ================================================================
    SCROLL NAAR HUIDIG WEEK / MAAND
    ================================================================ */
+/* Som van de vaste (sticky) linkerkolommen — uit de werkelijke header gelezen
+   i.p.v. een hardcoded constante, zodat het klopt na kolomwijzigingen. */
+function stickyBreedte() {
+  var tabel = document.querySelector('table.og-tbl');
+  if (!tabel) return 524;
+  var s = 0;
+  tabel.querySelectorAll('thead th.og-th-act, thead th.og-th-meta').forEach(function (th) {
+    s += th.offsetWidth;
+  });
+  return s || 524;
+}
+
+/* Kolommen zó breed dat een vast aantal in beeld past; de rest scrolt.
+   Week = ±8 kolommen, maand = ±7 (huidige −1 t/m +5). */
+function pasKolomBreedteAan() {
+  var tabel = document.querySelector('table.og-tbl');
+  if (!tabel || !grid) return;
+  var wrap = document.querySelector('.og-wrap');
+  if (!wrap) return;
+  var beschikbaar = wrap.clientWidth - stickyBreedte();
+  if (beschikbaar < 200) return;               /* nog niet gelayout / te smal */
+  if (grid.getResolutie() === 'week') {
+    tabel.style.setProperty('--wk-w', Math.max(34, Math.floor(beschikbaar / 8)) + 'px');
+  } else {
+    tabel.style.setProperty('--mnd-w', Math.max(60, Math.floor(beschikbaar / 7)) + 'px');
+  }
+}
+
 function scrollNaarHuidig() {
   setTimeout(function () {
     var wrap = document.querySelector('.og-wrap');
     if (!wrap) return;
-    /* Zoek de gemarkeerde kolom */
-    var huidig = wrap.querySelector('.og-th-huidig');
-    if (!huidig) return;
-    /* Scroll zodat de huidige kolom zichtbaar is, met wat ruimte links */
-    var stickyBreedte = 608; /* totale breedte vaste kolommen */
-    var kolomLinks = huidig.offsetLeft;
-    wrap.scrollLeft = Math.max(0, kolomLinks - stickyBreedte - 20);
+    var sticky = stickyBreedte();
+    var doel = null;
+    if (grid && grid.getResolutie() === 'week') {
+      /* Beginpositie = huidige week −1 (één week context links). */
+      var huidig = wrap.querySelector('.og-th-huidig');
+      if (huidig) {
+        var vorige = huidig.previousElementSibling;
+        doel = (vorige && vorige.classList.contains('og-th-week')) ? vorige : huidig;
+      }
+    } else {
+      /* Maand-modus: beginpositie = huidige maand −1. */
+      var hM = wrap.querySelector('.og-th-huidig');
+      if (hM) {
+        var vM = hM.previousElementSibling;
+        doel = (vM && vM.classList.contains('og-th-maand')) ? vM : hM;
+      }
+    }
+    if (!doel) return;
+    /* offsetLeft = afstand vanaf de tabel-linkerkant; min sticky → kolom komt
+       net na het vaste blok te staan. */
+    wrap.scrollLeft = Math.max(0, doel.offsetLeft - sticky);
   }, 150);
 }
+
+/* Herbereken kolombreedte bij venster-resize (gedebounced). */
+var _resizeT;
+window.addEventListener('resize', function () {
+  clearTimeout(_resizeT);
+  _resizeT = setTimeout(function () { pasKolomBreedteAan(); scrollNaarHuidig(); }, 150);
+});
 
 /* ================================================================
    INIT
    ================================================================ */
 updateBadge();
+/* Feiten-knop start in actieve staat (feitenAan = true). */
+(function () {
+  var b = document.getElementById('btnFeit');
+  if (b) { b.style.background = 'rgba(232,160,0,0.12)'; b.style.color = 'var(--accent-dk)'; b.style.borderColor = 'var(--accent)'; }
+})();
 /* Eén volledige render nu 'grid' is toegekend → onRender draait alle injectors
    (knoppen/deadlines/capaciteit/resource) op de verse DOM. */
 grid.render();

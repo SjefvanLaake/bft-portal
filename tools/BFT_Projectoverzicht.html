@@ -5,7 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BFT — Projectoverzicht</title>
   <link rel="stylesheet" href="../library/css/bofram-style.css">
+  <link rel="stylesheet" href="../library/css/bofram-overallgrid.css">
   <script src="../library/js/bft-projects.js"></script>
+  <!-- Per-project schilder-editor (Fase 2): hergebruikt het Overall-grid, gescoped op één project -->
+  <script src="../library/js/bft-medewerkers.js"></script>
+  <script src="../library/js/bft-klanten.js"></script>
+  <script src="../library/js/bft-overallgrid.js"></script>
   <style>
     /* ── Split-view layout ── */
     .po-shell {
@@ -293,6 +298,41 @@
     .po-tool-card.collapsed .po-tool-chev { transform: rotate(-90deg); }
     .po-tool-card.collapsed .po-tool-body { display: none; }
 
+    /* ── Planning-editor (Fase 2): per-project schilderen, gescoped Overall-grid ── */
+    .po-plan-wrap { padding: 4px 24px 24px; }
+    .po-plan-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; overflow: hidden; box-shadow: var(--shadow);
+    }
+    .po-plan-head {
+      padding: 12px 16px; display: flex; align-items: center; gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .po-plan-title {
+      font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--text2);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .po-plan-ctrls { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+    .po-plan-btn {
+      border: 1px solid var(--border); background: #fff; border-radius: 5px;
+      padding: 4px 9px; cursor: pointer; font-family: var(--mono); font-size: 10px;
+      font-weight: 600; color: var(--text2);
+    }
+    .po-plan-btn:hover { background: var(--surface2); border-color: var(--accent2); }
+    .po-plan-jaar {
+      font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--text);
+      min-width: 40px; text-align: center;
+    }
+    .po-plan-body { padding: 12px 16px; }
+    .po-plan-hint {
+      font-family: var(--mono); font-size: 10px; color: var(--muted);
+      margin: 8px 2px 0; line-height: 1.6;
+    }
+    /* In de embed: caret (force-open) en delete (te gevaarlijk hier) verbergen. */
+    #planGrid .og-del, #planGrid .og-caret { display: none !important; }
+    /* Eén project → begrens de scroll-hoogte van de grid-wrapper. */
+    .po-plan-body .og-wrap { max-height: 60vh; }
+
     .po-tool-body {
       border-top: 1px solid var(--border);
       padding: 14px 16px;
@@ -382,8 +422,7 @@
     </div>
   </div>
   <div class="bf-header-right">
-    <a class="po-hdr-link" href="BFT_OverallPlanning.html" title="Overall Planning — Gantt over alle projecten">📅 <span class="po-hdr-txt">Overall Planning</span></a>
-    <a class="po-hdr-link" href="BFT_ResourcePlanning.html" title="Resource Planning — capaciteit per medewerker">👷 <span class="po-hdr-txt">Resource Planning</span></a>
+    <a class="po-hdr-link" href="BFT_OverallPlanning.html" title="Overall Planning — Gantt + capaciteit over alle projecten">📅 <span class="po-hdr-txt">Overall Planning</span></a>
     <span class="bf-badge" id="hdrBadge">—</span>
   </div>
 </div>
@@ -414,10 +453,15 @@
 
   <!-- Rechter kolom -->
   <div class="po-detail" id="detailPanel">
-    <div class="po-empty" id="emptyState">
-      <div class="po-empty-icon">📋</div>
-      <div>Selecteer een project</div>
+    <!-- Bovendeel: header + feiten-kaarten (wordt per selectie opnieuw opgebouwd) -->
+    <div id="poDetailTop">
+      <div class="po-empty" id="emptyState">
+        <div class="po-empty-icon">📋</div>
+        <div>Selecteer een project</div>
+      </div>
     </div>
+    <!-- Planning-editor: persistente container (grid-instance blijft leven, wordt enkel herscoped) -->
+    <div id="poDetailPlan" style="display:none"></div>
   </div>
 
 </div>
@@ -568,16 +612,17 @@ function selecteer(id) {
 }
 
 function renderDetail() {
-  const panel = document.getElementById('detailPanel');
+  const top = document.getElementById('poDetailTop');
   if (!actief) {
-    panel.innerHTML = `<div class="po-empty" id="emptyState"><div class="po-empty-icon">📋</div><div>Selecteer een project</div></div>`;
+    top.innerHTML = `<div class="po-empty" id="emptyState"><div class="po-empty-icon">📋</div><div>Selecteer een project</div></div>`;
+    document.getElementById('poDetailPlan').style.display = 'none';
     return;
   }
   const p   = actief;
   const pct = totaalPct(p.tools);
   const opl = fmtOplevering(p.oplevering);
 
-  panel.innerHTML = `
+  top.innerHTML = `
     <div class="mock-banner">⚠ Mock-data — wordt vervangen door SharePoint Graph API na IT App Registration</div>
 
     <div class="po-det-head">
@@ -607,6 +652,78 @@ function renderDetail() {
       ${toolEvaluatie(p.tools.evaluatie)}
     </div>
   `;
+
+  /* Planning-editor onder de feiten-kaarten — scopen op dit project. */
+  scopePlanEditor(p.id);
+}
+
+/* ================================================================
+   PLANNING-EDITOR (Fase 2) — per-project schilderen via het Overall-grid
+   ================================================================ */
+let planGrid = null;   /* één instance; bij projectwissel enkel herscopen */
+
+/* Bouw de editor-kaart + grid-instance één keer; daarna alleen setFilterProject. */
+function ensurePlanEditor() {
+  if (planGrid) return;
+  const host = document.getElementById('poDetailPlan');
+  host.innerHTML = `
+    <div class="po-plan-wrap">
+      <div class="po-plan-card">
+        <div class="po-plan-head">
+          <div class="po-plan-title">📅 Planning <span style="color:var(--muted);font-weight:400">— schilder per discipline · 👤 wijs personen toe</span></div>
+          <div class="po-plan-ctrls">
+            <button class="po-plan-btn" id="planJaarPrev" title="Vorig jaar">◀</button>
+            <span class="po-plan-jaar" id="planJaarLbl">—</span>
+            <button class="po-plan-btn" id="planJaarNext" title="Volgend jaar">▶</button>
+            <button class="po-plan-btn" id="planResBtn" title="Wissel week/maand">↔ Week/Maand</button>
+          </div>
+        </div>
+        <div class="po-plan-body">
+          <div class="og-wrap"><div id="planGrid"></div></div>
+          <p class="po-plan-hint">In <strong>week-modus</strong> sleep je over de cellen om weken te schilderen per discipline. Wijzigingen verschijnen direct in de Overall Planning — het is dezelfde planning, alleen ruimer per project.</p>
+        </div>
+      </div>
+    </div>`;
+
+  planGrid = BFTOverallGrid.register({
+    container: document.getElementById('planGrid'),
+    jaar: new Date().getFullYear(),
+    filterProject: { servnr: '__none__' },   /* wordt bij scopePlanEditor gezet */
+    onChange: function () {
+      /* Schrijf de plan-snapshot voor het actieve project (zelfde key/logica als
+         de Overall Planning, via de gedeelde helper). */
+      if (!actief) return;
+      try {
+        const snap = BFTOverallGrid.planSnapshot(planGrid.getState().projecten
+          .filter(function (x) { return x.servnr === actief.id; })[0] || {}, planGrid.getJaar());
+        if (snap) localStorage.setItem('bft_v2_snap_plan_' + actief.id, JSON.stringify(snap));
+      } catch (e) {}
+    }
+  });
+
+  /* Controls */
+  document.getElementById('planResBtn').addEventListener('click', function () {
+    planGrid.toggleResolutie();
+  });
+  document.getElementById('planJaarPrev').addEventListener('click', function () {
+    planGrid.setJaar(planGrid.getJaar() - 1); updatePlanJaarLbl();
+  });
+  document.getElementById('planJaarNext').addEventListener('click', function () {
+    planGrid.setJaar(planGrid.getJaar() + 1); updatePlanJaarLbl();
+  });
+}
+
+function updatePlanJaarLbl() {
+  const lbl = document.getElementById('planJaarLbl');
+  if (lbl && planGrid) lbl.textContent = planGrid.getJaar();
+}
+
+/* Scope de editor op één project (bftId = servnr in het planning-record). */
+function scopePlanEditor(bftId) {
+  ensurePlanEditor();
+  document.getElementById('poDetailPlan').style.display = '';
+  planGrid.setFilterProject({ servnr: bftId });
+  updatePlanJaarLbl();
 }
 
 /* ================================================================
@@ -702,6 +819,20 @@ function toggleTool(id) {
    INIT
    ================================================================ */
 renderLijst();
+
+/* Diep-link: open meteen het project uit ?project= (vanuit OverallPlanning
+   "Details →" / andere tools) zodat je niet opnieuw hoeft te zoeken. */
+(function () {
+  var param = new URLSearchParams(location.search).get('project');
+  if (!param) return;
+  if (!PROJECTEN.some(function (p) { return p.id === param; })) return;
+  selecteer(param);
+  /* Scroll de geselecteerde kaart in beeld in de lijst. */
+  setTimeout(function () {
+    var card = document.querySelector('.po-card.active');
+    if (card && card.scrollIntoView) card.scrollIntoView({ block: 'nearest' });
+  }, 60);
+})();
 </script>
 
 </body>

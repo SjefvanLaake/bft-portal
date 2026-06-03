@@ -70,7 +70,11 @@
     jaar       : new Date().getFullYear(),
     accordion  : false,
     onChange   : null,
-    onRender   : null
+    onRender   : null,
+    /* filterProject: toon slechts één project (geforceerd uitgeklapt) — voor de
+       per-project schilder-editor in Projectoverzicht. Match op { servnr } en/of
+       { id }. null = alle projecten (normale overall-weergave). */
+    filterProject: null
   };
 
   // ── utils ──────────────────────────────────────────────────────────────
@@ -135,7 +139,9 @@
 
   // ── sticky kolom-configuratie ────────────────────────────────────────────
   var STICKY_ACT  = 52;
-  var STICKY_META = [90, 130, 56, 64, 44, 44, 44]; // breedte per meta-kolom
+  // breedte per meta-kolom (klant, omschrijving, wo, servnr, pl, eng, wvb).
+  // PL/EN/WVB smal: hun waarden zijn 2-letter codes → 30/30/36px (WVB-kop = 3 ltr).
+  var STICKY_META = [90, 130, 56, 64, 30, 30, 36];
   var STICKY_LEFT = [STICKY_ACT];                     // cumulatieve left-offset per meta-kolom
   STICKY_META.forEach(function (w, i) { STICKY_LEFT.push(STICKY_LEFT[i] + STICKY_META[i]); });
   var BG_HEAD  = 'var(--accent-dk,#00509e)';
@@ -154,7 +160,10 @@
 
   function nieuwProject(data) {
     data = data || {};
-    var p = { id: data.id || ('pr_' + uuid()), weken: data.weken || {} };
+    /* bezetting[disciplineKey] = [{persoonId,naam}] — wie draait mee op die
+       discipline. Object-entries (geen kale getallen) zodat per-persoon-weken
+       later toegevoegd kan worden zonder datamigratie. */
+    var p = { id: data.id || ('pr_' + uuid()), weken: data.weken || {}, bezetting: data.bezetting || {} };
     META_KOLOMMEN.forEach(function (k) { p[k.veld] = data[k.veld] != null ? String(data[k.veld]) : ''; });
     return p;
   }
@@ -210,7 +219,20 @@
       + '.og-dm-key{font-family:"IBM Plex Mono",monospace;font-size:11px;color:#8a909c;min-width:120px;}'
       + '.og-dm-del{min-width:auto;padding:8px 14px;font-size:15px;line-height:1;}'
       + '.og-dm-del:hover{background:#d63030;color:#fff;border-color:#d63030;}'
-      + '.og-dm-add{align-self:flex-start;min-width:auto;}';
+      + '.og-dm-add{align-self:flex-start;min-width:auto;}'
+      // bezetting-picker
+      + '.og-bz-list{display:flex;flex-direction:column;gap:2px;max-height:50vh;overflow:auto;}'
+      + '.og-bz-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;cursor:pointer;'
+      +   'font-family:"IBM Plex Sans",sans-serif;font-size:14px;color:#1a1f2e;}'
+      + '.og-bz-row:hover{background:#f1f3f6;}'
+      + '.og-bz-row input{width:16px;height:16px;cursor:pointer;}'
+      + '.og-bz-naam{flex:1;}'
+      + '.og-bz-disc{font-family:"IBM Plex Mono",monospace;font-size:11px;color:#8a909c;}'
+      + '.og-bz-leeg{font-family:"IBM Plex Mono",monospace;font-size:12px;color:#8a909c;padding:8px;}'
+      + '.og-bz-act{border:1px solid #c8ccd4;background:#fff;color:#3d4558;border-radius:5px;'
+      +   'width:26px;height:26px;line-height:1;cursor:pointer;font-size:13px;flex:none;}'
+      + '.og-bz-act:hover{background:#f1f3f6;border-color:#9ca3ad;}'
+      + '.og-bz-del:hover{background:#d63030;color:#fff;border-color:#d63030;}';
     var st = document.createElement('style'); st.id = FORM_CSS_ID; st.textContent = css;
     document.head.appendChild(st);
   }
@@ -374,6 +396,141 @@
     });
   }
 
+  // ── bezetting-picker modal (personen toewijzen aan een discipline) ───────
+  /* Leest de personeelslijst via de runtime-store (bftAlleMedewerkers) en kan
+     personen toevoegen/bewerken/verwijderen via diezelfde store. Alles met
+     typeof-guards: zonder store degradeert het naar een leesbare keuzelijst.
+     Toewijzing bewaart de stabiele persoonId (niet de naam) → migratie-proof. */
+  function masterLijst() {
+    if (typeof bftAlleMedewerkers === 'function') return bftAlleMedewerkers();
+    if (typeof BFT_MEDEWERKERS !== 'undefined' && Array.isArray(BFT_MEDEWERKERS)) return BFT_MEDEWERKERS;
+    return [];
+  }
+  function openBezettingPicker(titel, huidige) {
+    injectFormCss();
+    var kanBeheren = (typeof bftSlaMedewerkerOp === 'function');
+    var gekozen = {};
+    (huidige || []).forEach(function (x) {
+      var id = x.persoonId || x.naam;
+      gekozen[id] = { persoonId: id, naam: x.naam };
+    });
+    return new Promise(function (resolve) {
+      var ov = document.createElement('div');
+      ov.className = 'bft-og-ov open';
+
+      function rowsHtml() {
+        var master = masterLijst();
+        var rows = master.map(function (m) {
+          var on = !!gekozen[m.id];
+          var beheer = kanBeheren
+            ? '<button class="og-bz-act" data-edit="' + esc(m.id) + '" title="Naam/discipline bewerken">✎</button>'
+              + '<button class="og-bz-act og-bz-del" data-del="' + esc(m.id) + '" title="Verwijderen uit personeelslijst">×</button>'
+            : '';
+          return '<label class="og-bz-row"><input type="checkbox" data-id="' + esc(m.id) + '" data-naam="' + esc(m.naam) + '"' + (on ? ' checked' : '') + '>'
+            + '<span class="og-bz-naam">' + esc(m.naam) + '</span><span class="og-bz-disc">' + esc(m.discipline) + '</span>'
+            + beheer + '</label>';
+        }).join('');
+        /* Gekozen personen die (niet meer) in de master staan — toch tonen. */
+        var weesIds = Object.keys(gekozen).filter(function (k) { return !master.some(function (m) { return m.id === k; }); });
+        var wees = weesIds.map(function (k) {
+          return '<label class="og-bz-row"><input type="checkbox" data-id="' + esc(k) + '" data-naam="' + esc(gekozen[k].naam) + '" checked>'
+            + '<span class="og-bz-naam">' + esc(gekozen[k].naam) + '</span><span class="og-bz-disc">—</span></label>';
+        }).join('');
+        var leeg = (!rows && !wees) ? '<p class="og-bz-leeg">Nog geen personen. Klik “+ Nieuwe persoon”.</p>' : '';
+        return rows + wees + leeg;
+      }
+      function syncFromInputs() {
+        var nieuw = {};
+        ov.querySelectorAll('.og-bz-row input[type=checkbox]').forEach(function (cb) {
+          if (cb.checked) {
+            var id = cb.getAttribute('data-id');
+            nieuw[id] = { persoonId: id, naam: cb.getAttribute('data-naam') };
+          }
+        });
+        gekozen = nieuw;
+      }
+      function paint() {
+        ov.querySelector('#og-bz-list').innerHTML = rowsHtml();
+        wireRows();
+      }
+      function wireRows() {
+        ov.querySelectorAll('.og-bz-act[data-edit]').forEach(function (b) {
+          b.addEventListener('click', function (e) {
+            e.preventDefault(); e.stopPropagation();
+            syncFromInputs();
+            var id = b.getAttribute('data-edit');
+            var m = masterLijst().filter(function (x) { return x.id === id; })[0];
+            if (!m) return;
+            var naam = global.prompt ? global.prompt('Naam:', m.naam) : null;
+            if (naam === null) return;
+            naam = naam.trim(); if (!naam) return;
+            var disc = global.prompt ? global.prompt('Discipline:', m.discipline || '') : m.discipline;
+            bftSlaMedewerkerOp({ id: id, naam: naam, discipline: (disc || '').trim() || 'Overig' });
+            if (gekozen[id]) gekozen[id].naam = naam;
+            paint();
+          });
+        });
+        ov.querySelectorAll('.og-bz-act[data-del]').forEach(function (b) {
+          b.addEventListener('click', function (e) {
+            e.preventDefault(); e.stopPropagation();
+            syncFromInputs();
+            var id = b.getAttribute('data-del');
+            var m = masterLijst().filter(function (x) { return x.id === id; })[0];
+            var naam = m ? m.naam : 'deze persoon';
+            if (global.confirm && !global.confirm('“' + naam + '” verwijderen uit de personeelslijst?')) return;
+            if (typeof bftVerwijderMedewerker === 'function') bftVerwijderMedewerker(id);
+            delete gekozen[id];
+            paint();
+          });
+        });
+      }
+
+      ov.innerHTML = ''
+        + '<div class="bft-og-modal" role="dialog" aria-modal="true" style="max-width:520px;min-height:auto">'
+        +   '<div class="bft-og-top"><div class="ic">👤</div><div class="bft-og-ttl">' + esc(titel) + '</div></div>'
+        +   '<div class="bft-og-body og-dm-body" style="display:block">'
+        +     '<div id="og-bz-list" class="og-bz-list"></div>'
+        +     (kanBeheren ? '<button class="bft-og-btn og-dm-add" type="button" id="og-bz-nieuw" style="margin-top:12px">+ Nieuwe persoon</button>' : '')
+        +   '</div>'
+        +   '<div class="bft-og-actions">'
+        +     '<button class="bft-og-btn" data-act="cancel">Annuleer</button>'
+        +     '<button class="bft-og-btn primary" data-act="ok">Opslaan</button>'
+        +   '</div>'
+        + '</div>';
+      document.body.appendChild(ov);
+      paint();
+
+      function close(val) {
+        if (ov.parentNode) ov.parentNode.removeChild(ov);
+        document.removeEventListener('keydown', onKey);
+        resolve(val);
+      }
+      function onKey(e) { if (e.key === 'Escape') { e.preventDefault(); close(null); } }
+
+      var nieuwBtn = ov.querySelector('#og-bz-nieuw');
+      if (nieuwBtn) nieuwBtn.addEventListener('click', function () {
+        syncFromInputs();
+        var naam = global.prompt ? global.prompt('Naam nieuwe persoon:') : '';
+        if (!naam || !naam.trim()) return;
+        var disc = global.prompt ? global.prompt('Discipline (bv. Engineering / WVB / extern):', '') : '';
+        var id = (typeof bftNieuwMedewerkerId === 'function') ? bftNieuwMedewerkerId() : ('mdw_' + Date.now().toString(36));
+        bftSlaMedewerkerOp({ id: id, naam: naam.trim(), discipline: (disc || '').trim() || 'Overig' });
+        gekozen[id] = { persoonId: id, naam: naam.trim() };  /* nieuw = meteen aangevinkt */
+        paint();
+      });
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(null); });
+      ov.querySelectorAll('.bft-og-actions .bft-og-btn').forEach(function (b) {
+        b.addEventListener('click', function () {
+          if (b.getAttribute('data-act') === 'ok') {
+            syncFromInputs();
+            close(Object.keys(gekozen).map(function (k) { return gekozen[k]; }));
+          } else close(null);
+        });
+      });
+      document.addEventListener('keydown', onKey);
+    });
+  }
+
   // ── confirm helper (BFTDialog of fallback) ───────────────────────────────
   function confirmDlg(msg, opts) {
     if (global.BFTDialog && typeof global.BFTDialog.confirm === 'function') {
@@ -388,7 +545,45 @@
     if (!el) { console.error('[BFTOverallGrid] container niet gevonden:', opts.container); return null; }
     var store = makeStore(opts.storePrefix);
 
-    var doc = migreer(store.get(opts.storeKey), opts.jaar);
+    // ── Persistentie: per-project records i.p.v. één monolithisch document ──
+    // In-memory blijft `doc` een samengevoegd document (getState() ongewijzigd →
+    // render/injectors raken niets). Opslag is gesplitst zodat één planner per
+    // project z'n eigen record schrijft (multi-user-veilig; mapt op SharePoint-
+    // rij-per-project). Keys (achter de store-prefix):
+    //   'config'    = { versie, jaar, disciplines }   (globaal)
+    //   'index'     = [projectId, …]                  (volgorde + welke bestaan)
+    //   'proj_<id>' = volledig project                (meta + weken + bezetting)
+    // Legacy 'document' (één blob) wordt bij de eerste load éénmalig gesplitst;
+    // de oude blob blijft als 'document_backup' bewaard.
+    function persistConfig()   { store.set('config', { versie: doc.versie, jaar: doc.jaar, disciplines: doc.disciplines }); }
+    function persistIndex()    { store.set('index', doc.projecten.map(function (p) { return p.id; })); }
+    function persistProject(p) { if (p && p.id) store.set('proj_' + p.id, p); }
+    function emitChange()      { if (typeof opts.onChange === 'function') { try { opts.onChange(getState()); } catch (e) {} } }
+
+    function laadDoc() {
+      var config = store.get('config');
+      var index  = store.get('index');
+      if (config || Array.isArray(index)) {
+        var ids = Array.isArray(index) ? index : [];
+        var projecten = [];
+        ids.forEach(function (id) { var p = store.get('proj_' + id); if (p) projecten.push(p); });
+        return migreer({ versie: config && config.versie, jaar: config && config.jaar, disciplines: config && config.disciplines, projecten: projecten }, opts.jaar);
+      }
+      // Eenmalige migratie van het oude monolithische document, indien aanwezig.
+      var legacy = store.get(opts.storeKey);
+      if (legacy) {
+        var gemigreerd = migreer(legacy, opts.jaar);
+        store.set('document_backup', legacy);   // veiligheidskopie
+        store.set('config', { versie: gemigreerd.versie, jaar: gemigreerd.jaar, disciplines: gemigreerd.disciplines });
+        store.set('index', gemigreerd.projecten.map(function (p) { return p.id; }));
+        gemigreerd.projecten.forEach(persistProject);
+        store.del(opts.storeKey);                // monoliet weg (backup blijft)
+        return gemigreerd;
+      }
+      return migreer(null, opts.jaar);
+    }
+
+    var doc = laadDoc();
 
     // UI-state (uitgeklapte rijen + resolutie) — los van het document
     var ui = store.get(opts.uiKey) || {};
@@ -396,9 +591,15 @@
     if (ui.resolutie !== 'week' && ui.resolutie !== 'maand') ui.resolutie = 'maand';
     var drag = null; // actieve schilder-sessie
 
-    function save() {
-      store.set(opts.storeKey, doc);
-      if (typeof opts.onChange === 'function') { try { opts.onChange(getState()); } catch (e) {} }
+    // Volledige opslag (config + index + álle projecten) — voor import + discipline-cascade.
+    function save() { persistConfig(); persistIndex(); doc.projecten.forEach(persistProject); emitChange(); }
+    // Granulaire opslag — slechts één gewijzigd project (+ change-event). Voorkeur.
+    // Werkt de index bij als dit project er (nog) niet in staat → geen verweesde records.
+    function saveProject(p) {
+      persistProject(p);
+      var idx = store.get('index') || [];
+      if (p && p.id && idx.indexOf(p.id) === -1) persistIndex();
+      emitChange();
     }
     function saveUi() { store.set(opts.uiKey, ui); }
     function getState() { return doc; }
@@ -440,6 +641,11 @@
       if (samen.length) p.weken[key] = samen; else delete p.weken[key];
     }
 
+    function bezettingVoor(p, key) {
+      var b = (p.bezetting && p.bezetting[key]) || [];
+      return Array.isArray(b) ? b : [];
+    }
+
     function isoWeekNummer(d) {
       var jan4 = new Date(Date.UTC(d.getFullYear(), 0, 4));
       var day  = jan4.getUTCDay() || 7;
@@ -471,13 +677,26 @@
       });
       html += '</tr></thead><tbody>';
 
-      if (!doc.projecten.length) {
+      /* Zichtbare projecten — in filter-modus slechts het gekozen project. */
+      var zichtbaar = doc.projecten;
+      if (opts.filterProject) {
+        var f = opts.filterProject;
+        zichtbaar = doc.projecten.filter(function (p) {
+          return (f.id && p.id === f.id) || (f.servnr && p.servnr === f.servnr);
+        });
+      }
+
+      if (!zichtbaar.length) {
         var span = 1 + META_KOLOMMEN.length + kol.length;
         html += '<tr><td class="og-empty" colspan="' + span + '">'
-          + 'Nog geen projecten. Klik op “+ Project” om er een toe te voegen.</td></tr>';
+          + (opts.filterProject
+              ? 'Dit project staat nog niet in de planning. Gebruik “⟳ Sync” in de Overall Planning.'
+              : 'Nog geen projecten. Klik op “+ Project” om er een toe te voegen.')
+          + '</td></tr>';
       } else {
-        doc.projecten.forEach(function (p) {
-          var open = !!ui.expanded[p.id];
+        zichtbaar.forEach(function (p) {
+          /* In filter-modus altijd open (de editor toont één project volledig). */
+          var open = !!ui.expanded[p.id] || !!opts.filterProject;
           html += '<tr class="og-row-project' + (open ? ' open' : '') + '" data-id="' + esc(p.id) + '" data-pid="' + esc(p.id) + '">';
           html += stickyTd('og-td-act', 0, STICKY_ACT, BG_ROW,
             '<button class="og-caret" data-id="' + esc(p.id) + '" title="Uit-/inklappen">' + (open ? '▼' : '▶') + '</button>'
@@ -501,12 +720,20 @@
               html += '<td class="og-td-tijd' + hCls + '"></td>';
             } else {
               /* Gestapelde gekleurde balkjes per discipline */
-              var h = Math.floor(100 / actief.length);
               var bars = actief.map(function (d) {
                 return '<div style="flex:1;background:' + esc(d.color) + ';opacity:0.85"></div>';
               }).join('');
-              html += '<td class="og-td-tijd' + hCls + '" style="padding:0;vertical-align:top">'
-                + '<div style="height:100%;min-height:22px;display:flex;flex-direction:column">' + bars + '</div></td>';
+              /* Aantal UNIEKE personen over de actieve disciplines deze kolom —
+                 dedup op persoonId, zodat iemand in twee disciplines niet
+                 dubbel telt (dit is een hoofdtal, geen werklast). */
+              var uniek = {};
+              actief.forEach(function (d) {
+                bezettingVoor(p, d.key).forEach(function (x) { uniek[x.persoonId || x.naam] = 1; });
+              });
+              var totPers = Object.keys(uniek).length;
+              var badge = totPers > 0 ? '<span class="og-cnt">' + totPers + '</span>' : '';
+              html += '<td class="og-td-tijd' + hCls + '" style="padding:0;vertical-align:top;position:relative">'
+                + '<div style="height:100%;min-height:22px;display:flex;flex-direction:column">' + bars + '</div>' + badge + '</td>';
             }
           });
           html += '</tr>';
@@ -516,25 +743,31 @@
               var set = weekSetFor(p, d.key);
               html += '<tr class="og-row-disc" data-id="' + esc(p.id) + '" data-disc="' + esc(d.key) + '">';
               html += stickyTd('og-td-act', 0, STICKY_ACT, BG_DISC, '');
+              var nPers = bezettingVoor(p, d.key).length;
               META_KOLOMMEN.forEach(function (k, i) {
-                var content = (i === 0)
-                  ? '<span class="og-disc-sw" style="background:' + esc(d.color) + '"></span>'
-                    + '<span class="og-disc-label">' + esc(d.label) + '</span>'
-                  : '';
+                var content = '';
+                if (i === 0) {
+                  content = '<span class="og-disc-sw" style="background:' + esc(d.color) + '"></span>'
+                    + '<span class="og-disc-label">' + esc(d.label) + '</span>';
+                } else if (i === 1) {
+                  /* Personen-knop in de (verder lege) omschrijving-kolom — ruimer dan klant. */
+                  content = '<button class="og-pers-btn" data-id="' + esc(p.id) + '" data-disc="' + esc(d.key) + '" title="Personen toewijzen">👤 ' + nPers + (nPers === 1 ? ' persoon' : ' personen') + '</button>';
+                }
                 html += stickyTd('og-td-disc', STICKY_LEFT[i], STICKY_META[i], BG_DISC, content);
               });
+              var persLabel = nPers > 0 ? '<span class="og-pers">' + nPers + '</span>' : '';
               kol.forEach(function (c) {
                 var isHuidig = toonHuidig && ((c.type === 'week' && c.week === huidigWeek) || (c.type === 'maand' && c.maand === huidigMaand));
                 var hCls = isHuidig ? ' og-td-huidig' : '';
                 if (c.type === 'week') {
                   var on = !!set[c.week];
                   html += '<td class="og-td-tijd og-paint-cell' + (on ? ' painted' : '') + hCls + '" data-week="' + c.week + '"'
-                    + (on ? ' style="background:' + esc(d.color) + '"' : '') + '></td>';
+                    + (on ? ' style="background:' + esc(d.color) + '"' : '') + '>' + (on ? persLabel : '') + '</td>';
                 } else {
                   var any = false;
                   for (var w in set) { if (set[w] && maandVanWeek(doc.jaar, Number(w)) === c.maand) { any = true; break; } }
                   html += '<td class="og-td-tijd og-maand-sum' + (any ? ' filled' : '') + hCls + '"'
-                    + (any ? ' style="background:' + esc(d.color) + '"' : '') + '></td>';
+                    + (any ? ' style="background:' + esc(d.color) + '"' : '') + '>' + (any ? persLabel : '') + '</td>';
                 }
               });
               html += '</tr>';
@@ -562,6 +795,13 @@
           var naam = p ? (p.wo || p.klant || p.omschrijving || 'dit project') : 'dit project';
           confirmDlg('Project “' + naam + '” verwijderen?', { title: 'Verwijderen', okLabel: 'Verwijderen', danger: true })
             .then(function (ok) { if (ok) removeProject(id); });
+        });
+      });
+
+      el.querySelectorAll('.og-pers-btn').forEach(function (b) {
+        b.addEventListener('click', function (e) {
+          e.stopPropagation();
+          openBezetting(b.getAttribute('data-id'), b.getAttribute('data-disc'));
         });
       });
 
@@ -599,9 +839,10 @@
     }
     function endDrag() {
       if (!drag) return;
-      commitSet(drag.p, drag.key, drag.set);
+      var p = drag.p;                 /* vastpakken vóór reset */
+      commitSet(p, drag.key, drag.set);
       drag = null;
-      save();
+      saveProject(p);                 /* alleen dit project veranderde */
     }
 
     function setResolutie(r) { ui.resolutie = (r === 'week' ? 'week' : 'maand'); saveUi(); render(); }
@@ -624,7 +865,8 @@
     function addProject(data) {
       var p = nieuwProject(data);
       doc.projecten.push(p);
-      save(); render();
+      persistProject(p); persistIndex(); emitChange();   /* nieuw project + index */
+      render();
       return p;
     }
     function promptAddProject() {
@@ -636,19 +878,53 @@
     function removeProject(id) {
       var before = doc.projecten.length;
       doc.projecten = doc.projecten.filter(function (p) { return p.id !== id; });
-      if (doc.projecten.length !== before) { save(); render(); }
+      if (doc.projecten.length !== before) {
+        store.del('proj_' + id); persistIndex(); emitChange();   /* record + index */
+        render();
+      }
     }
+    function setBezetting(projId, discKey, lijst) {
+      var p = doc.projecten.filter(function (x) { return x.id === projId; })[0];
+      if (!p) return;
+      if (!p.bezetting) p.bezetting = {};
+      if (lijst && lijst.length) p.bezetting[discKey] = lijst;
+      else delete p.bezetting[discKey];
+      saveProject(p); render();      /* alleen dit project veranderde */
+    }
+    function openBezetting(projId, discKey) {
+      var p = doc.projecten.filter(function (x) { return x.id === projId; })[0];
+      if (!p) return Promise.resolve(null);
+      var disc = discByKey(discKey);
+      var titel = (disc ? disc.label : discKey) + ' — personen';
+      return openBezettingPicker(titel, bezettingVoor(p, discKey)).then(function (lijst) {
+        if (lijst === null) return null;        /* geannuleerd → ongewijzigd */
+        setBezetting(projId, discKey, lijst);
+        return lijst;
+      });
+    }
+
     function exportJSON() { return JSON.stringify(doc, null, 2); }
-    function importJSON(obj) { doc = migreer(obj, opts.jaar); save(); render(); }
+    function importJSON(obj) {
+      /* Records van projecten die na de import niet meer bestaan opruimen. */
+      var oudeIds = store.get('index') || [];
+      doc = migreer(obj, opts.jaar);
+      var nieuweIds = doc.projecten.map(function (p) { return p.id; });
+      oudeIds.forEach(function (id) { if (nieuweIds.indexOf(id) === -1) store.del('proj_' + id); });
+      save(); render();   /* volledige (her)schrijf: config + index + alle projecten */
+    }
 
     /* Toon-jaar wisselen. Entries van andere jaren blijven in doc bewaard
        (weekSetFor/commitSet zijn al jaar-gated), dus dit is puur een view-wissel. */
+    /* Scope de weergave naar één project (of null = alle). Hergebruikt door de
+       per-project editor om bij projectwissel te herscopen zonder de instance
+       (en z'n listeners) opnieuw aan te maken. */
+    function setFilterProject(f) { opts.filterProject = f || null; render(); }
     function getJaar() { return doc.jaar; }
     function setJaar(j) {
       j = Number(j);
       if (!j || isNaN(j) || j === doc.jaar) return;
       doc.jaar = j;
-      save();     /* persisteert doc.jaar + onChange (badge/snapshots) */
+      persistConfig(); emitChange();   /* alleen jaar (config) wijzigt; projectdata niet */
       render();   /* tijd-as + injectors (onRender) opnieuw voor het nieuwe jaar */
     }
 
@@ -660,6 +936,11 @@
         doc.projecten.forEach(function (p) {
           Object.keys(p.weken || {}).forEach(function (k) {
             if (behoudKeys.indexOf(k) === -1) delete p.weken[k];
+          });
+          /* Ook de bezetting van verwijderde disciplines opruimen (anders blijft
+             die verweesd in de opslag staan). */
+          Object.keys(p.bezetting || {}).forEach(function (k) {
+            if (behoudKeys.indexOf(k) === -1) delete p.bezetting[k];
           });
         });
         doc.disciplines = nieuwe;
@@ -677,6 +958,8 @@
       addProject: addProject,
       promptAddProject: promptAddProject,
       removeProject: removeProject,
+      setBezetting: setBezetting,
+      openBezetting: openBezetting,
       toggleExpand: toggleExpand,
       openDisciplineManager: openDisciplineMgr,
       setResolutie: setResolutie,
@@ -687,7 +970,35 @@
       importJSON: importJSON,
       getJaar: getJaar,
       setJaar: setJaar,
+      setFilterProject: setFilterProject,
       _opts: opts
+    };
+  }
+
+  /* ── Plan-snapshot (gedeeld) ──────────────────────────────────────────────
+     Vroegste start + laatste eind over álle disciplines/jaren van één project,
+     geordend op (jaar,week) — NIET op het getoonde jaar, zodat een view-wissel
+     de snapshot niet herschrijft. Pure functie: geen storage, geen bftId. De
+     aanroeper bepaalt de sleutel (bft_v2_snap_plan_<bftId>). Eén bron van
+     waarheid voor zowel de Overall Planning als de per-project editor. */
+  function planSnapshot(project, fallbackJaar) {
+    var alleWeken = Object.keys(project && project.weken || {})
+      .reduce(function (acc, k) { return acc.concat(project.weken[k] || []); }, []);
+    if (!alleWeken.length) return null;
+    function _jr(w) { return typeof w.jaar === 'number' ? w.jaar : fallbackJaar; }
+    var vroegste = alleWeken.reduce(function (a, w) {
+      return (_jr(w) * 100 + (w.startWeek || 99)) < (_jr(a) * 100 + (a.startWeek || 99)) ? w : a;
+    });
+    var laatste = alleWeken.reduce(function (a, w) {
+      return (_jr(w) * 100 + (w.eindWeek || 0)) > (_jr(a) * 100 + (a.eindWeek || 0)) ? w : a;
+    });
+    return {
+      startWeek: vroegste.startWeek || null,
+      startJaar: _jr(vroegste),
+      eindWeek:  laatste.eindWeek || null,
+      eindJaar:  _jr(laatste),
+      jaar:      _jr(vroegste),   /* back-compat voor oude lezers */
+      updated:   new Date().toISOString()
     };
   }
 
@@ -696,6 +1007,7 @@
     schemaVersie: SCHEMA_VERSIE,
     DEFAULT_DISCIPLINES: DEFAULT_DISCIPLINES,
     META_KOLOMMEN: META_KOLOMMEN,
+    planSnapshot: planSnapshot,
     register: function (userOpts) {
       var opts = mergeOpts(DEFAULT_OPTS, userOpts || {});
       return createInstance(opts);
