@@ -11,14 +11,15 @@
  * Disciplines sluiten aan op de OverallPlanning/ResourcePlanning-disciplines.
  * ────────────────────────────────────────────────────────────────────────
  */
+/* Namen afgekort naar 2-3 letters (conventie: werknemers worden zo aangeduid). */
 const BFT_MEDEWERKERS = [
-  { id: 'mdw_jdv', naam: 'J. de Vries', discipline: 'Projectleider' },
-  { id: 'mdw_pja', naam: 'P. Jansen',   discipline: 'Projectleider' },
-  { id: 'mdw_mba', naam: 'M. Bakker',   discipline: 'Projectleider' },
-  { id: 'mdw_she', naam: 'S. Hendriks', discipline: 'Engineering' },
-  { id: 'mdw_kev', naam: 'K. Evers',    discipline: 'Engineering' },
-  { id: 'mdw_two', naam: 'T. Wouters',  discipline: 'WVB' },
-  { id: 'mdw_rde', naam: 'R. Dekker',   discipline: 'WVB' }
+  { id: 'mdw_jdv', naam: 'JdV', discipline: 'Projectleider' },
+  { id: 'mdw_pja', naam: 'PJ',  discipline: 'Projectleider' },
+  { id: 'mdw_mba', naam: 'MB',  discipline: 'Projectleider' },
+  { id: 'mdw_she', naam: 'SH',  discipline: 'Engineering' },
+  { id: 'mdw_kev', naam: 'KE',  discipline: 'Engineering' },
+  { id: 'mdw_two', naam: 'TW',  discipline: 'WVB' },
+  { id: 'mdw_rde', naam: 'RD',  discipline: 'WVB' }
 ];
 
 /* ──────────────────────────────────────────────────────────────────────

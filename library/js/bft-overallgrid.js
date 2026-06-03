@@ -72,8 +72,8 @@
     onChange   : null,
     onRender   : null,
     /* filterProject: toon slechts één project (geforceerd uitgeklapt) — voor de
-       per-project schilder-editor in Projectoverzicht. Match op { servnr } en/of
-       { id }. null = alle projecten (normale overall-weergave). */
+       per-project schilder-editor in Projectoverzicht. Match op { bftId }
+       (voorkeur), { servnr } en/of { id }. null = alle projecten. */
     filterProject: null
   };
 
@@ -164,6 +164,10 @@
        discipline. Object-entries (geen kale getallen) zodat per-persoon-weken
        later toegevoegd kan worden zonder datamigratie. */
     var p = { id: data.id || ('pr_' + uuid()), weken: data.weken || {}, bezetting: data.bezetting || {} };
+    /* bftId = stabiele koppelsleutel naar BFT_PROJECTEN (= project.id). Apart van
+       servnr (dat nu het zichtbare 6-cijferige servicenummer toont). Niet-kolom-
+       veld, daarom expliciet bewaard (anders gooit migreer het weg). */
+    p.bftId = data.bftId != null ? String(data.bftId) : '';
     META_KOLOMMEN.forEach(function (k) { p[k.veld] = data[k.veld] != null ? String(data[k.veld]) : ''; });
     return p;
   }
@@ -682,7 +686,11 @@
       if (opts.filterProject) {
         var f = opts.filterProject;
         zichtbaar = doc.projecten.filter(function (p) {
-          return (f.id && p.id === f.id) || (f.servnr && p.servnr === f.servnr);
+          /* bftId = primaire koppeling; p.servnr===f.bftId vangt oude records op
+             waar servnr nog de bftId bevatte (back-compat vóór de ontkoppeling). */
+          return (f.bftId && (p.bftId === f.bftId || p.servnr === f.bftId))
+              || (f.id && p.id === f.id)
+              || (f.servnr && p.servnr === f.servnr);
         });
       }
 

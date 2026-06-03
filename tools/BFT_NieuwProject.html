@@ -13,7 +13,8 @@
     .card { background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;box-shadow:var(--shadow-md); }
     .fg { display:grid;gap:14px; }
     .fg2 { grid-template-columns:1fr 1fr; }
-    @media(max-width:560px){.fg2{grid-template-columns:1fr;}}
+    .fg3 { grid-template-columns:1fr 1fr 1fr; }
+    @media(max-width:560px){.fg2,.fg3{grid-template-columns:1fr;}}
     .field { display:flex;flex-direction:column;gap:5px; }
     .field label { font-size:10px;font-weight:700;letter-spacing:0.9px;text-transform:uppercase;color:var(--muted);font-family:var(--mono); }
     .field label .req { color:var(--danger); }
@@ -58,20 +59,26 @@
   </div>
 
   <div class="card">
-    <div class="fg fg2" style="margin-bottom:14px">
+    <div class="fg fg3" style="margin-bottom:14px">
       <div class="field">
         <label>Projectnummer <span class="req">*</span></label>
-        <input type="text" id="f_nr" placeholder="bijv. 201270" oninput="updatePreview()">
+        <input type="text" id="f_nr" inputmode="numeric" maxlength="6" placeholder="bijv. 201270"
+               oninput="this.value=this.value.replace(/\D/g,'').slice(0,6); updatePreview()">
+      </div>
+      <div class="field">
+        <label>Servicenummer</label>
+        <input type="text" id="f_servicenr" inputmode="numeric" maxlength="6" placeholder="bijv. 201224 (6 cijfers)"
+               oninput="this.value=this.value.replace(/\D/g,'').slice(0,6)">
       </div>
       <div class="field">
         <label>Machine type <span class="req">*</span></label>
-        <input type="text" id="f_type" placeholder="bijv. BFMR2000EK" oninput="updatePreview()">
+        <input type="text" id="f_type" maxlength="14" placeholder="bijv. BFMR2000EK" oninput="updatePreview()">
       </div>
     </div>
     <div class="fg" style="margin-bottom:14px">
       <div class="field">
         <label>Machine naam <span class="req">*</span></label>
-        <input type="text" id="f_naam" placeholder="bijv. BFMR2000EK" oninput="updatePreview()">
+        <input type="text" id="f_naam" maxlength="14" placeholder="bijv. BFMR2000EK (max 14)" oninput="updatePreview()">
       </div>
       <div class="field">
         <label>Klant <span class="req">*</span></label>
@@ -82,17 +89,17 @@
     <div class="fg fg2" style="margin-bottom:14px">
       <div class="field">
         <label>Projectleider</label>
-        <input type="text" id="f_pl" list="dl_pl" placeholder="Kies of typ naam PL" oninput="updatePreview()">
+        <input type="text" id="f_pl" list="dl_pl" maxlength="3" placeholder="2-3 ltr, bv. JdV" oninput="updatePreview()">
         <datalist id="dl_pl"></datalist>
       </div>
       <div class="field">
         <label>Engineer</label>
-        <input type="text" id="f_eng" list="dl_eng" placeholder="Kies of typ naam engineer" oninput="updatePreview()">
+        <input type="text" id="f_eng" list="dl_eng" maxlength="3" placeholder="2-3 ltr, bv. SH" oninput="updatePreview()">
         <datalist id="dl_eng"></datalist>
       </div>
       <div class="field">
         <label>WVB (werkvoorbereiding)</label>
-        <input type="text" id="f_wvb" list="dl_wvb" placeholder="Kies of typ naam WVB" oninput="updatePreview()">
+        <input type="text" id="f_wvb" list="dl_wvb" maxlength="3" placeholder="2-3 ltr, bv. TW" oninput="updatePreview()">
         <datalist id="dl_wvb"></datalist>
       </div>
       <div class="field">
@@ -154,7 +161,7 @@ function gv(id){ return document.getElementById(id)?.value?.trim() || ''; }
 function updatePreview(){
   const nr = gv('f_nr'), type = gv('f_type');
   if (nr && type) {
-    document.getElementById('f_naam').placeholder = `Mix ${type}`;
+    document.getElementById('f_naam').placeholder = type;
   }
 }
 
@@ -162,9 +169,12 @@ function updatePreview(){
 function huidigProjectObj(){
   const nr = gv('f_nr'), type = gv('f_type'), naam = gv('f_naam'), klant = gv('f_klant');
   if (!nr || !type || !naam || !klant) { alert('Vul minimaal projectnummer, type, naam en klant in.'); return null; }
+  if (!/^\d{6}$/.test(nr)) { alert('Projectnummer moet uit precies 6 cijfers bestaan.'); return null; }
+  const servicenr = gv('f_servicenr');
+  if (servicenr && !/^\d{6}$/.test(servicenr)) { alert('Servicenummer moet 6 cijfers zijn (of leeg laten).'); return null; }
   return {
     id: `${nr}_${type.replace(/[^a-zA-Z0-9]/g,'').toUpperCase()}`,
-    projectnr: nr, naam, klant,
+    projectnr: nr, servicenr, naam, klant,
     oplevering: gv('f_oplevering') || '',
     pl: gv('f_pl') || '', eng: gv('f_eng') || '', wvb: gv('f_wvb') || '',
     machineType: type,
@@ -196,7 +206,7 @@ function genereer(){
     return;
   }
 
-  const code = `  ,{\n    id: '${p.id}',\n    projectnr: '${p.projectnr}',\n    naam: '${p.naam}',\n    klant: '${p.klant}',\n    oplevering: '${p.oplevering}',\n    pl: '${p.pl}',\n    eng: '${p.eng}',\n    wvb: '${p.wvb}',\n    machineType: '${p.machineType}',\n    aangemaakt: '${p.aangemaakt}',\n    status: '${p.status}',\n    plannerUrl: '${p.plannerUrl}'\n  }`;
+  const code = `  ,{\n    id: '${p.id}',\n    projectnr: '${p.projectnr}',\n    servicenr: '${p.servicenr}',\n    naam: '${p.naam}',\n    klant: '${p.klant}',\n    oplevering: '${p.oplevering}',\n    pl: '${p.pl}',\n    eng: '${p.eng}',\n    wvb: '${p.wvb}',\n    machineType: '${p.machineType}',\n    aangemaakt: '${p.aangemaakt}',\n    status: '${p.status}',\n    plannerUrl: '${p.plannerUrl}'\n  }`;
   const nr = p.projectnr, naam = p.naam;
 
   const gitCommands = `git -C "C:\\Users\\sjefv\\OneDrive\\Documenten\\Claude\\Projects\\BFT-V2" add library/js/bft-projects.js\ngit -C "C:\\Users\\sjefv\\OneDrive\\Documenten\\Claude\\Projects\\BFT-V2" commit -m "Nieuw project: ${nr} ${naam}"\ngit -C "C:\\Users\\sjefv\\OneDrive\\Documenten\\Claude\\Projects\\BFT-V2" push`;

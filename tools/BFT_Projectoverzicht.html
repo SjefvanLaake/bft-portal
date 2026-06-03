@@ -688,14 +688,14 @@ function ensurePlanEditor() {
   planGrid = BFTOverallGrid.register({
     container: document.getElementById('planGrid'),
     jaar: new Date().getFullYear(),
-    filterProject: { servnr: '__none__' },   /* wordt bij scopePlanEditor gezet */
+    filterProject: { bftId: '__none__' },   /* wordt bij scopePlanEditor gezet */
     onChange: function () {
       /* Schrijf de plan-snapshot voor het actieve project (zelfde key/logica als
          de Overall Planning, via de gedeelde helper). */
       if (!actief) return;
       try {
         const snap = BFTOverallGrid.planSnapshot(planGrid.getState().projecten
-          .filter(function (x) { return x.servnr === actief.id; })[0] || {}, planGrid.getJaar());
+          .filter(function (x) { return (x.bftId || x.servnr) === actief.id; })[0] || {}, planGrid.getJaar());
         if (snap) localStorage.setItem('bft_v2_snap_plan_' + actief.id, JSON.stringify(snap));
       } catch (e) {}
     }
@@ -718,11 +718,11 @@ function updatePlanJaarLbl() {
   if (lbl && planGrid) lbl.textContent = planGrid.getJaar();
 }
 
-/* Scope de editor op één project (bftId = servnr in het planning-record). */
+/* Scope de editor op één project (koppeling via het bftId-veld). */
 function scopePlanEditor(bftId) {
   ensurePlanEditor();
   document.getElementById('poDetailPlan').style.display = '';
-  planGrid.setFilterProject({ servnr: bftId });
+  planGrid.setFilterProject({ bftId: bftId });
   updatePlanJaarLbl();
 }
 

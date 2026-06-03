@@ -718,22 +718,41 @@ function injectResourceRijen() {
   });
 }
 
+/* Koppel een planning-project aan zijn BFT-project-id. Voorkeur: het aparte
+   bftId-veld. Back-compat: oude records droegen de bftId nog in servnr. Laatste
+   redmiddel: match op WO-nr = projectnr. (servnr toont nu het 6-cijferige
+   servicenummer en is GEEN koppelsleutel meer.) */
 function vindBftIdVanProj(proj) {
+  if (proj.bftId && bftAlleProjecten().find(function(p){ return p.id === proj.bftId; })) return proj.bftId;
   if (proj.servnr && bftAlleProjecten().find(function(p){ return p.id === proj.servnr; })) return proj.servnr;
-  return null;
+  var byWo = bftAlleProjecten().find(function (p) { return p.projectnr === (proj.wo || '').trim(); });
+  return byWo ? byWo.id : null;
 }
 
-/* Zoek BFT-project-id — servnr wordt als persistente bftId gebruikt */
 function vindBftId(tr) {
   var doc = grid.getState();
   var projId = tr.dataset.pid || tr.dataset.id;
   var proj = doc.projecten.find(function (p) { return p.id === projId; });
-  if (!proj) return null;
-  /* servnr bevat de bftId (wordt bij Sync zo ingevuld) */
-  if (proj.servnr && bftAlleProjecten().find(function(p){ return p.id === proj.servnr; })) return proj.servnr;
-  /* Fallback: match op WO-nr = projectnr */
-  var bftProj = bftAlleProjecten().find(function (p) { return p.projectnr === (proj.wo || '').trim(); });
-  return bftProj ? bftProj.id : null;
+  return proj ? vindBftIdVanProj(proj) : null;
+}
+
+/* Eenmalige migratie van pre-ontkoppeling-records: servnr bevatte de bftId.
+   Zet die om naar het aparte bftId-veld en vul servnr met het 6-cijferige
+   servicenummer uit BFT_PROJECTEN. Draait stil; persisteert enkel bij wijziging. */
+function migreerServicenrVeld() {
+  if (!grid) return;
+  var doc = grid.getState();
+  var gewijzigd = false;
+  doc.projecten.forEach(function (p) {
+    if (p.bftId) return;  /* al ontkoppeld */
+    var bp = bftAlleProjecten().find(function (x) { return x.id === p.servnr; });
+    if (bp) {
+      p.bftId  = p.servnr;            /* oude bftId → eigen veld */
+      p.servnr = bp.servicenr || '';  /* kolom toont nu het servicenummer */
+      gewijzigd = true;
+    }
+  });
+  if (gewijzigd) grid.importJSON(doc);  /* persisteert + re-render */
 }
 
 /* ================================================================
@@ -743,9 +762,8 @@ function schrijfPlanningSnapshots() {
   if (!grid) return;
   var doc = grid.getState();
   doc.projecten.forEach(function (proj) {
-    /* bftId = servnr (gevalideerd tegen BFT_PROJECTEN), niet proj._bftId — dat
-       veld bestond niet, waardoor de snapshot nooit werd geschreven. Snapshot-
-       berekening zit nu in de gedeelde BFTOverallGrid.planSnapshot (één bron). */
+    /* bftId via vindBftIdVanProj (bftId-veld → servnr-fallback → wo). Snapshot-
+       berekening zit in de gedeelde BFTOverallGrid.planSnapshot (één bron). */
     var bftId = vindBftIdVanProj(proj);
     if (!bftId) return;
     var snap = BFTOverallGrid.planSnapshot(proj, doc.jaar);
@@ -759,7 +777,7 @@ function schrijfPlanningSnapshots() {
    ================================================================ */
 document.getElementById('btnSync').addEventListener('click', function () {
   var doc = grid.getState();
-  var bestaandeIds = doc.projecten.map(function (p) { return p.servnr; }).filter(Boolean);
+  var bestaandeIds = doc.projecten.map(function (p) { return p.bftId || p.servnr; }).filter(Boolean);
   var nieuw = bftAlleProjecten().filter(function (p) {
     return p.status !== 'gearchiveerd' && bestaandeIds.indexOf(p.id) === -1;
   });
@@ -773,8 +791,9 @@ document.getElementById('btnSync').addEventListener('click', function () {
     grid.addProject({
       klant:        p.klant,
       omschrijving: p.naam,
-      wo:           p.projectnr,
-      servnr:       p.id,        /* persistent bftId — niet wijzigen */
+      wo:           p.projectnr,            /* WO-nr — 6 cijfers */
+      servnr:       p.servicenr || '',      /* Service-nr — 6 cijfers (zichtbaar) */
+      bftId:        p.id,                   /* koppelsleutel — niet zichtbaar */
       pl:           p.pl || '',
       eng:          p.eng || '',
       wvb:          p.wvb || ''
@@ -954,6 +973,8 @@ updateBadge();
   var b = document.getElementById('btnFeit');
   if (b) { b.style.background = 'rgba(232,160,0,0.12)'; b.style.color = 'var(--accent-dk)'; b.style.borderColor = 'var(--accent)'; }
 })();
+/* Eenmalige opwaardering van oude records (servnr=bftId → bftId-veld + servicenummer). */
+migreerServicenrVeld();
 /* Eén volledige render nu 'grid' is toegekend → onRender draait alle injectors
    (knoppen/deadlines/capaciteit/resource) op de verse DOM. */
 grid.render();
