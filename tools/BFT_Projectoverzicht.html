@@ -688,6 +688,7 @@ function ensurePlanEditor() {
   planGrid = BFTOverallGrid.register({
     container: document.getElementById('planGrid'),
     jaar: new Date().getFullYear(),
+    vanafHuidig: true,                       /* zelfde focus als het overzicht: huidig jaar start bij week/maand −1 */
     filterProject: { bftId: '__none__' },   /* wordt bij scopePlanEditor gezet */
     onChange: function () {
       /* Schrijf de plan-snapshot voor het actieve project (zelfde key/logica als
