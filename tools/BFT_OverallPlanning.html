@@ -736,21 +736,35 @@ function vindBftId(tr) {
   return proj ? vindBftIdVanProj(proj) : null;
 }
 
-/* Eenmalige migratie van pre-ontkoppeling-records: servnr bevatte de bftId.
-   Zet die om naar het aparte bftId-veld en vul servnr met het 6-cijferige
-   servicenummer uit BFT_PROJECTEN. Draait stil; persisteert enkel bij wijziging. */
-function migreerServicenrVeld() {
+/* Ververs de weergavevelden van gekoppelde planning-projecten uit de bron
+   (BFT_PROJECTEN). OverallPlanning is consume-only: alle metadata (klant,
+   omschrijving, WO, servicenummer, PL/EN/WVB) hoort de bron te volgen — alleen
+   weken/bezetting zijn planning-eigen. Lost tegelijk de ontkoppeling op: oude
+   records droegen de bftId in servnr; vindBftIdVanProj vangt dat als fallback,
+   waarna bftId apart wordt gezet en servnr het servicenummer toont. Draait stil
+   bij init; persisteert enkel bij wijziging. */
+function herstelMetadataUitBron() {
   if (!grid) return;
   var doc = grid.getState();
   var gewijzigd = false;
   doc.projecten.forEach(function (p) {
-    if (p.bftId) return;  /* al ontkoppeld */
-    var bp = bftAlleProjecten().find(function (x) { return x.id === p.servnr; });
-    if (bp) {
-      p.bftId  = p.servnr;            /* oude bftId → eigen veld */
-      p.servnr = bp.servicenr || '';  /* kolom toont nu het servicenummer */
-      gewijzigd = true;
-    }
+    var bftId = vindBftIdVanProj(p);              /* bftId-veld → servnr → wo */
+    if (!bftId) return;                            /* bv. losse Excel-rij: ongemoeid */
+    var bp = bftAlleProjecten().find(function (x) { return x.id === bftId; });
+    if (!bp) return;
+    var bron = {
+      bftId:        bftId,
+      klant:        bp.klant || '',
+      omschrijving: bp.naam || '',
+      wo:           bp.projectnr || '',
+      servnr:       bp.servicenr || '',
+      pl:           bp.pl || '',
+      eng:          bp.eng || '',
+      wvb:          bp.wvb || ''
+    };
+    Object.keys(bron).forEach(function (k) {
+      if (p[k] !== bron[k]) { p[k] = bron[k]; gewijzigd = true; }
+    });
   });
   if (gewijzigd) grid.importJSON(doc);  /* persisteert + re-render */
 }
@@ -973,8 +987,9 @@ updateBadge();
   var b = document.getElementById('btnFeit');
   if (b) { b.style.background = 'rgba(232,160,0,0.12)'; b.style.color = 'var(--accent-dk)'; b.style.borderColor = 'var(--accent)'; }
 })();
-/* Eenmalige opwaardering van oude records (servnr=bftId → bftId-veld + servicenummer). */
-migreerServicenrVeld();
+/* Ververs weergavevelden uit de bron (omschrijving/klant/WO/servicenr/PL/EN/WVB)
+   + ontkoppel oude servnr=bftId-records. */
+herstelMetadataUitBron();
 /* Eén volledige render nu 'grid' is toegekend → onRender draait alle injectors
    (knoppen/deadlines/capaciteit/resource) op de verse DOM. */
 grid.render();
