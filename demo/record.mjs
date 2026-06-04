@@ -152,6 +152,19 @@ const SNAPS = {
   '201700_MP':         { bvl:{pct:10,fase:'Fase 1 — Voorbereiding'} }
 };
 
+/* Projectoverzicht: feiten-snapshots (mbcl/bvl/ibn/eval) + een geseede planning
+   voor het hero-project, zodat de per-project editor échte balken toont. */
+const PO_SNAPS = {
+  '201267_BFMR2000EK': { mbcl:{pct:65,openItems:7}, bvl:{pct:80,fase:'Fase 3 — Montage'}, ibn:{pct:40}, eval:{score:4.2,status:'klaar'} },
+  '201250_BFM800':     { mbcl:{pct:100,openItems:0}, bvl:{pct:100,fase:'Afgerond'}, ibn:{pct:100}, eval:{score:4.6,status:'klaar'} },
+  '201268_BFR500':     { mbcl:{pct:30,openItems:14}, bvl:{pct:20,fase:'Fase 2 — Bovenbak'} }
+};
+const PO_PLAN = {
+  bftId:'201267_BFMR2000EK', klant:'Demo Klant BV', omschrijving:'BFMR2000EK',
+  wo:'201267', servnr:'201224', pl:'JdV', eng:'SH', wvb:'TW',
+  weken: { engineering:[[24,28]], wvb:[[25,29]], randtaken:[[26,30]] }
+};
+
 const SCENARIOS = [
   {
     id: 'overallplanning',
@@ -198,6 +211,66 @@ const SCENARIOS = [
       await h.shot('heeljaar');
 
       await h.card('Bofram Portaal', 'Eén plek: plan, werkelijkheid en capaciteit');
+    }
+  },
+
+  {
+    id: 'projectoverzicht',
+    tool: 'tools/BFT_Projectoverzicht.html',
+    seed: {
+      data: { snaps: PO_SNAPS, plan: PO_PLAN },
+      fn: ({ snaps, plan }) => {
+        try {
+          const now = new Date().toISOString();
+          const Y = new Date().getFullYear();
+          for (const [id, v] of Object.entries(snaps)) {
+            if (v.mbcl) localStorage.setItem('bft_v2_snap_mbcl_'+id, JSON.stringify(Object.assign({}, v.mbcl, {updated:now})));
+            if (v.bvl)  localStorage.setItem('bft_v2_snap_bvl_'+id,  JSON.stringify(Object.assign({}, v.bvl,  {updated:now})));
+            if (v.ibn)  localStorage.setItem('bft_v2_snap_ibn_'+id,  JSON.stringify(Object.assign({}, v.ibn,  {updated:now})));
+            if (v.eval) localStorage.setItem('bft_v2_snap_eval_'+id, JSON.stringify(Object.assign({}, v.eval, {updated:now})));
+          }
+          // planning-store zodat de per-project editor balken toont
+          const P = 'bft_overallplanning_';
+          const disc = [
+            {key:'engineering',label:'Engineering',color:'#FFFF00'},
+            {key:'wvb',label:'WVB',color:'#92D050'},
+            {key:'randtaken',label:'Randtaken',color:'#FFC000'},
+            {key:'begeleiding',label:'Begeleiding opbouw',color:'#00B0F0'}
+          ];
+          localStorage.setItem(P+'config', JSON.stringify({ versie:1, jaar:Y, disciplines:disc }));
+          localStorage.setItem(P+'index', JSON.stringify(['pr_demo1']));
+          const weken = {};
+          for (const [k, rs] of Object.entries(plan.weken)) weken[k] = rs.map(r => ({ startWeek:r[0], eindWeek:r[1], jaar:Y, notitie:'' }));
+          localStorage.setItem(P+'proj_pr_demo1', JSON.stringify({
+            id:'pr_demo1', bftId:plan.bftId, klant:plan.klant, omschrijving:plan.omschrijving,
+            wo:plan.wo, servnr:plan.servnr, pl:plan.pl, eng:plan.eng, wvb:plan.wvb, weken, bezetting:{}
+          }));
+        } catch(e){}
+      }
+    },
+    run: async (h) => {
+      await h.card('Bofram Portaal', 'Projectoverzicht — feiten &amp; planning per project');
+      await h.shot('start');
+
+      await h.click('.po-card:has-text("BFMR2000EK")');   // hero-project openen
+      await h.pause(1000);
+      await h.shot('detail_feiten');
+
+      await h.page.locator('#poDetailPlan').scrollIntoViewIfNeeded().catch(()=>{});
+      await h.pause(900);
+      await h.shot('planning');
+
+      await h.click('#planResBtn');                        // editor → week-modus
+      await h.pause(950);
+      await h.shot('planning_week');
+
+      await h.page.locator('.po-detail').evaluate(e => e.scrollTo({ top:0 })).catch(()=>{});
+      await h.pause(400);
+      await h.click('.po-card:has-text("BFM800")');        // ander (afgerond) project
+      await h.pause(1000);
+      await h.shot('ander_project');
+
+      await h.card('Bofram Portaal', 'Eén klik: status, voortgang en planning');
     }
   }
 ];

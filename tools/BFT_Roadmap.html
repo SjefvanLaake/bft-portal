@@ -126,7 +126,7 @@ var ROADMAP = {
             + 'project-specifieke lijm bouwen.',
   /* Fasering in de tijd — overlay op de thematische secties. Gekoppeld aan de
      echte poort: client-side nu → go-live (Graph/M365) → backend + grote tools. */
-  gereed: 'Al gereed: planning-revisie (feiten + per-project editor), Planner deep-link, en de swap-punt-architectuur (tools lezen via één laag → straks alleen die laag naar Graph swappen).',
+  gereed: 'Al gereed: planning-revisie (feiten + per-project editor), Planner deep-link, de swap-punt-architectuur (tools lezen via één laag → straks alleen die laag naar Graph swappen), en de demo-opname-pipeline (Playwright → mp4/gif van de echte tools).',
   fasering: [
     { fase: 'Fase 1 — Nu', periode: 'juni–juli 2026', sub: 'Client-side · vóór go-live · geen externe afhankelijkheid', kleur: '#1e9e5e',
       items: [
@@ -144,6 +144,7 @@ var ROADMAP = {
         'Planner-status in de kaart · Outlook/Agenda · Power Automate',
         'Klant-status-PDF (vereist Mail-scope)',
         'HandleidingGenerator deel B + Importer afronden',
+        'Geanimeerde per-tool-handleidingen (Playwright-pipeline, in CI)',
         'Cross-tool activiteiten-tijdlijn (zodra gewenst)'
       ] },
     { fase: 'Fase 3 — Daarna', periode: 'vanaf Q4 2026', sub: 'Backend (Azure Function) + grotere tools · eerst valideren met de werkvloer', kleur: '#1a6ec7',
@@ -251,6 +252,8 @@ var ROADMAP = {
           desc: 'Meldteksten uit LOGO!Soft naar het machine-specifieke deel van het IBN-protocol. Geparkeerd tot een nieuwe LOGO!HMI-versie getest is (kan de export veranderen).' },
         { titel: 'HandleidingGenerator deel B + Importer', status: 'geparkeerd',
           desc: 'Handleiding-inhoud (.bft) netjes in de architectuur (SharePoint i.p.v. losse download) en het .bft-contract met de Importer op 3 punten repareren.' },
+        { titel: 'Geanimeerde handleiding / gescripte tool-demo’s', status: 'gebouwd',
+          desc: 'Playwright-pipeline stuurt de échte tool door een scenario en levert mp4 (PowerPoint-klaar) + gif + stap-screenshots uit één bron — her-genereren bij UI-wijziging = opnieuw draaien. De pijplijn werkt (eerste demo’s: Overall Planning + Projectoverzicht). Volgende: per-tool-scenario’s + automatisch genereren in CI, gekoppeld aan de HandleidingGenerator.' },
         { titel: 'Klant-status-PDF', status: 'geparkeerd',
           desc: 'Lichtere voorloper van het Opleverdossier. Let op: klant-filtering (geen monteurnamen/storingen/scores lekken) en e-mailen vereist Graph Mail-scope (niet aangevraagd).' }
       ]
