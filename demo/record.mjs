@@ -272,6 +272,39 @@ const SCENARIOS = [
 
       await h.card('Bofram Portaal', 'Eén klik: status, voortgang en planning');
     }
+  },
+
+  {
+    id: 'bouwvolgordelijst',
+    tool: 'tools/BFT_Bouwvolgordelijst.html',
+    run: async (h) => {
+      await h.card('Bofram Portaal', 'Bouwvolgordelijst — sjabloon per machinetype, afgevinkt met monteur-stempel');
+      await h.shot('start');
+
+      // project met een sjabloon kiezen (BFMR2000EK)
+      await h.page.selectOption('#projSelect', '201267_BFMR2000EK').catch(()=>{});
+      await h.pause(1200);
+      await h.shot('geladen');
+
+      // monteur invullen + bevestigen (verplicht om af te vinken)
+      await h.click('#bft-monteur-input');                 // cursor → veld, focus
+      await h.page.fill('#bft-monteur-input', 'JdV');
+      await h.pause(450);
+      await h.page.press('#bft-monteur-input', 'Enter');   // bevestigt (onkeydown → bevestig)
+      await h.pause(800);
+      await h.shot('monteur');
+
+      // eerste stappen afvinken → krijgen een monteur-stempel
+      await h.click('.bft-cl-chk-ok >> nth=0');
+      await h.pause(450);
+      await h.click('.bft-cl-chk-ok >> nth=1');
+      await h.pause(450);
+      await h.click('.bft-cl-chk-ok >> nth=2');
+      await h.pause(800);
+      await h.shot('afgevinkt');
+
+      await h.card('Bofram Portaal', 'Elke stap getekend — voortgang en fase live bijgewerkt');
+    }
   }
 ];
 
