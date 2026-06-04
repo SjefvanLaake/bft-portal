@@ -20,6 +20,17 @@
     .rm-legenda span { display:inline-flex; align-items:center; gap:4px; }
     .rm-dot { width:9px; height:9px; border-radius:50%; display:inline-block; }
 
+    /* Fasering-overzicht (tijd-overlay) */
+    .rm-fasering-kop { font-size:16px; font-weight:700; color:var(--text); margin:6px 0 2px; }
+    .rm-gereed { font-size:12px; color:#1e9e5e; font-weight:600; margin:0 0 10px; line-height:1.5; }
+    .rm-fasen { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:8px; }
+    @media(max-width:760px){ .rm-fasen{ grid-template-columns:1fr; } }
+    .rm-fase-kaart { background:var(--surface); border:1px solid var(--border); border-top:4px solid var(--fc,#888); border-radius:8px; padding:12px 14px; }
+    .rm-fase-naam { font-size:13px; font-weight:700; color:var(--text); }
+    .rm-fase-sub { font-family:var(--mono); font-size:9.5px; color:var(--muted); margin:2px 0 8px; line-height:1.4; }
+    .rm-fase-lijst { margin:0; padding-left:16px; }
+    .rm-fase-lijst li { font-size:11.5px; color:var(--text2); line-height:1.5; margin-bottom:4px; }
+
     .rm-sectie { margin-bottom: 22px; }
     .rm-sectie-kop {
       display:flex; align-items:center; gap:10px;
@@ -92,6 +103,8 @@
 
   <div class="rm-intro" id="introBox"></div>
 
+  <div id="fasering"></div>
+
   <div id="secties"></div>
 
   <div class="rm-foot" id="footBox"></div>
@@ -110,6 +123,38 @@ var ROADMAP = {
   voorbehoud: 'Voorbehoud: de tool-ideeën zijn afgeleid uit de huidige toolset, niet uit observatie op de werkvloer — '
             + 'valideren met 2-3 monteurs/engineers vóór bouw. Leidend principe: M365 niet nabouwen, alleen de '
             + 'project-specifieke lijm bouwen.',
+  /* Fasering in de tijd — overlay op de thematische secties. Gekoppeld aan de
+     echte poort: client-side nu → go-live (Graph/M365) → backend + grote tools. */
+  gereed: 'Al gereed: planning-revisie (feiten + per-project editor), Planner deep-link, en de swap-punt-architectuur (tools lezen via één laag → straks alleen die laag naar Graph swappen).',
+  fasering: [
+    { fase: 'Fase 1 — Nu', sub: 'Client-side · vóór go-live · geen externe afhankelijkheid', kleur: '#1e9e5e',
+      items: [
+        'Risico-vlag in de Bouwvolgordelijst (quick win, akkoord)',
+        'Toewijzing per checklist-item (akkoord)',
+        'bftHuidigeActor()-helper (actor-consistentie)',
+        'Projectjournaal (append-only, getimestampt)',
+        'Opleverdossier-generator — start met checklist + handleiding',
+        'Foto-documentatie per bouwstap'
+      ] },
+    { fase: 'Fase 2 — Go-live', sub: 'Met SharePoint/Graph + M365-login · na IT App Registration + hosting', kleur: '#e8a000',
+      items: [
+        'Multi-user & gedeelde data, SSO, veilig gelijktijdig bewerken (ETag)',
+        'Documenten & PDF’s centraal in de Document Library',
+        'Planner-status in de kaart · Outlook/Agenda · Power Automate',
+        'Klant-status-PDF (vereist Mail-scope)',
+        'HandleidingGenerator deel B + Importer afronden',
+        'Cross-tool activiteiten-tijdlijn (zodra gewenst)'
+      ] },
+    { fase: 'Fase 3 — Daarna', sub: 'Backend (Azure Function) + grotere tools · eerst valideren met de werkvloer', kleur: '#1a6ec7',
+      items: [
+        'PowerAll materiaaldekking-/tekortentool + prijs-/calculatiedata',
+        'Machine-configurator → richtprijs/voorcalculatie',
+        'Onderhoud-/Service-module + installed-base register',
+        'CE-risicobeoordeling + conformiteitsdossier',
+        'Schema-logica toetsen (SOLIDWORKS Electrical-export)',
+        'LOGO!Soft → IBN message-text importer (geparkeerd)'
+      ] }
+  ],
   secties: [
     {
       kop: 'Wat de live-versie ons oplevert',
@@ -226,6 +271,21 @@ function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,
     new Date().toLocaleDateString('nl-NL',{day:'numeric',month:'long',year:'numeric'});
   document.getElementById('introBox').innerHTML = esc(ROADMAP.intro) + '<br><br><strong>' + esc(ROADMAP.voorbehoud) + '</strong>';
 
+  /* Fasering-overlay */
+  var fh = '<div class="rm-fasering-kop">⏱ Fasering in de tijd</div>'
+    + '<div class="rm-gereed">✓ ' + esc(ROADMAP.gereed) + '</div>'
+    + '<div class="rm-fasen">';
+  ROADMAP.fasering.forEach(function(f){
+    fh += '<div class="rm-fase-kaart" style="--fc:' + f.kleur + '">'
+      + '<div class="rm-fase-naam" style="color:' + f.kleur + '">' + esc(f.fase) + '</div>'
+      + '<div class="rm-fase-sub">' + esc(f.sub) + '</div>'
+      + '<ul class="rm-fase-lijst">'
+      + f.items.map(function(it){ return '<li>' + esc(it) + '</li>'; }).join('')
+      + '</ul></div>';
+  });
+  fh += '</div>';
+  document.getElementById('fasering').innerHTML = fh;
+
   var html = '';
   ROADMAP.secties.forEach(function(sec, i){
     html += '<div class="rm-sectie">'
@@ -266,6 +326,19 @@ document.getElementById('btnPdf').addEventListener('click', function(){
     { text:'■ Idee', fontSize:8, color:'#1a6ec7', width:'auto', margin:[0,0,12,0] },
     { text:'■ Geparkeerd', fontSize:8, color:'#7a849a', width:'auto' }
   ], margin:[0,2,0,12] });
+
+  /* Fasering-overzicht (tijd-overlay) */
+  content.push({ text:'Fasering in de tijd', fontSize:13, bold:true, color:'#1a1f2e', margin:[0,2,0,2] });
+  content.push({ canvas:[{type:'rect',x:0,y:0,w:515,h:2.5,color:'#e8a000'}], margin:[0,0,0,5] });
+  content.push({ text:'✓ '+ROADMAP.gereed, fontSize:8.5, italics:true, color:'#1e9e5e', margin:[0,0,0,8] });
+  content.push({ columns: ROADMAP.fasering.map(function(f){ return {
+    width:'*', margin:[0,0,8,0],
+    stack:[
+      { text:f.fase, fontSize:10, bold:true, color:f.kleur, margin:[0,0,0,1] },
+      { text:f.sub, fontSize:7, color:'#7a849a', margin:[0,0,0,4], lineHeight:1.2 },
+      { ul: f.items.map(function(it){ return { text:it, fontSize:8, color:'#3d4558', margin:[0,0,0,2], lineHeight:1.2 }; }) }
+    ]
+  }; }), columnGap:10, margin:[0,0,0,12] });
 
   ROADMAP.secties.forEach(function(sec, i){
     content.push({ text:(i+1)+'. '+sec.kop, fontSize:13, bold:true, color:'#1a1f2e', margin:[0,10,0,2] });
