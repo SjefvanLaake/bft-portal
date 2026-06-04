@@ -26,7 +26,8 @@
     .rm-fasen { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:8px; }
     @media(max-width:760px){ .rm-fasen{ grid-template-columns:1fr; } }
     .rm-fase-kaart { background:var(--surface); border:1px solid var(--border); border-top:4px solid var(--fc,#888); border-radius:8px; padding:12px 14px; }
-    .rm-fase-naam { font-size:13px; font-weight:700; color:var(--text); }
+    .rm-fase-naam { font-size:13px; font-weight:700; color:var(--text); display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .rm-fase-periode { font-family:var(--mono); font-size:9px; font-weight:700; color:#fff; padding:1px 7px; border-radius:10px; flex:none; white-space:nowrap; }
     .rm-fase-sub { font-family:var(--mono); font-size:9.5px; color:var(--muted); margin:2px 0 8px; line-height:1.4; }
     .rm-fase-lijst { margin:0; padding-left:16px; }
     .rm-fase-lijst li { font-size:11.5px; color:var(--text2); line-height:1.5; margin-bottom:4px; }
@@ -127,7 +128,7 @@ var ROADMAP = {
      echte poort: client-side nu → go-live (Graph/M365) → backend + grote tools. */
   gereed: 'Al gereed: planning-revisie (feiten + per-project editor), Planner deep-link, en de swap-punt-architectuur (tools lezen via één laag → straks alleen die laag naar Graph swappen).',
   fasering: [
-    { fase: 'Fase 1 — Nu', sub: 'Client-side · vóór go-live · geen externe afhankelijkheid', kleur: '#1e9e5e',
+    { fase: 'Fase 1 — Nu', periode: 'juni–juli 2026', sub: 'Client-side · vóór go-live · geen externe afhankelijkheid', kleur: '#1e9e5e',
       items: [
         'Risico-vlag in de Bouwvolgordelijst (quick win, akkoord)',
         'Toewijzing per checklist-item (akkoord)',
@@ -136,7 +137,7 @@ var ROADMAP = {
         'Opleverdossier-generator — start met checklist + handleiding',
         'Foto-documentatie per bouwstap'
       ] },
-    { fase: 'Fase 2 — Go-live', sub: 'Met SharePoint/Graph + M365-login · na IT App Registration + hosting', kleur: '#e8a000',
+    { fase: 'Fase 2 — Go-live', periode: 'aug–okt 2026', sub: 'Met SharePoint/Graph + M365-login · na IT App Registration + hosting', kleur: '#e8a000',
       items: [
         'Multi-user & gedeelde data, SSO, veilig gelijktijdig bewerken (ETag)',
         'Documenten & PDF’s centraal in de Document Library',
@@ -145,7 +146,7 @@ var ROADMAP = {
         'HandleidingGenerator deel B + Importer afronden',
         'Cross-tool activiteiten-tijdlijn (zodra gewenst)'
       ] },
-    { fase: 'Fase 3 — Daarna', sub: 'Backend (Azure Function) + grotere tools · eerst valideren met de werkvloer', kleur: '#1a6ec7',
+    { fase: 'Fase 3 — Daarna', periode: 'vanaf Q4 2026', sub: 'Backend (Azure Function) + grotere tools · eerst valideren met de werkvloer', kleur: '#1a6ec7',
       items: [
         'PowerAll materiaaldekking-/tekortentool + prijs-/calculatiedata',
         'Machine-configurator → richtprijs/voorcalculatie',
@@ -277,7 +278,8 @@ function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,
     + '<div class="rm-fasen">';
   ROADMAP.fasering.forEach(function(f){
     fh += '<div class="rm-fase-kaart" style="--fc:' + f.kleur + '">'
-      + '<div class="rm-fase-naam" style="color:' + f.kleur + '">' + esc(f.fase) + '</div>'
+      + '<div class="rm-fase-naam" style="color:' + f.kleur + '">' + esc(f.fase)
+      + '<span class="rm-fase-periode" style="background:' + f.kleur + '">' + esc(f.periode) + '</span></div>'
       + '<div class="rm-fase-sub">' + esc(f.sub) + '</div>'
       + '<ul class="rm-fase-lijst">'
       + f.items.map(function(it){ return '<li>' + esc(it) + '</li>'; }).join('')
@@ -334,7 +336,8 @@ document.getElementById('btnPdf').addEventListener('click', function(){
   content.push({ columns: ROADMAP.fasering.map(function(f){ return {
     width:'*', margin:[0,0,8,0],
     stack:[
-      { text:f.fase, fontSize:10, bold:true, color:f.kleur, margin:[0,0,0,1] },
+      { text:f.fase, fontSize:10, bold:true, color:f.kleur, margin:[0,0,0,0] },
+      { text:f.periode, fontSize:8.5, bold:true, color:f.kleur, margin:[0,0,0,3] },
       { text:f.sub, fontSize:7, color:'#7a849a', margin:[0,0,0,4], lineHeight:1.2 },
       { ul: f.items.map(function(it){ return { text:it, fontSize:8, color:'#3d4558', margin:[0,0,0,2], lineHeight:1.2 }; }) }
     ]
