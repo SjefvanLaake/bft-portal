@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BFT-Portaal — Roadmap & Toekomstvisie</title>
+  <link rel="stylesheet" href="../library/css/bofram-style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.min.js"></script>
+  <script src="../library/js/bft-pdf-logo.js"></script>
+  <style>
+    .rm-page { max-width: 1000px; margin: 0 auto; padding: 20px 22px 64px; }
+    .rm-intro {
+      background: rgba(26,110,199,0.06); border: 1px solid rgba(26,110,199,0.22);
+      border-radius: 8px; padding: 14px 18px; margin-bottom: 18px;
+      font-size: 13px; line-height: 1.6; color: var(--text2);
+    }
+    .rm-toolbar { display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+    .rm-legenda { display:flex; gap:14px; flex-wrap:wrap; font-family:var(--mono); font-size:10px; color:var(--muted); margin-left:auto; }
+    .rm-legenda span { display:inline-flex; align-items:center; gap:4px; }
+    .rm-dot { width:9px; height:9px; border-radius:50%; display:inline-block; }
+
+    .rm-sectie { margin-bottom: 22px; }
+    .rm-sectie-kop {
+      display:flex; align-items:center; gap:10px;
+      font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 4px;
+    }
+    .rm-sectie-kop .nr {
+      font-family:var(--mono); font-size:12px; font-weight:700; color:#fff;
+      background:var(--accent-dk,#00509e); border-radius:5px; padding:2px 8px; flex:none;
+    }
+    .rm-accent { height:3px; background:var(--accent,#e8a000); border-radius:2px; margin:6px 0 12px; }
+    .rm-sectie-intro { font-size:12.5px; color:var(--text2); line-height:1.6; margin:-4px 0 12px; }
+
+    .rm-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    @media(max-width:720px){ .rm-grid{ grid-template-columns:1fr; } }
+    .rm-item {
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 3px solid var(--border2); border-radius: 7px; padding: 11px 14px;
+    }
+    .rm-item.s-gebouwd   { border-left-color:#1e9e5e; }
+    .rm-item.s-gepland   { border-left-color:#e8a000; }
+    .rm-item.s-idee      { border-left-color:#1a6ec7; }
+    .rm-item.s-geparkeerd{ border-left-color:#9aa3b2; }
+    .rm-item-kop { display:flex; align-items:baseline; gap:8px; margin-bottom:3px; }
+    .rm-item-titel { font-size:13px; font-weight:600; color:var(--text); flex:1; }
+    .rm-chip {
+      font-family:var(--mono); font-size:8.5px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.4px; padding:2px 6px; border-radius:4px; flex:none; white-space:nowrap;
+    }
+    .rm-chip.gebouwd   { background:rgba(30,158,94,0.12);  color:#1e9e5e; }
+    .rm-chip.gepland   { background:rgba(232,160,0,0.14);  color:#b87d00; }
+    .rm-chip.idee      { background:rgba(26,110,199,0.12); color:#1a6ec7; }
+    .rm-chip.geparkeerd{ background:var(--bg2,#eef1f5);    color:#7a849a; }
+    .rm-item-desc { font-size:12px; color:var(--text2); line-height:1.55; }
+
+    .rm-foot {
+      margin-top:8px; font-family:var(--mono); font-size:11px; color:var(--muted);
+      line-height:1.7; border-top:1px solid var(--border); padding-top:12px;
+    }
+  </style>
+</head>
+<body>
+
+<header class="bf-header">
+  <div class="bf-header-left">
+    <a href="../index.html" title="Terug naar portaal"
+       style="color:rgba(255,255,255,0.55);font-family:var(--mono);font-size:11px;text-decoration:none;display:flex;align-items:center;gap:4px;flex-shrink:0">
+      ← Portaal
+    </a>
+    <div class="bf-logo"></div>
+    <div class="bf-header-div"></div>
+    <div class="bf-header-title">
+      <h1>Roadmap &amp; Toekomstvisie</h1>
+      <p>Wat de live-versie ons brengt · samenwerking ERP / M365 / tools · wensenlijst</p>
+    </div>
+  </div>
+  <span class="bf-badge" id="datumBadge">—</span>
+</header>
+
+<div class="rm-page">
+
+  <div class="rm-toolbar">
+    <button class="bf-btn bf-btn-primary" id="btnPdf">⤓ Bofram PDF</button>
+    <div class="rm-legenda">
+      <span><i class="rm-dot" style="background:#1e9e5e"></i> Gebouwd</span>
+      <span><i class="rm-dot" style="background:#e8a000"></i> Gepland / akkoord</span>
+      <span><i class="rm-dot" style="background:#1a6ec7"></i> Idee — valideren</span>
+      <span><i class="rm-dot" style="background:#9aa3b2"></i> Geparkeerd</span>
+    </div>
+  </div>
+
+  <div class="rm-intro" id="introBox"></div>
+
+  <div id="secties"></div>
+
+  <div class="rm-foot" id="footBox"></div>
+
+</div>
+
+<script>
+/* ================================================================
+   ROADMAP — één databron voor scherm én Bofram-PDF
+   ================================================================ */
+var ROADMAP = {
+  titel: 'BFT-Portaal — Roadmap & Toekomstvisie',
+  intro: 'Overzicht van wat de gehoste (“live”) versie ons oplevert en wat we daarna kunnen bouwen — '
+       + 'in samenwerking met het ERP-pakket (PowerAll), Microsoft 365 en de tools onderling. '
+       + 'De wensenlijst onderaan is samen opgesteld. ',
+  voorbehoud: 'Voorbehoud: de tool-ideeën zijn afgeleid uit de huidige toolset, niet uit observatie op de werkvloer — '
+            + 'valideren met 2-3 monteurs/engineers vóór bouw. Leidend principe: M365 niet nabouwen, alleen de '
+            + 'project-specifieke lijm bouwen.',
+  secties: [
+    {
+      kop: 'Wat de live-versie ons oplevert',
+      intro: 'Hosting op een vast Bofram-subdomein + SharePoint/Graph + inloggen met het M365-account (Azure AD/MSAL). '
+           + 'Dit haalt de mock-fase-beperkingen weg.',
+      items: [
+        { titel: 'Echt multi-user & gedeeld', status: 'gepland',
+          desc: 'Data leeft niet meer per browser (localStorage) maar centraal in SharePoint Lists. ~20 gebruikers tegelijk, dezelfde data op kantoor én in het veld, op elk apparaat.' },
+        { titel: 'Eén leesbron voor stamdata', status: 'gepland',
+          desc: 'Projecten, medewerkers en klanten centraal. Wijziging op één plek werkt overal door — geen code-snippet of git-push meer per nieuw project.' },
+        { titel: 'Eén login (SSO)', status: 'gepland',
+          desc: 'Inloggen met het bestaande M365-account. Geen aparte wachtwoorden; rechten via Azure AD.' },
+        { titel: 'Veilig gelijktijdig bewerken', status: 'gepland',
+          desc: 'ETag / optimistic concurrency voorkomt dat twee mensen elkaars werk overschrijven (bv. twee monteurs op één checklist).' },
+        { titel: 'Documenten & PDF’s centraal', status: 'gepland',
+          desc: 'Opleverdossiers, protocollen en exports in de SharePoint Document Library — vindbaar en aan het project gekoppeld.' },
+        { titel: 'Swap-punt-architectuur ligt klaar', status: 'gebouwd',
+          desc: 'Tools lezen nu al via één laag (bftAlleProjecten / bftAlleMedewerkers, snapshots). Bij go-live vervangen we alleen die functies door Graph-calls — de tools zelf veranderen niet.' }
+      ]
+    },
+    {
+      kop: 'Samenwerking met het ERP (PowerAll)',
+      intro: 'PowerAll Connect API (REST, include-systeem). Read-only koppeling via een kleine backend-proxy — '
+           + 'de API-sleutel mag niet in de browser. Bestellen blijft in PowerAll.',
+      items: [
+        { titel: 'Materiaaldekking-/tekortentool', status: 'idee',
+          desc: 'Live per machine tonen wat nog besteld/ontvangen moet worden: voorraad, inkoopstatus, verwachte leverdata. Vervangt de handmatige Stuklijstvergelijker.' },
+        { titel: 'Koppeling op de werkorderregel', status: 'idee',
+          desc: 'Inkoop en ontvangsten koppelen op ID aan de WO-regel — geen broos artikelnummer-matchen. WorkOrderLine = materiaalbehoefte per machine.' },
+        { titel: 'Vergelijkbare machines', status: 'idee',
+          desc: 'Via de master-stuklijst (Product → Structure/BOM) machines vergelijken voor hergebruik en standaardisatie.' },
+        { titel: 'Backend-proxy (eerste niet-client-side tool)', status: 'idee',
+          desc: 'Azure Function als proxy (sleutel + CORS). Los van de IT-App-Registration; zelfde swap-punt-patroon als de Graph-laag.' },
+        { titel: 'Eerst valideren in sandbox', status: 'idee',
+          desc: 'Waar landt scan-verbruik (PickList vs WO-regel), het WO-veld voor de BFT-projectkoppeling, leverdata, en of PowerAll al een tekorten/MRP-scherm heeft (dan bouwen we alleen de cross-machine-vergelijking + ontsluiting).' }
+      ]
+    },
+    {
+      kop: 'Samenwerking met Microsoft 365',
+      intro: 'Niet nabouwen wat M365 al doet (taken → Planner, agenda → Outlook/Teams) — alleen de project-lijm. '
+           + 'Let op: nu is alleen Sites.ReadWrite.All aangevraagd; Tasks/Calendar/Mail vereisen extra scopes.',
+      items: [
+        { titel: 'Planner-taken — deep-link', status: 'gebouwd',
+          desc: 'Vanuit de projectkaart doorklikken naar het Planner-bord. Werkt nu al (geen extra scopes nodig).' },
+        { titel: 'Planner-status in de projectkaart', status: 'idee',
+          desc: 'Stap 2: read-only “X open / Y over tijd” uit Graph Tasks. Vereist extra scopes (Tasks.Read + Group.Read.All).' },
+        { titel: 'Outlook / Agenda', status: 'idee',
+          desc: 'Opleverdata of besprekingen als agenda-deeplink (Graph Calendar). Plannen blijft in Outlook/Teams.' },
+        { titel: 'Power Automate-notificaties', status: 'idee',
+          desc: 'Flows die melden bij naderende deadline of statuswijziging — zonder eigen notificatiesysteem te bouwen.' },
+        { titel: 'Excel & SharePoint als datalaag', status: 'idee',
+          desc: 'Excel-export naar de Document Library; SharePoint Lists als gedeelde opslag voor alle tools.' }
+      ]
+    },
+    {
+      kop: 'In de tools zelf (project-samenwerking)',
+      intro: 'Kleine, project-specifieke uitbreidingen op het bestaande projectrecord + snapshots. '
+           + 'Geen parallelle silo’s; audit = per feature (append-only + wie/wanneer).',
+      items: [
+        { titel: 'Risico-vlag in de Bouwvolgordelijst', status: 'gepland',
+          desc: 'Uitvoeringsrisico op een bouwstap → markering + verplichte notitie of 4-ogen sign-off; doortellen als “open risico’s”. Quick win — akkoord.' },
+        { titel: 'Toewijzing per checklist-item', status: 'gepland',
+          desc: '“Wie moet deze stap doen” toewijzen uit de personeelslijst, naast het bestaande “wie deed het”-stempel. Planner blijft voor algemene taken. Akkoord.' },
+        { titel: 'Projectjournaal', status: 'idee',
+          desc: 'Append-only, getimestampt logboek per project (wie/wat/wanneer). Vult een echt gat en is inherent auditeerbaar.' },
+        { titel: 'bftHuidigeActor()-helper', status: 'gepland',
+          desc: 'Eén gedeelde “wie voert dit uit”-bron (nu monteur/tester-veld; later MSAL-identiteit). Lost de actor-inconsistentie tussen tools op.' },
+        { titel: 'Foto-documentatie per bouwstap', status: 'idee',
+          desc: 'Foto’s vastleggen bij een stap, via het journaal-fundament. Optioneel.' },
+        { titel: 'Cross-tool activiteiten-tijdlijn', status: 'idee',
+          desc: 'Eén chronologische feed over álle tools in het Projectoverzicht. Pas bouwen als de behoefte er is → dan een volwaardig audit-event-log.' }
+      ]
+    },
+    {
+      kop: 'Geplande tools & wensenlijst',
+      intro: 'Samen opgesteld. Volgorde indicatief; eerst valideren met de werkvloer.',
+      items: [
+        { titel: '1. Opleverdossier-generator', status: 'idee',
+          desc: 'Bundelt per project checklist + IBN + handleiding + stuklijst + CE tot één klant-deliverable. Waarde zit in de validatie (alle IBN-gates GO? handleiding aanwezig? fasen afgetekend?), niet in het “zippen”. Bouw eerst.' },
+        { titel: '2. Onderhoud-/Service-module + installed-base', status: 'idee',
+          desc: 'Register van geleverde machines (serienr/klant/oplever/garantie) + onderhoudsintervallen + due-signalering. Terugkerende-omzet-motor en fundament voor reserveonderdelen. Eerst checken of Bofram zelf onderhoud doet.' },
+        { titel: '3. CE-risicobeoordeling + conformiteitsdossier', status: 'idee',
+          desc: 'EN-ISO 12100 (hazard→risico→maatregel→restrisico) + concept-conformiteitsverklaring (Machineverordening 2023/1230). Gestructureerd hulpmiddel, geen orakel — de veiligheidsverantwoordelijke tekent.' },
+        { titel: 'PowerAll materiaaldekking-tool', status: 'idee',
+          desc: 'Zie sectie “Samenwerking met het ERP”. Vereist backend.' },
+        { titel: 'Schema-logica toetsen', status: 'idee',
+          desc: 'SOLIDWORKS Electrical-export → deterministische regel-engine (structureel/consistentie), later hybride met AI voor de veiligheidsketen. PDF-only is een doodlopend spoor.' },
+        { titel: 'LOGO!Soft → IBN message-text importer', status: 'geparkeerd',
+          desc: 'Meldteksten uit LOGO!Soft naar het machine-specifieke deel van het IBN-protocol. Geparkeerd tot een nieuwe LOGO!HMI-versie getest is (kan de export veranderen).' },
+        { titel: 'HandleidingGenerator deel B + Importer', status: 'geparkeerd',
+          desc: 'Handleiding-inhoud (.bft) netjes in de architectuur (SharePoint i.p.v. losse download) en het .bft-contract met de Importer op 3 punten repareren.' },
+        { titel: 'Klant-status-PDF', status: 'geparkeerd',
+          desc: 'Lichtere voorloper van het Opleverdossier. Let op: klant-filtering (geen monteurnamen/storingen/scores lekken) en e-mailen vereist Graph Mail-scope (niet aangevraagd).' }
+      ]
+    }
+  ],
+  afgevallen: 'Bewust afgevallen: losse reserveonderdelen-catalogus (= fase 2 van de Onderhoudsmodule), '
+            + 'urenregistratie/nacalculatie (duplicatierisico met het ERP) en FAT/SAT (overlapt het IBN-protocol).'
+};
+
+var STATUS_LABEL = { gebouwd:'Gebouwd', gepland:'Gepland', idee:'Idee', geparkeerd:'Geparkeerd' };
+
+/* ================================================================
+   SCHERM-RENDER
+   ================================================================ */
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+(function renderDOM(){
+  document.getElementById('datumBadge').textContent =
+    new Date().toLocaleDateString('nl-NL',{day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('introBox').innerHTML = esc(ROADMAP.intro) + '<br><br><strong>' + esc(ROADMAP.voorbehoud) + '</strong>';
+
+  var html = '';
+  ROADMAP.secties.forEach(function(sec, i){
+    html += '<div class="rm-sectie">'
+      + '<div class="rm-sectie-kop"><span class="nr">' + (i+1) + '</span>' + esc(sec.kop) + '</div>'
+      + '<div class="rm-accent"></div>'
+      + (sec.intro ? '<div class="rm-sectie-intro">' + esc(sec.intro) + '</div>' : '')
+      + '<div class="rm-grid">';
+    sec.items.forEach(function(it){
+      html += '<div class="rm-item s-' + it.status + '">'
+        + '<div class="rm-item-kop"><span class="rm-item-titel">' + esc(it.titel) + '</span>'
+        + '<span class="rm-chip ' + it.status + '">' + STATUS_LABEL[it.status] + '</span></div>'
+        + '<div class="rm-item-desc">' + esc(it.desc) + '</div>'
+        + '</div>';
+    });
+    html += '</div></div>';
+  });
+  document.getElementById('secties').innerHTML = html;
+  document.getElementById('footBox').textContent = ROADMAP.afgevallen;
+})();
+
+/* ================================================================
+   BOFRAM-PDF EXPORT (pdfMake, zelfde huisstijl als de andere tools)
+   ================================================================ */
+var PDF_KLEUR = { gebouwd:'#1e9e5e', gepland:'#b87d00', idee:'#1a6ec7', geparkeerd:'#7a849a' };
+
+document.getElementById('btnPdf').addEventListener('click', function(){
+  var PDF_LOGO = (typeof BFT_PDF_LOGO !== 'undefined') ? BFT_PDF_LOGO : null;
+  var datum = new Date().toLocaleDateString('nl-NL',{day:'numeric',month:'long',year:'numeric'});
+  var content = [];
+
+  content.push({ text: ROADMAP.intro, fontSize:10, color:'#3d4558', margin:[0,0,0,6] });
+  content.push({ text: ROADMAP.voorbehoud, fontSize:9, italics:true, color:'#7a849a', margin:[0,0,0,4] });
+
+  /* Legenda */
+  content.push({ columns:[
+    { text:'■ Gebouwd', fontSize:8, color:'#1e9e5e', width:'auto', margin:[0,0,12,0] },
+    { text:'■ Gepland', fontSize:8, color:'#b87d00', width:'auto', margin:[0,0,12,0] },
+    { text:'■ Idee', fontSize:8, color:'#1a6ec7', width:'auto', margin:[0,0,12,0] },
+    { text:'■ Geparkeerd', fontSize:8, color:'#7a849a', width:'auto' }
+  ], margin:[0,2,0,12] });
+
+  ROADMAP.secties.forEach(function(sec, i){
+    content.push({ text:(i+1)+'. '+sec.kop, fontSize:13, bold:true, color:'#1a1f2e', margin:[0,10,0,2] });
+    content.push({ canvas:[{type:'rect',x:0,y:0,w:515,h:2.5,color:'#e8a000'}], margin:[0,0,0,5] });
+    if (sec.intro) content.push({ text:sec.intro, fontSize:9, italics:true, color:'#7a849a', margin:[0,0,0,7] });
+    sec.items.forEach(function(it){
+      content.push({ columns:[
+        { text:it.titel, fontSize:10, bold:true, color:'#1a1f2e', width:'*' },
+        { text:STATUS_LABEL[it.status], fontSize:7.5, bold:true, color:PDF_KLEUR[it.status],
+          alignment:'right', width:64 }
+      ], margin:[0,5,0,1] });
+      content.push({ text:it.desc, fontSize:9, color:'#3d4558', margin:[8,0,0,2], lineHeight:1.3 });
+    });
+  });
+
+  content.push({ canvas:[{type:'line',x1:0,y1:0,x2:515,y2:0,lineWidth:0.5,lineColor:'#dfe3ea'}], margin:[0,12,0,6] });
+  content.push({ text:ROADMAP.afgevallen, fontSize:8.5, italics:true, color:'#7a849a' });
+
+  var headerImg = PDF_LOGO
+    ? {image:PDF_LOGO,width:58,margin:[12,7,0,0],border:[false,false,false,false],fillColor:'#000000'}
+    : {text:'BOFRAM',fontSize:13,bold:true,color:'#e8a000',margin:[16,15,0,0],border:[false,false,false,false],fillColor:'#000000'};
+  var titel = ROADMAP.titel;
+
+  pdfMake.createPdf({
+    pageMargins:[40,92,40,44],
+    defaultStyle:{fontSize:10,lineHeight:1.4,color:'#3d4558'},
+    info:{ title:titel, author:'Bofram Techniek' },
+    header:function(page,pages){ return {stack:[
+      {table:{widths:[100,'*',90],body:[[
+        headerImg,
+        {stack:[
+          {text:'Roadmap & Toekomstvisie',fontSize:11,bold:true,color:'#fff',alignment:'center',margin:[0,12,0,0]},
+          {text:datum,fontSize:8,color:'rgba(255,255,255,0.55)',alignment:'center',margin:[0,1,0,0]}
+        ],border:[false,false,false,false],fillColor:'#000000'},
+        {text:page+'/'+pages,fontSize:9,color:'rgba(255,255,255,0.5)',alignment:'right',margin:[0,20,15,0],border:[false,false,false,false],fillColor:'#000000'}
+      ]]},layout:{defaultBorder:false}},
+      {canvas:[{type:'rect',x:0,y:0,w:595,h:3,color:'#e8a000'}]}
+    ]}; },
+    footer:function(page,pages){ return {columns:[
+      {text:'Bofram Techniek — BFT-Portaal',fontSize:8,color:'#aaa',margin:[40,8,0,0]},
+      {text:'Pagina '+page+'/'+pages,fontSize:8,color:'#aaa',alignment:'right',margin:[0,8,40,0]}
+    ]}; },
+    content:content
+  }).download('BFT_Roadmap_'+new Date().toISOString().slice(0,10)+'.pdf');
+});
+</script>
+
+</body>
+</html>
