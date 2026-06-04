@@ -305,6 +305,38 @@ const SCENARIOS = [
 
       await h.card('Bofram Portaal', 'Elke stap getekend — voortgang en fase live bijgewerkt');
     }
+  },
+
+  {
+    id: 'machinebouwchecklist',
+    tool: 'tools/BFT_MachinebouwChecklist.html',
+    run: async (h) => {
+      await h.card('Bofram Portaal', 'MachinebouwChecklist — 10 fasen, afgevinkt met audit-stempel');
+      await h.shot('start');
+
+      await h.page.selectOption('#projSelect', '201267_BFMR2000EK').catch(()=>{});
+      await h.pause(1200);
+      await h.shot('geladen');
+
+      // monteur invullen + bevestigen (verplicht om af te vinken)
+      await h.click('#bft-monteur-input');
+      await h.page.fill('#bft-monteur-input', 'JdV');
+      await h.pause(450);
+      await h.page.press('#bft-monteur-input', 'Enter');
+      await h.pause(800);
+      await h.shot('monteur');
+
+      // eerste stappen afvinken → krijgen een audit-stempel
+      await h.click('.bft-cl-chk-ok >> nth=0');
+      await h.pause(450);
+      await h.click('.bft-cl-chk-ok >> nth=1');
+      await h.pause(450);
+      await h.click('.bft-cl-chk-ok >> nth=2');
+      await h.pause(800);
+      await h.shot('afgevinkt');
+
+      await h.card('Bofram Portaal', 'Audit-stempel per stap · voortgang en blokkering live');
+    }
   }
 ];
 

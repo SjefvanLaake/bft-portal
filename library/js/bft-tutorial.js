@@ -10,6 +10,7 @@
 
   /* href (zoals in index.html) → { src (mp4), titel } */
   var VIDEOS = {
+    'tools/BFT_MachinebouwChecklist.html': { src: 'library/tutorials/machinebouwchecklist.mp4', titel: 'MachinebouwChecklist' },
     'tools/BFT_OverallPlanning.html':   { src: 'library/tutorials/overallplanning.mp4',   titel: 'Overall Planning' },
     'tools/BFT_Projectoverzicht.html':  { src: 'library/tutorials/projectoverzicht.mp4',  titel: 'Projectoverzicht' },
     'tools/BFT_Bouwvolgordelijst.html': { src: 'library/tutorials/bouwvolgordelijst.mp4', titel: 'Bouwvolgordelijst' }
