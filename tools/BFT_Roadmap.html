@@ -318,10 +318,19 @@ document.getElementById('btnPdf').addEventListener('click', function(){
   var datum = new Date().toLocaleDateString('nl-NL',{day:'numeric',month:'long',year:'numeric'});
   var content = [];
 
-  content.push({ text: ROADMAP.intro, fontSize:10, color:'#3d4558', margin:[0,0,0,6] });
-  content.push({ text: ROADMAP.voorbehoud, fontSize:9, italics:true, color:'#7a849a', margin:[0,0,0,4] });
+  /* Roboto (pdfMake-font) mist → (U+2192) en ✓ (U+2713) — vervang ze alleen voor
+     de PDF (scherm/HTML toont de echte glyphs wél). › en de rest zijn aanwezig. */
+  function pdfTxt(s){
+    return String(s == null ? '' : s)
+      .replace(/\s*→\s*/g, ' › ')   /* →  →  › */
+      .replace(/✓\s*/g, '')              /* ✓  →  weg */
+      .trim();
+  }
 
-  /* Legenda */
+  content.push({ text: pdfTxt(ROADMAP.intro), fontSize:10, color:'#3d4558', margin:[0,0,0,6] });
+  content.push({ text: pdfTxt(ROADMAP.voorbehoud), fontSize:9, italics:true, color:'#7a849a', margin:[0,0,0,4] });
+
+  /* Legenda (■ is wél aanwezig in Roboto) */
   content.push({ columns:[
     { text:'■ Gebouwd', fontSize:8, color:'#1e9e5e', width:'auto', margin:[0,0,12,0] },
     { text:'■ Gepland', fontSize:8, color:'#b87d00', width:'auto', margin:[0,0,12,0] },
@@ -332,33 +341,33 @@ document.getElementById('btnPdf').addEventListener('click', function(){
   /* Fasering-overzicht (tijd-overlay) */
   content.push({ text:'Fasering in de tijd', fontSize:13, bold:true, color:'#1a1f2e', margin:[0,2,0,2] });
   content.push({ canvas:[{type:'rect',x:0,y:0,w:515,h:2.5,color:'#e8a000'}], margin:[0,0,0,5] });
-  content.push({ text:'✓ '+ROADMAP.gereed, fontSize:8.5, italics:true, color:'#1e9e5e', margin:[0,0,0,8] });
+  content.push({ text:pdfTxt(ROADMAP.gereed), fontSize:8.5, italics:true, color:'#1e9e5e', margin:[0,0,0,8] });
   content.push({ columns: ROADMAP.fasering.map(function(f){ return {
     width:'*', margin:[0,0,8,0],
     stack:[
-      { text:f.fase, fontSize:10, bold:true, color:f.kleur, margin:[0,0,0,0] },
-      { text:f.periode, fontSize:8.5, bold:true, color:f.kleur, margin:[0,0,0,3] },
-      { text:f.sub, fontSize:7, color:'#7a849a', margin:[0,0,0,4], lineHeight:1.2 },
-      { ul: f.items.map(function(it){ return { text:it, fontSize:8, color:'#3d4558', margin:[0,0,0,2], lineHeight:1.2 }; }) }
+      { text:pdfTxt(f.fase), fontSize:10, bold:true, color:f.kleur, margin:[0,0,0,0] },
+      { text:pdfTxt(f.periode), fontSize:8.5, bold:true, color:f.kleur, margin:[0,0,0,3] },
+      { text:pdfTxt(f.sub), fontSize:7, color:'#7a849a', margin:[0,0,0,4], lineHeight:1.2 },
+      { ul: f.items.map(function(it){ return { text:pdfTxt(it), fontSize:8, color:'#3d4558', margin:[0,0,0,2], lineHeight:1.2 }; }) }
     ]
   }; }), columnGap:10, margin:[0,0,0,12] });
 
   ROADMAP.secties.forEach(function(sec, i){
-    content.push({ text:(i+1)+'. '+sec.kop, fontSize:13, bold:true, color:'#1a1f2e', margin:[0,10,0,2] });
+    content.push({ text:(i+1)+'. '+pdfTxt(sec.kop), fontSize:13, bold:true, color:'#1a1f2e', margin:[0,10,0,2] });
     content.push({ canvas:[{type:'rect',x:0,y:0,w:515,h:2.5,color:'#e8a000'}], margin:[0,0,0,5] });
-    if (sec.intro) content.push({ text:sec.intro, fontSize:9, italics:true, color:'#7a849a', margin:[0,0,0,7] });
+    if (sec.intro) content.push({ text:pdfTxt(sec.intro), fontSize:9, italics:true, color:'#7a849a', margin:[0,0,0,7] });
     sec.items.forEach(function(it){
       content.push({ columns:[
-        { text:it.titel, fontSize:10, bold:true, color:'#1a1f2e', width:'*' },
+        { text:pdfTxt(it.titel), fontSize:10, bold:true, color:'#1a1f2e', width:'*' },
         { text:STATUS_LABEL[it.status], fontSize:7.5, bold:true, color:PDF_KLEUR[it.status],
           alignment:'right', width:64 }
       ], margin:[0,5,0,1] });
-      content.push({ text:it.desc, fontSize:9, color:'#3d4558', margin:[8,0,0,2], lineHeight:1.3 });
+      content.push({ text:pdfTxt(it.desc), fontSize:9, color:'#3d4558', margin:[8,0,0,2], lineHeight:1.3 });
     });
   });
 
   content.push({ canvas:[{type:'line',x1:0,y1:0,x2:515,y2:0,lineWidth:0.5,lineColor:'#dfe3ea'}], margin:[0,12,0,6] });
-  content.push({ text:ROADMAP.afgevallen, fontSize:8.5, italics:true, color:'#7a849a' });
+  content.push({ text:pdfTxt(ROADMAP.afgevallen), fontSize:8.5, italics:true, color:'#7a849a' });
 
   var headerImg = PDF_LOGO
     ? {image:PDF_LOGO,width:58,margin:[12,7,0,0],border:[false,false,false,false],fillColor:'#000000'}
@@ -373,10 +382,10 @@ document.getElementById('btnPdf').addEventListener('click', function(){
       {table:{widths:[100,'*',90],body:[[
         headerImg,
         {stack:[
-          {text:'Roadmap & Toekomstvisie',fontSize:11,bold:true,color:'#fff',alignment:'center',margin:[0,12,0,0]},
-          {text:datum,fontSize:8,color:'rgba(255,255,255,0.55)',alignment:'center',margin:[0,1,0,0]}
+          {text:'Roadmap & Toekomstvisie',fontSize:11,bold:true,color:'#ffffff',alignment:'center',margin:[0,12,0,0]},
+          {text:datum,fontSize:8,color:'#c9ccd2',alignment:'center',margin:[0,1,0,0]}
         ],border:[false,false,false,false],fillColor:'#000000'},
-        {text:page+'/'+pages,fontSize:9,color:'rgba(255,255,255,0.5)',alignment:'right',margin:[0,20,15,0],border:[false,false,false,false],fillColor:'#000000'}
+        {text:page+'/'+pages,fontSize:9,color:'#c9ccd2',alignment:'right',margin:[0,20,15,0],border:[false,false,false,false],fillColor:'#000000'}
       ]]},layout:{defaultBorder:false}},
       {canvas:[{type:'rect',x:0,y:0,w:595,h:3,color:'#e8a000'}]}
     ]}; },
