@@ -688,21 +688,46 @@ function importBarHtml(){
     <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent,#e8a000);border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
       <div style="flex:1;min-width:200px">
         <div style="font-weight:700;font-size:13px">📥 I/O-import</div>
-        <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">${n ? n + ' I/O geïmporteerd — testvragen geladen' : 'Importeer de I/O (io.json) om de testvragen te laden'}</div>
+        <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">${n ? n + ' I/O geïmporteerd — testvragen geladen' : 'Sleep de LOGO-CSV\'s (Logo1-4.csv) of een io.json om de testvragen te laden'}</div>
       </div>
-      <input type="file" id="ioFile" accept=".json,application/json" hidden onchange="importeerIOBestand(this.files[0]); this.value='';">
+      <input type="file" id="ioFile" accept=".csv,.json,application/json" multiple hidden onchange="importeerIOBestanden(this.files); this.value='';">
       <button class="btn-fase" onclick="document.getElementById('ioFile').click()">${n ? 'Her-importeren' : 'Importeer I/O'}</button>
       ${n ? `<button class="btn-fase" style="border-color:var(--danger);color:var(--danger)" onclick="verwijderImport()">Verwijder import</button>` : ''}
     </div>`;
 }
 
-async function importeerIOBestand(file){
-  if (!file) return;
+/* LOGO!Soft CSV (Connector,name) → I/O-objecten. Controllernaam = bestandsnaam. */
+function parseLogoCsv(txt, ctrl){
+  const io = [];
+  txt.split(/\r?\n/).slice(1).forEach(line => {
+    const m = line.match(/^([^,]+),"?\s*(.*?)\s*"?$/);
+    if (!m) return;
+    const klem = m[1].replace(/^﻿/, '').trim(), functie = (m[2] || '').trim();
+    if (!functie) return;                          // lege connector
+    const mm = klem.match(/^(A?)(I|Q)(\d+)$/);     // alleen I/AI/Q/AQ
+    if (!mm) return;
+    io.push({ id: ctrl + '-' + klem, controller: ctrl, klem, functie,
+              richting: mm[2] === 'I' ? 'in' : 'uit', soort: mm[1] === 'A' ? 'analoog' : 'digitaal' });
+  });
+  return io;
+}
+
+/* Import accepteert zowel LOGO-CSV's (direct) als een io.json — meerdere tegelijk. */
+async function importeerIOBestanden(fileList){
+  if (!fileList || !fileList.length) return;
   if (!huidigProject) { ioMelding('Kies eerst een project.'); return; }
-  let doc;
-  try { doc = JSON.parse(await file.text()); } catch(e){ ioMelding('Geen geldige JSON.'); return; }
-  const io = Array.isArray(doc) ? doc : (Array.isArray(doc.io) ? doc.io : null);
-  if (!io || !io.length) { ioMelding('Geen I/O gevonden (verwacht een io[]-array).'); return; }
+  let io = [];
+  for (const f of Array.from(fileList)){
+    const txt = await f.text();
+    if (/\.csv$/i.test(f.name) || /^﻿?Connector,name/.test(txt)) {
+      io = io.concat(parseLogoCsv(txt, f.name.replace(/\.[^.]+$/, '')));
+    } else {
+      let doc; try { doc = JSON.parse(txt); } catch(e){ ioMelding('Geen geldige JSON: ' + f.name); return; }
+      const arr = Array.isArray(doc) ? doc : (Array.isArray(doc.io) ? doc.io : null);
+      if (arr) io = io.concat(arr);
+    }
+  }
+  if (!io.length) { ioMelding('Geen I/O gevonden — kies LOGO-CSV\'s (Logo1-4.csv) of een io.json.'); return; }
   bewaarFase3Origineel();
   state.io = io;
   pasIOToe(io);
