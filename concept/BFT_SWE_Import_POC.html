@@ -45,9 +45,9 @@
 <div class="wrap">
   <div class="drop" id="drop">
     <div style="font-size:30px">📥</div>
-    <div>Sleep de <b>SOLIDWORKS Electrical XML's</b> hierheen of <b>klik om te kiezen</b></div>
-    <div class="hint">BOM · List of wires · Locations · Drawings — meerdere tegelijk mag</div>
-    <input type="file" id="file" accept=".xml" multiple hidden>
+    <div>Sleep de <b>LOGO!Soft CSV's</b> + <b>SWE-XML's</b> hierheen of <b>klik om te kiezen</b></div>
+    <div class="hint">Logo1-4.csv (primaire I/O-bron) · BOM · List of wires · Locations — één machine per keer</div>
+    <input type="file" id="file" accept=".xml,.csv" multiple hidden>
     <div class="files" id="files"></div>
   </div>
   <div id="uit"></div>
@@ -85,11 +85,33 @@ function typeVan(rows){
   return 'overig';
 }
 
-const data = { bom:[], wires:[], locations:[], overig:[], bestanden:[] };
+/* ── LOGO!Soft CSV (Connector,name) → benoemde I/O met klem/richting/soort ── */
+function parseLogo(txt){
+  const io = [];
+  txt.split(/\r?\n/).slice(1).forEach(line => {
+    const m = line.match(/^([^,]+),"?\s*(.*?)\s*"?$/);
+    if (!m) return;
+    const klem = m[1].replace(/^﻿/,'').trim(), functie = (m[2]||'').trim();
+    if (!functie) return;                       // lege connector overslaan
+    const mm = klem.match(/^(A?)(I|Q)(\d+)$/);  // I, Q, AI, AQ — rest (M/N/X/C/F/S) overslaan
+    if (!mm) return;
+    io.push({ klem, functie, richting: mm[2]==='I'?'in':'uit', soort: mm[1]==='A'?'analoog':'digitaal' });
+  });
+  return io;
+}
+function normF(s){ return String(s||'').toLowerCase().replace(/[!"]/g,'').replace(/\s+/g,' ').trim(); }
+
+const data = { bom:[], wires:[], locations:[], overig:[], logo:{}, bestanden:[] };
 
 async function verwerk(fileList){
   for (const f of fileList){
     const txt = await f.text();
+    if (/\.csv$/i.test(f.name) || /^﻿?Connector,name/.test(txt)) {
+      const ctrl = f.name.replace(/\.[^.]+$/,'');
+      data.logo[ctrl] = parseLogo(txt);
+      data.bestanden.push({ naam:f.name, type:'logo', n:data.logo[ctrl].length });
+      continue;
+    }
     const rows = parseRows(txt);
     const t = typeVan(rows);
     data.bestanden.push({ naam:f.name, type:t, n:rows.length });
@@ -117,25 +139,79 @@ function functieLabel(addr){
 function render(){
   let h = '';
 
-  /* 1 — I/O-FUNCTIELIJST (de goudader) */
-  const labels = new Set();
-  data.wires.forEach(w => { [functieLabel(w.Origin), functieLabel(w.Destination)].forEach(l => l && labels.add(l)); });
-  const ioLijst = [...labels].sort((a,b) => a.localeCompare(b,'nl'));
-  h += kaart('① I/O-functielijst — kandidaat-testitems', ioLijst.length, 'g',
-    ioLijst.length
-      ? `<div class="hint">Uit de wire-origins/destinations. Worden machine-specifieke IBN-testitems.</div>
-         <button class="btn" onclick="kopieer()" style="margin:8px 0">⧉ Kopieer als lijst</button>
-         <div class="lijst" id="ioLijst">${ioLijst.map(l => `<div>• ${esc(l)}</div>`).join('')}</div>`
+  /* ⓛ — I/O PER LOGO-CONTROLLER (primaire bron, uit CSV) */
+  const ctrls = Object.keys(data.logo).sort();
+  if (ctrls.length) {
+    let totLogo = 0; ctrls.forEach(c => totLogo += data.logo[c].length);
+    h += kaart('🔌 I/O per LOGO-controller — primaire bron', totLogo + ' I/O', 'g',
+      `<div class="hint">Uit LOGO!Soft CSV: klem · richting · functie per controller. Klaar voor io.json.</div>
+       <button class="btn" onclick="kopieerLogo()" style="margin:8px 0">⧉ Kopieer als io.json</button>` +
+      ctrls.map(c => {
+        const io = data.logo[c];
+        const t = (r,s) => io.filter(x => x.richting===r && x.soort===s).length;
+        return `<div style="margin:10px 0;border-top:1px solid var(--border);padding-top:8px">
+          <b class="mono">${esc(c)}</b>
+          <span class="hint" style="display:inline">DI ${t('in','digitaal')} · AI ${t('in','analoog')} · DQ ${t('uit','digitaal')} · AQ ${t('uit','analoog')}</span>
+          <table style="margin-top:4px"><tr><th>Klem</th><th>Richting</th><th>Functie</th></tr>${
+            io.map(x => `<tr><td class="mono">${esc(x.klem)}</td>
+              <td><span class="tag">${x.richting==='in'?'◀ in':'▶ uit'}${x.soort==='analoog'?' ~':''}</span></td>
+              <td>${esc(x.functie)}</td></tr>`).join('')}</table>
+        </div>`;
+      }).join(''));
+
+    /* ✓ — MACHINE-VERIFICATIE (zelfde machine?) */
+    h += kaart('✓ Machine-verificatie', '', '', verificatieHtml(ctrls));
+  }
+
+  /* Afgeleide data: LOGO-type per mark, I/O per module/locatie, componenten per locatie */
+  const logoT = {};
+  data.bom.forEach(r => { if (/LOGO/i.test(r.Description||'')) marks(r.Mark).forEach(m => logoT[m] = r.Description); });
+  function modType(desc){
+    if (/AM2 AQ/i.test(desc||'')) return {lab:'analoog uit', k:'o'};
+    if (/AM2/i.test(desc||''))    return {lab:'analoog in',  k:'o'};
+    if (/DM16|RCE|LOGO/i.test(desc||'')) return {lab:'digitaal', k:'g'};
+    return {lab:'overig', k:''};
+  }
+  const perMod = {}, ioPerLoc = {}, cmpPerLoc = {};
+  data.wires.forEach(w => [w.Origin, w.Destination].forEach(ep => {
+    const m = (ep||'').match(/\+(L\d+)-(J\d+):(.+)$/);
+    if (m && functieLabel(':' + m[3].trim()) !== null) {
+      const loc = m[1], mod = '-' + m[2], lab = m[3].trim();
+      (perMod[mod] = perMod[mod] || new Set()).add(lab);
+      (ioPerLoc[loc] = ioPerLoc[loc] || new Set()).add(mod + '|' + lab);
+    }
+    const re = /\+(L\d+)-([A-Za-z]+\d+)/g; let x;
+    while ((x = re.exec(ep||''))) (cmpPerLoc[x[1]] = cmpPerLoc[x[1]] || new Set()).add(x[2]);
+  }));
+  const totIO = new Set(); Object.values(perMod).forEach(s => s.forEach(l => totIO.add(l)));
+
+  /* ① — I/O PER LOGO-MODULE (read-only) */
+  const mods = Object.keys(perMod).sort((a,b) => (+a.replace(/\D/g,'')) - (+b.replace(/\D/g,'')));
+  h += kaart('① I/O per LOGO-module', totIO.size + ' functies', 'g',
+    mods.length
+      ? `<div class="hint">Read-only capaciteit-overzicht. Type (digitaal / analoog) afgeleid uit de BOM-modulebeschrijving.</div>
+         <button class="btn" onclick="kopieer()" style="margin:8px 0">⧉ Kopieer alle I/O</button>` +
+        mods.map(mod => {
+          const t = modType(logoT[mod]);
+          const labs = [...perMod[mod]].sort((a,b)=>a.localeCompare(b,'nl'));
+          return `<div style="margin:10px 0;border-top:1px solid var(--border);padding-top:8px">
+            <span class="badge ${t.k}">${esc(t.lab)}</span>
+            <b class="mono">${esc(mod)}</b>
+            <span class="hint" style="display:inline">${esc(logoT[mod]||'overig device')} · ${labs.length} punten</span>
+            <div class="lijst" style="margin-top:4px">${labs.map(l=>`<div class="io-lbl">• ${esc(l)}</div>`).join('')}</div>
+          </div>`;
+        }).join('')
       : '<div class="leeg">Nog geen wires geladen.</div>');
 
-  /* 2 — LOGO! I/O-MODULES */
-  const logo = [];
-  data.bom.forEach(r => { if (/LOGO/i.test(r.Description||'')) marks(r.Mark).forEach(m => logo.push({m, d:r.Description})); });
-  h += kaart('② LOGO! I/O-modules', logo.length, 'o',
-    logo.length
-      ? `<table><tr><th>Mark</th><th>Module</th></tr>${logo.sort((a,b)=>a.m.localeCompare(b.m))
-          .map(x => `<tr><td class="mono">${esc(x.m)}</td><td>${esc(x.d)}</td></tr>`).join('')}</table>`
-      : '<div class="leeg">Geen LOGO-modules in de BOM.</div>');
+  /* ② — I/O & COMPONENTEN PER LOCATIE (read-only) */
+  const locDesc = {}; data.locations.forEach(l => locDesc[(l.Location_Mark||'').replace(/^\+/,'')] = l.Description);
+  const locKeys = [...new Set([...Object.keys(ioPerLoc), ...Object.keys(cmpPerLoc)])].sort((a,b)=>(+a.slice(1))-(+b.slice(1)));
+  h += kaart('② Per locatie — I/O & componenten', locKeys.length + ' locaties', '',
+    locKeys.length
+      ? `<table><tr><th>Locatie</th><th>Omschrijving</th><th>I/O-punten</th><th>Componenten</th></tr>${
+          locKeys.map(l => `<tr><td class="mono">+${esc(l)}</td><td>${esc(locDesc[l]||'—')}</td>
+            <td>${ioPerLoc[l]?ioPerLoc[l].size:0}</td><td>${cmpPerLoc[l]?cmpPerLoc[l].size:0}</td></tr>`).join('')}</table>`
+      : '<div class="leeg">Geen locatie-data.</div>');
 
   /* 3 — COMPONENT-INVENTARIS per klasse */
   const perKlasse = {};
@@ -175,8 +251,52 @@ function kaart(titel, badge, kleur, body){
 }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function kopieer(){
-  const t = [...document.querySelectorAll('#ioLijst div')].map(d => d.textContent.replace(/^•\s*/,'')).join('\n');
-  navigator.clipboard.writeText(t).then(()=>alert('I/O-lijst gekopieerd ('+t.split('\n').length+' regels)'));
+  const set = new Set([...document.querySelectorAll('.io-lbl')].map(d => d.textContent.replace(/^•\s*/,'').trim()));
+  const t = [...set].sort((a,b)=>a.localeCompare(b,'nl')).join('\n');
+  navigator.clipboard.writeText(t).then(()=>alert('I/O-lijst gekopieerd ('+set.size+' unieke functies)'));
+}
+
+/* Verificatie: dubbele controllers + kruischeck LOGO ↔ SWE-XML */
+function verificatieHtml(ctrls){
+  const out = [];
+  /* a) dubbele/zelfde controller (hoge onderlinge functie-overlap) */
+  const dup = [];
+  for (let i=0;i<ctrls.length;i++) for (let j=i+1;j<ctrls.length;j++){
+    const A = new Set(data.logo[ctrls[i]].map(x=>normF(x.functie)));
+    const B = data.logo[ctrls[j]].map(x=>normF(x.functie));
+    if (!A.size || !B.length) continue;
+    const inter = B.filter(x=>A.has(x)).length;
+    const ratio = inter / Math.min(A.size, B.length);
+    if (ratio > 0.6) dup.push(`${ctrls[i]} ↔ ${ctrls[j]} (${Math.round(ratio*100)}% gelijk)`);
+  }
+  out.push(dup.length
+    ? `<div class="warn">⚠ Mogelijk dezelfde controller dubbel: ${dup.join(', ')} — upload je niet per ongeluk één CSV 2×?</div>`
+    : `<div style="color:var(--groen)">✓ ${ctrls.length} onderscheidende controllers — geen dubbele I/O-sets.</div>`);
+  /* b) kruischeck LOGO ↔ SWE-XML (zelfde machine?) */
+  if (data.wires.length){
+    const xml = new Set();
+    data.wires.forEach(w => [w.Origin, w.Destination].forEach(a => {
+      if ((a||'').indexOf(':')>=0){ const l = a.slice(a.lastIndexOf(':')+1).trim(); if (/[a-z]/.test(l) && !/^\d/.test(l)) xml.add(normF(l)); }
+    }));
+    const logoSet = new Set(); ctrls.forEach(c => data.logo[c].forEach(x => logoSet.add(normF(x.functie))));
+    const inter = [...logoSet].filter(x=>xml.has(x)).length;
+    const pct = logoSet.size ? Math.round(inter/logoSet.size*100) : 0;
+    out.push(pct >= 15
+      ? `<div style="color:var(--groen);margin-top:6px">✓ LOGO ↔ SWE-XML overlap: ${inter} functies (${pct}%) — bronnen lijken van <b>dezelfde machine</b>.</div>`
+      : `<div class="warn" style="margin-top:6px">⚠ Lage LOGO↔XML overlap (${pct}%) — mogelijk <b>verschillende machines</b>? Controleer de bestanden.</div>`);
+  } else {
+    out.push(`<div class="hint" style="margin-top:6px">Laad ook de SWE-XML (List of wires) voor een kruischeck LOGO ↔ bedrading.</div>`);
+  }
+  return out.join('');
+}
+
+/* I/O → io.json-concept (stabiele id = controller-klem) */
+function kopieerLogo(){
+  const io = [];
+  Object.keys(data.logo).sort().forEach(c => data.logo[c].forEach(x =>
+    io.push({ id:`${c}-${x.klem}`, controller:c, klem:x.klem, richting:x.richting, soort:x.soort, functie:x.functie })));
+  const json = JSON.stringify({ machineId:'', schemaVersion:1, bron:'LOGO!Soft CSV', io }, null, 2);
+  navigator.clipboard.writeText(json).then(()=>alert('io.json gekopieerd ('+io.length+' I/O-punten)'));
 }
 </script>
 </body>
