@@ -897,7 +897,7 @@ function renderSidebar() {
       const klaar = t.done + t.nvt === t.totaal;
       return `<div class="ibn-sb-item ${klaar ? 'klaar' : ''}" onclick="scrollNaarSec('${s.id}')">
         <div class="ibn-sb-icon">${klaar ? '✓' : ''}</div>
-        <span>${s.id} ${s.titel}</span>
+        <span>${BFTToolShell.esc(s.id)} ${BFTToolShell.esc(s.titel)}</span>
         <span class="ibn-sb-count">${t.done + t.nvt}/${t.totaal}</span>
       </div>`;
     }).join('');
@@ -1075,7 +1075,7 @@ function renderSectie(s) {
     <div class="ibn-sec" id="sec-${s.id}">
       <div class="ibn-sec-head">
         <div class="ibn-sec-id ${klaar ? 'klaar' : ''}">${s.id}</div>
-        <div class="ibn-sec-titel">${s.titel}</div>
+        <div class="ibn-sec-titel">${BFTToolShell.esc(s.titel)}</div>
         <div class="ibn-sec-prog ${klaar ? 'klaar' : ''}">${t.done + t.nvt} / ${t.totaal}</div>
       </div>
       <div class="ibn-tbl">
@@ -1098,8 +1098,8 @@ function renderRij(it) {
   return `
     <div class="ibn-row ${rijCls}" id="row-${it.id}">
       <div class="ibn-row-content">
-        <div class="ibn-desc">${it.desc}</div>
-        ${it.sub ? `<div class="ibn-sub">${it.sub}</div>` : ''}
+        <div class="ibn-desc">${BFTToolShell.esc(it.desc)}</div>
+        ${it.sub ? `<div class="ibn-sub">${BFTToolShell.esc(it.sub)}</div>` : ''}
         <div class="ibn-stempel">${mont ? `✓ ${mont} · ${ts}` : ''}</div>
       </div>
       <button class="ibn-note-btn ${note ? 'heeft-note' : ''}" title="Opmerking"
