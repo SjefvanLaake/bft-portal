@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SWE-XML → IBN — Proof of Concept</title>
+<style>
+  :root{ --zwart:#111; --goud:#e8a000; --blauw:#1a6ec7; --groen:#1e9e5e; --grijs:#7a849a;
+         --bg:#f4f5f7; --surface:#fff; --border:#e1e4e8; --text:#1a1f2e; --text2:#3d4558; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+  header{background:var(--zwart);color:#fff;padding:14px 22px;border-bottom:3px solid var(--goud);display:flex;align-items:baseline;gap:14px}
+  header h1{font-size:16px;margin:0;font-weight:700}
+  header span{font-size:11px;color:#c9ccd2;font-family:ui-monospace,monospace}
+  .wrap{max-width:1080px;margin:0 auto;padding:20px 22px 80px}
+  .drop{border:2px dashed var(--blauw);border-radius:10px;background:rgba(26,110,199,0.05);padding:26px;text-align:center;cursor:pointer;transition:.15s}
+  .drop:hover,.drop.over{background:rgba(26,110,199,0.12)}
+  .drop b{color:var(--blauw)}
+  .files{font-family:ui-monospace,monospace;font-size:11px;color:var(--grijs);margin:10px 0 0}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:9px;margin-top:18px;overflow:hidden}
+  .card-kop{padding:11px 16px;background:#fafbfc;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+  .card-kop h2{font-size:14px;margin:0;flex:1}
+  .badge{font-family:ui-monospace,monospace;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--blauw);color:#fff}
+  .badge.g{background:var(--groen)} .badge.o{background:var(--goud)}
+  .card-body{padding:14px 16px;max-height:340px;overflow:auto}
+  .lijst{columns:2;column-gap:24px;font-size:13px;line-height:1.7}
+  .lijst div{break-inside:avoid}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th,td{text-align:left;padding:4px 8px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{font-family:ui-monospace,monospace;font-size:10px;color:var(--grijs);position:sticky;top:0;background:#fafbfc}
+  .mono{font-family:ui-monospace,monospace}
+  .tag{display:inline-block;font-family:ui-monospace,monospace;font-size:11px;background:#eef1f5;border-radius:4px;padding:1px 6px;margin:1px}
+  .hint{font-size:12px;color:var(--grijs);margin:4px 0 0}
+  .btn{font:inherit;font-size:12px;border:1px solid var(--border);background:#fff;border-radius:6px;padding:5px 11px;cursor:pointer}
+  .btn:hover{background:#f0f2f5}
+  .leeg{color:var(--grijs);font-style:italic}
+  .warn{color:#d63030}
+</style>
+</head>
+<body>
+<header>
+  <h1>SWE-XML → IBN</h1><span>Proof of Concept · deterministische parser</span>
+</header>
+
+<div class="wrap">
+  <div class="drop" id="drop">
+    <div style="font-size:30px">📥</div>
+    <div>Sleep de <b>SOLIDWORKS Electrical XML's</b> hierheen of <b>klik om te kiezen</b></div>
+    <div class="hint">BOM · List of wires · Locations · Drawings — meerdere tegelijk mag</div>
+    <input type="file" id="file" accept=".xml" multiple hidden>
+    <div class="files" id="files"></div>
+  </div>
+  <div id="uit"></div>
+</div>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const drop = $('#drop'), inp = $('#file');
+
+drop.onclick = () => inp.click();
+['dragover','dragenter'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add('over'); }));
+['dragleave','drop'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', ev => verwerk(ev.dataTransfer.files));
+inp.onchange = () => verwerk(inp.files);
+
+/* ── XML → array van rij-objecten (veld → tekst) ── */
+function parseRows(xmlText){
+  const doc = new DOMParser().parseFromString(xmlText, 'application/xml');
+  if (doc.querySelector('parsererror')) return [];
+  return Array.from(doc.querySelectorAll('Root > Row')).map(row => {
+    const o = {};
+    Array.from(row.children).forEach(c => { o[c.tagName] = (c.textContent || '').trim(); });
+    return o;
+  });
+}
+
+/* ── Type herkennen aan de aanwezige kolommen ── */
+function typeVan(rows){
+  if (!rows.length) return 'leeg';
+  const k = Object.keys(rows[0]);
+  if (k.includes('Origin') && k.includes('Line_style')) return 'wires';
+  if (k.includes('Location_Mark')) return 'locations';
+  if (k.includes('Mark') && k.includes('Reference')) return 'bom';
+  return 'overig';
+}
+
+const data = { bom:[], wires:[], locations:[], overig:[], bestanden:[] };
+
+async function verwerk(fileList){
+  for (const f of fileList){
+    const txt = await f.text();
+    const rows = parseRows(txt);
+    const t = typeVan(rows);
+    data.bestanden.push({ naam:f.name, type:t, n:rows.length });
+    if (data[t]) data[t] = data[t].concat(rows);
+  }
+  $('#files').textContent = data.bestanden.map(b => `${b.naam} → ${b.type} (${b.n})`).join('   ·   ');
+  render();
+}
+
+/* ── Component-marks uit een "Mark"-veld (kan meerdere bevatten) ── */
+function marks(s){ return (s||'').split(',').map(x => x.trim()).filter(Boolean); }
+function prefix(m){ const x = m.match(/^-?([A-Za-z]+)/); return x ? x[1].toUpperCase() : '?'; }
+
+/* ── Functie-label uit een wire-endpoint (na laatste ':') ── */
+function functieLabel(addr){
+  if (!addr || addr.indexOf(':') < 0) return null;
+  const lab = addr.slice(addr.lastIndexOf(':') + 1).trim();
+  if (lab.length < 3) return null;          // A1, A2, 86…
+  if (/^\d/.test(lab)) return null;         // draadnr/kleur/CAN: "14 WH", "1 (BN)", "11 CAN HI"
+  if (/^[A-Z]?\d+$/.test(lab)) return null; // klemnummers
+  if (!/[a-z]/.test(lab)) return null;      // all-caps codes: "WH", "CAN HI", "PE"
+  return lab;
+}
+
+function render(){
+  let h = '';
+
+  /* 1 — I/O-FUNCTIELIJST (de goudader) */
+  const labels = new Set();
+  data.wires.forEach(w => { [functieLabel(w.Origin), functieLabel(w.Destination)].forEach(l => l && labels.add(l)); });
+  const ioLijst = [...labels].sort((a,b) => a.localeCompare(b,'nl'));
+  h += kaart('① I/O-functielijst — kandidaat-testitems', ioLijst.length, 'g',
+    ioLijst.length
+      ? `<div class="hint">Uit de wire-origins/destinations. Worden machine-specifieke IBN-testitems.</div>
+         <button class="btn" onclick="kopieer()" style="margin:8px 0">⧉ Kopieer als lijst</button>
+         <div class="lijst" id="ioLijst">${ioLijst.map(l => `<div>• ${esc(l)}</div>`).join('')}</div>`
+      : '<div class="leeg">Nog geen wires geladen.</div>');
+
+  /* 2 — LOGO! I/O-MODULES */
+  const logo = [];
+  data.bom.forEach(r => { if (/LOGO/i.test(r.Description||'')) marks(r.Mark).forEach(m => logo.push({m, d:r.Description})); });
+  h += kaart('② LOGO! I/O-modules', logo.length, 'o',
+    logo.length
+      ? `<table><tr><th>Mark</th><th>Module</th></tr>${logo.sort((a,b)=>a.m.localeCompare(b.m))
+          .map(x => `<tr><td class="mono">${esc(x.m)}</td><td>${esc(x.d)}</td></tr>`).join('')}</table>`
+      : '<div class="leeg">Geen LOGO-modules in de BOM.</div>');
+
+  /* 3 — COMPONENT-INVENTARIS per klasse */
+  const perKlasse = {};
+  let totaal = 0;
+  data.bom.forEach(r => marks(r.Mark).forEach(m => {
+    const p = prefix(m); (perKlasse[p] = perKlasse[p] || []).push({m, d:r.Description, ref:r.Reference}); totaal++;
+  }));
+  const klassen = Object.keys(perKlasse).sort();
+  h += kaart('③ Component-inventaris (per klasse)', totaal + ' marks', '',
+    klassen.length
+      ? `<div class="hint">Marks geëxpandeerd uit samengestelde BOM-rijen.</div>` +
+        klassen.map(k => `<div style="margin:8px 0"><span class="badge">${k}</span> <b>${perKlasse[k].length}</b>
+          <div>${[...new Set(perKlasse[k].map(x=>x.m))].sort().map(m=>`<span class="tag">${esc(m)}</span>`).join('')}</div></div>`).join('')
+      : '<div class="leeg">Geen BOM geladen.</div>');
+
+  /* 4 — LOCATIES */
+  h += kaart('④ Locaties', data.locations.length, '',
+    data.locations.length
+      ? `<table><tr><th>Mark</th><th>Omschrijving</th></tr>${data.locations
+          .map(l => `<tr><td class="mono">${esc(l.Location_Mark)}</td><td>${esc(l.Description)}</td></tr>`).join('')}</table>`
+      : '<div class="leeg">Geen locations geladen.</div>');
+
+  /* 5 — VALIDATIE-HOOK (signalering grote componenten) */
+  const motoren = [...new Set(data.bom.flatMap(r => marks(r.Mark)).filter(m => /^-?M\d/.test(m)))].sort();
+  const noodstop = data.bom.filter(r => /emergency|noodstop/i.test(r.Description||'')).flatMap(r=>marks(r.Mark));
+  h += kaart('⑤ Signalering grote componenten (validatie-aanzet)', motoren.length + noodstop.length, '',
+    `<div><b>Motoren:</b> ${motoren.length ? motoren.map(m=>`<span class="tag">${esc(m)}</span>`).join('') : '<span class="leeg">—</span>'}</div>
+     <div style="margin-top:6px"><b>Noodstop-gerelateerd:</b> ${noodstop.length ? [...new Set(noodstop)].map(m=>`<span class="tag">${esc(m)}</span>`).join('') : '<span class="leeg">—</span>'}</div>
+     <div class="hint">Volgende stap: kruisen met het FASEN-protocol → meld wat het protocol niet test.</div>`);
+
+  $('#uit').innerHTML = h;
+}
+
+function kaart(titel, badge, kleur, body){
+  return `<div class="card"><div class="card-kop"><h2>${titel}</h2><span class="badge ${kleur}">${badge}</span></div>
+    <div class="card-body">${body}</div></div>`;
+}
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function kopieer(){
+  const t = [...document.querySelectorAll('#ioLijst div')].map(d => d.textContent.replace(/^•\s*/,'')).join('\n');
+  navigator.clipboard.writeText(t).then(()=>alert('I/O-lijst gekopieerd ('+t.split('\n').length+' regels)'));
+}
+</script>
+</body>
+</html>
