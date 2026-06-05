@@ -9,6 +9,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.min.js"></script>
   <script src="../library/js/bft-projects.js"></script>
   <script src="../library/js/bft-pdf-logo.js"></script>
+  <script src="../library/js/bft-pdf.js"></script>
   <script src="../library/js/bft-tool-shell.js" defer></script>
   <script src="../library/js/bft-checklist.js" defer></script>
   <style>
@@ -624,38 +625,11 @@ function exportPDF() {
   });
 
   /* ── pdfMake definitie ── */
-  const PDF_LOGO = (typeof BFT_PDF_LOGO !== 'undefined') ? BFT_PDF_LOGO : null;
-
   const docDef = {
     pageMargins: [40, 88, 40, 40],
     defaultStyle: { fontSize: 10, lineHeight: 1.3, color: '#3d4558' },
-    header: (page, pages) => ({
-      stack: [
-        {
-          table: {
-            widths: [90, '*', 90],
-            body: [[
-              { image: PDF_LOGO, width: 58, margin:[12,7,0,0],
-                border:[false,false,false,false], fillColor:'#000000' },
-              { text: titelDoc, fontSize:11, bold:true, color:'#fff',
-                alignment:'center', margin:[0,16,0,0],
-                border:[false,false,false,false], fillColor:'#000000' },
-              { text: `${page} / ${pages}`, fontSize:9, color:'rgba(255,255,255,0.5)',
-                alignment:'right', margin:[0,20,15,0],
-                border:[false,false,false,false], fillColor:'#000000' }
-            ]]
-          },
-          layout: { defaultBorder:false }
-        },
-        { canvas:[{ type:'rect', x:0, y:0, w:595, h:3, color:'#e8a000' }] }
-      ]
-    }),
-    footer: (page, pages) => ({
-      columns: [
-        { text: titelDoc,          fontSize:8, color:'#aaa', margin:[40,8,0,0] },
-        { text: `Pagina ${page} / ${pages}`, fontSize:8, color:'#aaa', alignment:'right', margin:[0,8,40,0] }
-      ]
-    }),
+    header: BFTPdf.header(titelDoc),
+    footer: BFTPdf.footer(titelDoc),
     content
   };
 

@@ -9,6 +9,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.min.js"></script>
   <script src="../library/js/bft-projects.js"></script>
   <script src="../library/js/bft-pdf-logo.js"></script>
+  <script src="../library/js/bft-pdf.js"></script>
   <script src="../library/js/bft-dialog.js" defer></script>
   <style>
     .container { max-width: 860px; margin: 0 auto; padding: 24px 20px 100px; }
@@ -852,7 +853,6 @@ function exportPDF() {
   slaOp(d);
   const datum = new Date().toISOString().slice(0, 10);
   const titel = d.storingnummer;
-  const PDF_LOGO = (typeof BFT_PDF_LOGO !== 'undefined') ? BFT_PDF_LOGO : null;
 
   const rij = (label, val) => [
     { text: label, fontSize: 9, color: '#7a849a', bold: true, margin: [0,3,0,3] },
@@ -899,10 +899,6 @@ function exportPDF() {
   const res = d.resultaat;
   sectie('Resultaat', [`Status: ${res.status}`, res.vervolg ? `Vervolg: ${res.vervolg}` : '', res.openPunten ? `Open: ${res.openPunten}` : ''].filter(Boolean).join('\n'));
 
-  const headerImg = PDF_LOGO
-    ? { image: PDF_LOGO, width: 58, margin:[12,7,0,0], border:[false,false,false,false], fillColor:'#000000' }
-    : { text: 'BOFRAM', fontSize: 13, bold: true, color: '#e8a000', margin:[16,15,0,0], border:[false,false,false,false], fillColor:'#000000' };
-
   const btn = document.querySelector('.str-footer .bf-btn-primary');
   if (btn) { btn.disabled = true; btn.textContent = 'Bezig…'; }
 
@@ -910,18 +906,8 @@ function exportPDF() {
     pdfMake.createPdf({
       pageMargins: [40,88,40,40],
       defaultStyle: { fontSize: 10, lineHeight: 1.4, color: '#3d4558' },
-      header: (page, pages) => ({ stack: [
-        { table: { widths:[90,'*',90], body: [[
-          headerImg,
-          { text: titel, fontSize:11, bold:true, color:'#fff', alignment:'center', margin:[0,16,0,0], border:[false,false,false,false], fillColor:'#000000' },
-          { text:`${page} / ${pages}`, fontSize:9, color:'rgba(255,255,255,0.5)', alignment:'right', margin:[0,20,15,0], border:[false,false,false,false], fillColor:'#000000' }
-        ]]}, layout:{defaultBorder:false}},
-        { canvas: [{type:'rect',x:0,y:0,w:595,h:3,color:'#e8a000'}] }
-      ]}),
-      footer: (page, pages) => ({ columns:[
-        { text: titel, fontSize:8, color:'#aaa', margin:[40,8,0,0] },
-        { text:`Pagina ${page} / ${pages}`, fontSize:8, color:'#aaa', alignment:'right', margin:[0,8,40,0] }
-      ]}),
+      header: BFTPdf.header(titel),
+      footer: BFTPdf.footer(titel),
       content
     }).download(`${d.storingnummer.replace(/[:\s]/g,'_')}_${datum}.pdf`, () => {
       if (btn) { btn.disabled = false; btn.textContent = '⬇ PDF'; }

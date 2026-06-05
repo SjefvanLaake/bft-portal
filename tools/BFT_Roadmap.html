@@ -8,6 +8,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.min.js"></script>
   <script src="../library/js/bft-pdf-logo.js"></script>
+  <script src="../library/js/bft-pdf.js"></script>
   <style>
     .rm-page { max-width: 1000px; margin: 0 auto; padding: 20px 22px 64px; }
     .rm-intro {
@@ -323,18 +324,11 @@ function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,
 var PDF_KLEUR = { gebouwd:'#1e9e5e', gepland:'#b87d00', idee:'#1a6ec7', geparkeerd:'#7a849a' };
 
 document.getElementById('btnPdf').addEventListener('click', function(){
-  var PDF_LOGO = (typeof BFT_PDF_LOGO !== 'undefined') ? BFT_PDF_LOGO : null;
   var datum = new Date().toLocaleDateString('nl-NL',{day:'numeric',month:'long',year:'numeric'});
   var content = [];
 
-  /* Roboto (pdfMake-font) mist → (U+2192) en ✓ (U+2713) — vervang ze alleen voor
-     de PDF (scherm/HTML toont de echte glyphs wél). › en de rest zijn aanwezig. */
-  function pdfTxt(s){
-    return String(s == null ? '' : s)
-      .replace(/\s*→\s*/g, ' › ')   /* →  →  › */
-      .replace(/✓\s*/g, '')              /* ✓  →  weg */
-      .trim();
-  }
+  /* Glyph-fix (Roboto mist → en ✓) komt uit de gedeelde helper. */
+  var pdfTxt = BFTPdf.pdfTxt;
 
   content.push({ text: pdfTxt(ROADMAP.intro), fontSize:10, color:'#3d4558', margin:[0,0,0,6] });
   content.push({ text: pdfTxt(ROADMAP.voorbehoud), fontSize:9, italics:true, color:'#7a849a', margin:[0,0,0,4] });
@@ -378,30 +372,14 @@ document.getElementById('btnPdf').addEventListener('click', function(){
   content.push({ canvas:[{type:'line',x1:0,y1:0,x2:515,y2:0,lineWidth:0.5,lineColor:'#dfe3ea'}], margin:[0,12,0,6] });
   content.push({ text:pdfTxt(ROADMAP.afgevallen), fontSize:8.5, italics:true, color:'#7a849a' });
 
-  var headerImg = PDF_LOGO
-    ? {image:PDF_LOGO,width:58,margin:[12,7,0,0],border:[false,false,false,false],fillColor:'#000000'}
-    : {text:'BOFRAM',fontSize:13,bold:true,color:'#e8a000',margin:[16,15,0,0],border:[false,false,false,false],fillColor:'#000000'};
   var titel = ROADMAP.titel;
 
   pdfMake.createPdf({
     pageMargins:[40,92,40,44],
     defaultStyle:{fontSize:10,lineHeight:1.4,color:'#3d4558'},
     info:{ title:titel, author:'Bofram Techniek' },
-    header:function(page,pages){ return {stack:[
-      {table:{widths:[100,'*',90],body:[[
-        headerImg,
-        {stack:[
-          {text:'Roadmap & Toekomstvisie',fontSize:11,bold:true,color:'#ffffff',alignment:'center',margin:[0,12,0,0]},
-          {text:datum,fontSize:8,color:'#c9ccd2',alignment:'center',margin:[0,1,0,0]}
-        ],border:[false,false,false,false],fillColor:'#000000'},
-        {text:page+'/'+pages,fontSize:9,color:'#c9ccd2',alignment:'right',margin:[0,20,15,0],border:[false,false,false,false],fillColor:'#000000'}
-      ]]},layout:{defaultBorder:false}},
-      {canvas:[{type:'rect',x:0,y:0,w:595,h:3,color:'#e8a000'}]}
-    ]}; },
-    footer:function(page,pages){ return {columns:[
-      {text:'Bofram Techniek — BFT-Portaal',fontSize:8,color:'#aaa',margin:[40,8,0,0]},
-      {text:'Pagina '+page+'/'+pages,fontSize:8,color:'#aaa',alignment:'right',margin:[0,8,40,0]}
-    ]}; },
+    header: BFTPdf.header('Roadmap & Toekomstvisie', datum),
+    footer: BFTPdf.footer('Bofram Techniek — BFT-Portaal'),
     content:content
   }).download('BFT_Roadmap_'+new Date().toISOString().slice(0,10)+'.pdf');
 });
