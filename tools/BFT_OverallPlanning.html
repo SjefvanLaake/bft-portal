@@ -294,8 +294,6 @@ var grid = BFTOverallGrid.register({
     injectFeitenStatus();      /* werkelijke status (MBCL + Bouwvolgorde) in het label */
     injectCapaciteitsRijen();
     pasKolomBreedteAan();  /* kolommen breed genoeg voor de focus (week ±8 / maand ±7) */
-    /* injectResourceRijen() vervalt — bezetting (personen) wordt nu native in het
-       grid getoond als aantal IN de geschilderde discipline-cellen. */
   }
 });
 
@@ -614,104 +612,6 @@ function injectCapaciteitsRijen() {
   var tbody = tabel.querySelector('tbody');
   tbody.appendChild(sep);
   tbody.appendChild(tr);
-}
-
-/* ── [VERVALLEN] Resource-panel: employee-uren-rijen per uitgeklapt project ──
-   Niet meer aangeroepen sinds bezetting (personen) native in het grid wordt
-   getoond als aantal IN de geschilderde discipline-cellen (zie bft-overallgrid
-   bezetting + .og-pers). Bewaard voor eventuele toekomstige uren-detailweergave. */
-function injectResourceRijen() {
-  var tabel = document.querySelector('table.og-tbl');
-  if (!tabel) return;
-  tabel.querySelectorAll('tr.res-rij, tr.res-sep').forEach(function(r){ r.remove(); });
-
-  var doc  = grid.getState();
-  var ths  = Array.prototype.slice.call(tabel.querySelectorAll('thead th'));
-  var tijdThs = ths.filter(function(th){ return th.classList.contains('og-th-week') || th.classList.contains('og-th-maand'); });
-
-  tabel.querySelectorAll('tr.og-row-project.open').forEach(function(projRow) {
-    var bftId = vindBftId(projRow);
-    if (!bftId) return;
-
-    var resState = null;
-    try { resState = JSON.parse(localStorage.getItem('bft_v2_res_' + bftId)); } catch(e) {}
-    if (!resState || !resState.medewerkers || !resState.medewerkers.length) return;
-
-    var projId   = projRow.dataset.id;
-    var discRijen = tabel.querySelectorAll('tr.og-row-disc[data-id="' + projId + '"]:not(.res-rij)');
-    if (!discRijen.length) return;
-    var anker = discRijen[discRijen.length - 1];
-
-    /* Scheidingsrij */
-    var sep = document.createElement('tr');
-    sep.className = 'res-sep'; sep.dataset.id = projId;
-    var sepTd = document.createElement('td');
-    sepTd.colSpan = ths.length;
-    sepTd.innerHTML = '👷 Capaciteit — ' + resState.medewerkers.length + ' medewerker(s) · klik Resource → om te bewerken';
-    sep.appendChild(sepTd);
-    anker.after(sep);
-    anker = sep;
-
-    /* Employee-rijen */
-    resState.medewerkers.forEach(function(mdw) {
-      var urenMdw = (resState.uren && resState.uren[mdw.naam]) || {};
-      var tr = document.createElement('tr');
-      tr.className = 'res-rij'; tr.dataset.id = projId;
-
-      /* Sticky action cel */
-      /* Sticky cellen — losse cellen per meta-kolom, breedtes uit de header (geen brede colspan-cel die overlapt) */
-      var hdrActR  = tabel.querySelector('thead th.og-th-act');
-      var hdrMetaR = Array.prototype.slice.call(tabel.querySelectorAll('thead th.og-th-meta'));
-
-      var tdAct = document.createElement('td');
-      tdAct.style.cssText = 'position:sticky;left:0;z-index:2;background:#f7f4fd;min-width:' + (hdrActR ? hdrActR.style.minWidth : '52px');
-      tr.appendChild(tdAct);
-
-      hdrMetaR.forEach(function(hth, i) {
-        var td = document.createElement('td');
-        td.style.cssText = 'position:sticky;left:' + hth.style.left + ';z-index:2;background:#f7f4fd;min-width:' + hth.style.minWidth
-          + (i === 0 ? ';padding-left:22px;white-space:nowrap' : '');
-        if (i === 0) {
-          td.innerHTML =
-            '<span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#7c3aed;vertical-align:middle;margin-right:8px;opacity:0.7"></span>'
-            + '<span style="font-family:var(--mono);font-size:11px;color:var(--text2)">' + mdw.naam + '</span>'
-            + '<span style="font-family:var(--mono);font-size:9px;color:#7c3aed;margin-left:8px;opacity:0.8">' + mdw.discipline + '</span>';
-        }
-        tr.appendChild(td);
-      });
-
-      /* Tijdkolommen */
-      tijdThs.forEach(function(th) {
-        var uren = 0;
-        var td = document.createElement('td');
-        td.style.textAlign = 'center';
-        if (th.classList.contains('og-th-huidig')) td.classList.add('og-td-huidig');
-
-        if (th.classList.contains('og-th-week')) {
-          var weekNr = parseInt(th.textContent.trim().replace('w', ''), 10);
-          uren = urenMdw['w' + doc.jaar + '_' + weekNr] || 0;
-        } else {
-          var MAAND_NM = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
-          var label = th.textContent.trim().toLowerCase();
-          var mi = MAAND_NM.findIndex(function(m){ return label.startsWith(m); });
-          if (mi >= 0) {
-            for (var w = 1; w <= 53; w++) {
-              if (maandVanWeekLocaal(doc.jaar, w) === mi) uren += urenMdw['w' + doc.jaar + '_' + w] || 0;
-            }
-          }
-        }
-
-        if (uren > 0) {
-          td.style.cssText = 'text-align:center;font-family:var(--mono);font-size:10px;font-weight:700;color:#7c3aed;background:#e6ddfb';
-          td.textContent = uren + 'u';
-        }
-        tr.appendChild(td);
-      });
-
-      anker.after(tr);
-      anker = tr;
-    });
-  });
 }
 
 /* Koppel een planning-project aan zijn BFT-project-id. Voorkeur: het aparte
