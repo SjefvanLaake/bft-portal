@@ -229,7 +229,9 @@ var ROADMAP = {
         { titel: 'Foto-documentatie per bouwstap', status: 'idee',
           desc: 'Foto’s vastleggen bij een stap, via het journaal-fundament. Optioneel.' },
         { titel: 'Cross-tool activiteiten-tijdlijn', status: 'idee',
-          desc: 'Eén chronologische feed over álle tools in het Projectoverzicht. Pas bouwen als de behoefte er is → dan een volwaardig audit-event-log.' }
+          desc: 'Eén chronologische feed over álle tools in het Projectoverzicht. Pas bouwen als de behoefte er is → dan een volwaardig audit-event-log.' },
+        { titel: 'SOLIDWORKS Electrical XML → IBN-protocol', status: 'idee',
+          desc: 'XML-export uit SOLIDWORKS Electrical inlezen om het machine-specifieke deel van het IBN-protocol automatisch te vullen (componenten / I-O / aansluitingen) i.p.v. handmatig overtypen. Deterministisch parsen van de gestructureerde XML — anders dan het doodlopende PDF-spoor. Onderscheidt zich van “Schema-logica toetsen”: dat valideert het schema, dit vult het protocol.' }
       ]
     },
     {
@@ -248,6 +250,8 @@ var ROADMAP = {
           desc: 'Zie sectie “Samenwerking met het ERP”. Vereist backend.' },
         { titel: 'Schema-logica toetsen', status: 'idee',
           desc: 'SOLIDWORKS Electrical-export → deterministische regel-engine (structureel/consistentie), later hybride met AI voor de veiligheidsketen. PDF-only is een doodlopend spoor.' },
+        { titel: 'Interactieve BOM-lijst voor klant', status: 'idee',
+          desc: 'Klant kan de stuklijst van zijn machine online inzien en doorzoeken (zoeken, filteren, status per regel) in plaats van een statische PDF/Excel — gevoed uit de BOM (later PowerAll). Klant-veilige weergave: alleen relevante onderdeel-info, geen interne inkoopprijzen of leveranciers. Eerst valideren welk detailniveau de klant mag/wil zien.' },
         { titel: 'LOGO!Soft → IBN message-text importer', status: 'geparkeerd',
           desc: 'Meldteksten uit LOGO!Soft naar het machine-specifieke deel van het IBN-protocol. Geparkeerd tot een nieuwe LOGO!HMI-versie getest is (kan de export veranderen).' },
         { titel: 'HandleidingGenerator deel B + Importer', status: 'geparkeerd',
