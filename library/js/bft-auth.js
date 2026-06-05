@@ -20,8 +20,9 @@ const BFTAuth = (function () {
 
   const SCOPES   = ['Sites.ReadWrite.All', 'User.Read'];
   const ADMINS   = [
-    /* E-mailadressen van beheerders — aanpassen na ingebruikname */
-    'sjefvanlaake@gmail.com'
+    /* M365-bedrijfse-mailadressen van beheerders — invullen na ingebruikname.
+       Geen privé-/gmail-adressen: isAdmin() matcht op de SSO-identiteit. */
+    'PLACEHOLDER_ADMIN@bofram.nl'
   ];
 
   /* ── Interne state ── */
