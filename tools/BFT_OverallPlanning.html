@@ -492,7 +492,9 @@ function _escHtml(s) {
 function _escAttr(s) { return _escHtml(s).replace(/"/g, '&quot;'); }
 
 /* ── Optie B: Capaciteitslaag ── */
-var capaciteitAan = false;
+/* Standaard zichtbaar: bezetting over alle projecten is altijd in beeld.
+   De ⊷ Capaciteit-knop blijft werken als verberg/toon-toggle. */
+var capaciteitAan = true;
 
 function maandVanWeekLocaal(jaar, week) {
   var jan4 = new Date(Date.UTC(jaar, 0, 4));
@@ -543,8 +545,13 @@ function injectCapaciteitsRijen() {
   sep.className = 'cap-sep';
   var sepTd = document.createElement('td');
   sepTd.colSpan = ths.length;
-  sepTd.textContent = 'Capaciteit — bezetting over alle projecten'
+  /* Label in een sticky span zodat het links in beeld blijft bij horizontaal
+     scrollen (de colSpan-cel zelf scrollt mee met het grid). */
+  var sepInner = document.createElement('span');
+  sepInner.style.cssText = 'position:sticky; left:8px; display:inline-block;';
+  sepInner.textContent = 'Capaciteit — bezetting over alle projecten'
     + (headcount ? ' · ' + headcount + ' beschikbaar' : '');
+  sepTd.appendChild(sepInner);
   sep.appendChild(sepTd);
 
   /* Capaciteitsrij */
@@ -845,6 +852,16 @@ document.getElementById('btnCap').addEventListener('click', function () {
   this.style.borderColor = capaciteitAan ? 'rgba(124,58,237,0.4)' : '';
   injectCapaciteitsRijen();
 });
+
+/* Capaciteit staat standaard aan → knop bij laden meteen in actieve staat. */
+(function () {
+  var b = document.getElementById('btnCap');
+  if (b && capaciteitAan) {
+    b.style.background  = 'rgba(124,58,237,0.10)';
+    b.style.color       = '#7c3aed';
+    b.style.borderColor = 'rgba(124,58,237,0.4)';
+  }
+})();
 
 document.getElementById('btnFeit').addEventListener('click', function () {
   feitenAan = !feitenAan;
