@@ -133,7 +133,6 @@ var ROADMAP = {
       items: [
         'Risico-vlag in de Bouwvolgordelijst (quick win, akkoord)',
         'Toewijzing per checklist-item (akkoord)',
-        'bftHuidigeActor()-helper (actor-consistentie)',
         'Projectjournaal (append-only, getimestampt)',
         'Opleverdossier-generator — start met checklist + handleiding',
         'Foto-documentatie per bouwstap'
@@ -225,8 +224,8 @@ var ROADMAP = {
           desc: '“Wie moet deze stap doen” toewijzen uit de personeelslijst, naast het bestaande “wie deed het”-stempel. Planner blijft voor algemene taken. Akkoord.' },
         { titel: 'Projectjournaal', status: 'idee',
           desc: 'Append-only, getimestampt logboek per project (wie/wat/wanneer). Vult een echt gat en is inherent auditeerbaar.' },
-        { titel: 'bftHuidigeActor()-helper', status: 'gepland',
-          desc: 'Eén gedeelde “wie voert dit uit”-bron (nu monteur/tester-veld; later MSAL-identiteit). Lost de actor-inconsistentie tussen tools op.' },
+        { titel: 'Gedeelde actor-laag (BFTToolShell.monteur)', status: 'gebouwd',
+          desc: 'Eén “wie voert dit uit”-bron: BFTToolShell.monteur (get/set/stempel/persistentie, leest de MSAL-naam bij login). In gebruik door Bouwvolgordelijst, IBN en MachinebouwChecklist; IBN heeft daarnaast een eigen tester-stempel voor gate-aftekening. Optioneel resterend: Storingslog voorvullen vanuit deze laag.' },
         { titel: 'Foto-documentatie per bouwstap', status: 'idee',
           desc: 'Foto’s vastleggen bij een stap, via het journaal-fundament. Optioneel.' },
         { titel: 'Cross-tool activiteiten-tijdlijn', status: 'idee',
