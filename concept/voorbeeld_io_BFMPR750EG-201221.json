@@ -1,0 +1,1120 @@
+{
+  "machineId": "BFMPR750EG-201221",
+  "schemaVersion": 1,
+  "note": "VOORBEELD — nog niet definitief",
+  "bron": "LOGO!Soft CSV (Logo1-4) 2026-06-05",
+  "io": [
+    {
+      "id": "Logo1-I1",
+      "controller": "Logo1",
+      "klem": "I1",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Tfswitch generator"
+    },
+    {
+      "id": "Logo1-I2",
+      "controller": "Logo1",
+      "klem": "I2",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Tfswitch mains"
+    },
+    {
+      "id": "Logo1-I3",
+      "controller": "Logo1",
+      "klem": "I3",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Start D motor"
+    },
+    {
+      "id": "Logo1-I4",
+      "controller": "Logo1",
+      "klem": "I4",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Stop D motor"
+    },
+    {
+      "id": "Logo1-I5",
+      "controller": "Logo1",
+      "klem": "I5",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Motor D draait"
+    },
+    {
+      "id": "Logo1-I6",
+      "controller": "Logo1",
+      "klem": "I6",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "!RESET!"
+    },
+    {
+      "id": "Logo1-I7",
+      "controller": "Logo1",
+      "klem": "I7",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "!Fase volgorde fout!"
+    },
+    {
+      "id": "Logo1-I8",
+      "controller": "Logo1",
+      "klem": "I8",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "!Aardlekfout!"
+    },
+    {
+      "id": "Logo1-I9",
+      "controller": "Logo1",
+      "klem": "I9",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "!Generator temp te hoog!"
+    },
+    {
+      "id": "Logo1-I10",
+      "controller": "Logo1",
+      "klem": "I10",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "!Voeding omvormer!"
+    },
+    {
+      "id": "Logo1-I11",
+      "controller": "Logo1",
+      "klem": "I11",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "!Voeding Truck!"
+    },
+    {
+      "id": "Logo1-I12",
+      "controller": "Logo1",
+      "klem": "I12",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "!Hoofd zekering failure!"
+    },
+    {
+      "id": "Logo1-I13",
+      "controller": "Logo1",
+      "klem": "I13",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "!Alarm freq hd pomp!"
+    },
+    {
+      "id": "Logo1-I14",
+      "controller": "Logo1",
+      "klem": "I14",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "!Alarm freq mix pomp!"
+    },
+    {
+      "id": "Logo1-I15",
+      "controller": "Logo1",
+      "klem": "I15",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "!Alarm soft recy pomp!"
+    },
+    {
+      "id": "Logo1-I16",
+      "controller": "Logo1",
+      "klem": "I16",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "!Alarm freq pit pomp!"
+    },
+    {
+      "id": "Logo1-I17",
+      "controller": "Logo1",
+      "klem": "I17",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "!Alarm hydrauliek!"
+    },
+    {
+      "id": "Logo1-I18",
+      "controller": "Logo1",
+      "klem": "I18",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "!D motor waarschuwing!"
+    },
+    {
+      "id": "Logo1-I19",
+      "controller": "Logo1",
+      "klem": "I19",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "!Alarm luchtdruk <5Bar!"
+    },
+    {
+      "id": "Logo1-I20",
+      "controller": "Logo1",
+      "klem": "I20",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "!AB uit/ geen bereik!"
+    },
+    {
+      "id": "Logo1-I21",
+      "controller": "Logo1",
+      "klem": "I21",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "!400VC MBS fout!"
+    },
+    {
+      "id": "Logo1-I22",
+      "controller": "Logo1",
+      "klem": "I22",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "!Keuze AB HB!"
+    },
+    {
+      "id": "Logo1-I23",
+      "controller": "Logo1",
+      "klem": "I23",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "!Nood accu fout!"
+    },
+    {
+      "id": "Logo1-I24",
+      "controller": "Logo1",
+      "klem": "I24",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "!D motor fout!"
+    },
+    {
+      "id": "Logo1-AI1",
+      "controller": "Logo1",
+      "klem": "AI1",
+      "richting": "in",
+      "soort": "analoog",
+      "functie": "!Amphere L1!"
+    },
+    {
+      "id": "Logo1-AI2",
+      "controller": "Logo1",
+      "klem": "AI2",
+      "richting": "in",
+      "soort": "analoog",
+      "functie": "!Amphere L2!"
+    },
+    {
+      "id": "Logo1-AI3",
+      "controller": "Logo1",
+      "klem": "AI3",
+      "richting": "in",
+      "soort": "analoog",
+      "functie": "!Amphere L3!"
+    },
+    {
+      "id": "Logo1-AI4",
+      "controller": "Logo1",
+      "klem": "AI4",
+      "richting": "in",
+      "soort": "analoog",
+      "functie": "HD pomp motorsnelheid"
+    },
+    {
+      "id": "Logo1-Q1",
+      "controller": "Logo1",
+      "klem": "Q1",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Tfswitch generator"
+    },
+    {
+      "id": "Logo1-Q2",
+      "controller": "Logo1",
+      "klem": "Q2",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Tfswitch 0"
+    },
+    {
+      "id": "Logo1-Q3",
+      "controller": "Logo1",
+      "klem": "Q3",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Tfswitch Mains"
+    },
+    {
+      "id": "Logo1-Q4",
+      "controller": "Logo1",
+      "klem": "Q4",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Start D motor"
+    },
+    {
+      "id": "Logo1-Q5",
+      "controller": "Logo1",
+      "klem": "Q5",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "!Fase volgorde fout!"
+    },
+    {
+      "id": "Logo1-Q6",
+      "controller": "Logo1",
+      "klem": "Q6",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Stop truck motor"
+    },
+    {
+      "id": "Logo1-Q7",
+      "controller": "Logo1",
+      "klem": "Q7",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "D motor actief"
+    },
+    {
+      "id": "Logo1-Q8",
+      "controller": "Logo1",
+      "klem": "Q8",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "!Aardlekfout!"
+    },
+    {
+      "id": "Logo1-Q9",
+      "controller": "Logo1",
+      "klem": "Q9",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "!Hoofd magneer relais ok!"
+    },
+    {
+      "id": "Logo1-Q10",
+      "controller": "Logo1",
+      "klem": "Q10",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "!Reset alarm!"
+    },
+    {
+      "id": "Logo1-Q11",
+      "controller": "Logo1",
+      "klem": "Q11",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "!Algemeen alarm AB!"
+    },
+    {
+      "id": "Logo1-Q12",
+      "controller": "Logo1",
+      "klem": "Q12",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "!Algemeen alarm!"
+    },
+    {
+      "id": "Logo1-Q13",
+      "controller": "Logo1",
+      "klem": "Q13",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "!D motor actief AB!"
+    },
+    {
+      "id": "Logo1-Q14",
+      "controller": "Logo1",
+      "klem": "Q14",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "!HD pomp actief AB!"
+    },
+    {
+      "id": "Logo2-I1",
+      "controller": "Logo2",
+      "klem": "I1",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Start hogedruk pomp motor"
+    },
+    {
+      "id": "Logo2-I2",
+      "controller": "Logo2",
+      "klem": "I2",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Stop hogedruk pomp motor"
+    },
+    {
+      "id": "Logo2-I3",
+      "controller": "Logo2",
+      "klem": "I3",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "HD pomp in run"
+    },
+    {
+      "id": "Logo2-I4",
+      "controller": "Logo2",
+      "klem": "I4",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Smeerolie ok"
+    },
+    {
+      "id": "Logo2-I5",
+      "controller": "Logo2",
+      "klem": "I5",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "+ HD pomp"
+    },
+    {
+      "id": "Logo2-I6",
+      "controller": "Logo2",
+      "klem": "I6",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "- HD pomp"
+    },
+    {
+      "id": "Logo2-I7",
+      "controller": "Logo2",
+      "klem": "I7",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Liner wash ok"
+    },
+    {
+      "id": "Logo2-I9",
+      "controller": "Logo2",
+      "klem": "I9",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Start mixpomp"
+    },
+    {
+      "id": "Logo2-I10",
+      "controller": "Logo2",
+      "klem": "I10",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Stop mixpomp"
+    },
+    {
+      "id": "Logo2-I11",
+      "controller": "Logo2",
+      "klem": "I11",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Start recy pomp"
+    },
+    {
+      "id": "Logo2-I12",
+      "controller": "Logo2",
+      "klem": "I12",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Stop recy pomp"
+    },
+    {
+      "id": "Logo2-I13",
+      "controller": "Logo2",
+      "klem": "I13",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Start shale shaker"
+    },
+    {
+      "id": "Logo2-I14",
+      "controller": "Logo2",
+      "klem": "I14",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Stop shale shaker"
+    },
+    {
+      "id": "Logo2-I15",
+      "controller": "Logo2",
+      "klem": "I15",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Start mud shaker"
+    },
+    {
+      "id": "Logo2-I16",
+      "controller": "Logo2",
+      "klem": "I16",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Stop mud shaker"
+    },
+    {
+      "id": "Logo2-I17",
+      "controller": "Logo2",
+      "klem": "I17",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Start pitpomp en kleppen"
+    },
+    {
+      "id": "Logo2-I18",
+      "controller": "Logo2",
+      "klem": "I18",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Stop pitpomp en kleppen"
+    },
+    {
+      "id": "Logo2-I19",
+      "controller": "Logo2",
+      "klem": "I19",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Start waterpomp en kleppen"
+    },
+    {
+      "id": "Logo2-I20",
+      "controller": "Logo2",
+      "klem": "I20",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Stop waterpomp en kleppen"
+    },
+    {
+      "id": "Logo2-I22",
+      "controller": "Logo2",
+      "klem": "I22",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Auto/ manual pitpomp"
+    },
+    {
+      "id": "Logo2-I23",
+      "controller": "Logo2",
+      "klem": "I23",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Auto/manual waterpomp"
+    },
+    {
+      "id": "Logo2-I24",
+      "controller": "Logo2",
+      "klem": "I24",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Start/stop hogedrukreiniger"
+    },
+    {
+      "id": "Logo2-AI1",
+      "controller": "Logo2",
+      "klem": "AI1",
+      "richting": "in",
+      "soort": "analoog",
+      "functie": "Niveau VRD/ Mixtank"
+    },
+    {
+      "id": "Logo2-AI2",
+      "controller": "Logo2",
+      "klem": "AI2",
+      "richting": "in",
+      "soort": "analoog",
+      "functie": "Niveau Diesel tank"
+    },
+    {
+      "id": "Logo2-AI3",
+      "controller": "Logo2",
+      "klem": "AI3",
+      "richting": "in",
+      "soort": "analoog",
+      "functie": "Druk HD pomp"
+    },
+    {
+      "id": "Logo2-AI4",
+      "controller": "Logo2",
+      "klem": "AI4",
+      "richting": "in",
+      "soort": "analoog",
+      "functie": "Voordruk HD pomp"
+    },
+    {
+      "id": "Logo2-Q1",
+      "controller": "Logo2",
+      "klem": "Q1",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Start HD pomp"
+    },
+    {
+      "id": "Logo2-Q2",
+      "controller": "Logo2",
+      "klem": "Q2",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "HD pomp in run"
+    },
+    {
+      "id": "Logo2-Q5",
+      "controller": "Logo2",
+      "klem": "Q5",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Start mix pomp"
+    },
+    {
+      "id": "Logo2-Q6",
+      "controller": "Logo2",
+      "klem": "Q6",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Start recy pomp"
+    },
+    {
+      "id": "Logo2-Q7",
+      "controller": "Logo2",
+      "klem": "Q7",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Start shale shaker"
+    },
+    {
+      "id": "Logo2-Q8",
+      "controller": "Logo2",
+      "klem": "Q8",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Start mud shaker"
+    },
+    {
+      "id": "Logo2-Q13",
+      "controller": "Logo2",
+      "klem": "Q13",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Start pitpomp"
+    },
+    {
+      "id": "Logo2-Q14",
+      "controller": "Logo2",
+      "klem": "Q14",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Start waterpomp"
+    },
+    {
+      "id": "Logo2-Q15",
+      "controller": "Logo2",
+      "klem": "Q15",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Stroom 32A afsluiten"
+    },
+    {
+      "id": "Logo2-Q16",
+      "controller": "Logo2",
+      "klem": "Q16",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Stroom 63A afsluiten"
+    },
+    {
+      "id": "Logo2-Q20",
+      "controller": "Logo2",
+      "klem": "Q20",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Start hogedrukspuit"
+    },
+    {
+      "id": "Logo2-AQ1",
+      "controller": "Logo2",
+      "klem": "AQ1",
+      "richting": "uit",
+      "soort": "analoog",
+      "functie": "Hogedrukpomp snelheid naar freq"
+    },
+    {
+      "id": "Logo2-AQ2",
+      "controller": "Logo2",
+      "klem": "AQ2",
+      "richting": "uit",
+      "soort": "analoog",
+      "functie": "liter/min naar AB"
+    },
+    {
+      "id": "Logo2-AQ3",
+      "controller": "Logo2",
+      "klem": "AQ3",
+      "richting": "uit",
+      "soort": "analoog",
+      "functie": "Niveau mixtank naar AB"
+    },
+    {
+      "id": "Logo2-AQ4",
+      "controller": "Logo2",
+      "klem": "AQ4",
+      "richting": "uit",
+      "soort": "analoog",
+      "functie": "Druk HD pomp"
+    },
+    {
+      "id": "Logo3-I1",
+      "controller": "Logo3",
+      "klem": "I1",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Lift recycling up"
+    },
+    {
+      "id": "Logo3-I2",
+      "controller": "Logo3",
+      "klem": "I2",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Lift recycling down"
+    },
+    {
+      "id": "Logo3-I3",
+      "controller": "Logo3",
+      "klem": "I3",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Lift cilinder Rood"
+    },
+    {
+      "id": "Logo3-I4",
+      "controller": "Logo3",
+      "klem": "I4",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Lift cilinder Geel"
+    },
+    {
+      "id": "Logo3-I5",
+      "controller": "Logo3",
+      "klem": "I5",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Ligt cilinder Blauw"
+    },
+    {
+      "id": "Logo3-I6",
+      "controller": "Logo3",
+      "klem": "I6",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Lift cilinder Groen"
+    },
+    {
+      "id": "Logo3-I7",
+      "controller": "Logo3",
+      "klem": "I7",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Plateau cilinder in"
+    },
+    {
+      "id": "Logo3-I8",
+      "controller": "Logo3",
+      "klem": "I8",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Plateau cilinder uit"
+    },
+    {
+      "id": "Logo3-I9",
+      "controller": "Logo3",
+      "klem": "I9",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Shale shaker up"
+    },
+    {
+      "id": "Logo3-I10",
+      "controller": "Logo3",
+      "klem": "I10",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Shale shaker down"
+    },
+    {
+      "id": "Logo3-I11",
+      "controller": "Logo3",
+      "klem": "I11",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Mud shaker up"
+    },
+    {
+      "id": "Logo3-I12",
+      "controller": "Logo3",
+      "klem": "I12",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Mud shaker down"
+    },
+    {
+      "id": "Logo3-I17",
+      "controller": "Logo3",
+      "klem": "I17",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Start H powerpack"
+    },
+    {
+      "id": "Logo3-I18",
+      "controller": "Logo3",
+      "klem": "I18",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Feedback haspel"
+    },
+    {
+      "id": "Logo3-I19",
+      "controller": "Logo3",
+      "klem": "I19",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Feedback Maxilift"
+    },
+    {
+      "id": "Logo3-I24",
+      "controller": "Logo3",
+      "klem": "I24",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Vrijgave Part regen"
+    },
+    {
+      "id": "Logo3-Q1",
+      "controller": "Logo3",
+      "klem": "Q1",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Cilinder Rood in"
+    },
+    {
+      "id": "Logo3-Q2",
+      "controller": "Logo3",
+      "klem": "Q2",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Cilinder Rood uit"
+    },
+    {
+      "id": "Logo3-Q3",
+      "controller": "Logo3",
+      "klem": "Q3",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Cilinder Geel in"
+    },
+    {
+      "id": "Logo3-Q4",
+      "controller": "Logo3",
+      "klem": "Q4",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Cilinder Geel uit"
+    },
+    {
+      "id": "Logo3-Q5",
+      "controller": "Logo3",
+      "klem": "Q5",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Cilinder Blauw in"
+    },
+    {
+      "id": "Logo3-Q6",
+      "controller": "Logo3",
+      "klem": "Q6",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Cilinder Blauw uit"
+    },
+    {
+      "id": "Logo3-Q7",
+      "controller": "Logo3",
+      "klem": "Q7",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Cilinder Groen in"
+    },
+    {
+      "id": "Logo3-Q8",
+      "controller": "Logo3",
+      "klem": "Q8",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Cilinder Groen uit"
+    },
+    {
+      "id": "Logo3-Q9",
+      "controller": "Logo3",
+      "klem": "Q9",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Cilinder plateau in"
+    },
+    {
+      "id": "Logo3-Q10",
+      "controller": "Logo3",
+      "klem": "Q10",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Cilinder Plateau uit"
+    },
+    {
+      "id": "Logo3-Q11",
+      "controller": "Logo3",
+      "klem": "Q11",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Shale shaker up"
+    },
+    {
+      "id": "Logo3-Q12",
+      "controller": "Logo3",
+      "klem": "Q12",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Shale shaker down"
+    },
+    {
+      "id": "Logo3-Q13",
+      "controller": "Logo3",
+      "klem": "Q13",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Mud shaker up"
+    },
+    {
+      "id": "Logo3-Q14",
+      "controller": "Logo3",
+      "klem": "Q14",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Mud shaker down"
+    },
+    {
+      "id": "Logo3-Q15",
+      "controller": "Logo3",
+      "klem": "Q15",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Pressure valve"
+    },
+    {
+      "id": "Logo3-Q16",
+      "controller": "Logo3",
+      "klem": "Q16",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "H powerpack kraan"
+    },
+    {
+      "id": "Logo3-Q17",
+      "controller": "Logo3",
+      "klem": "Q17",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "H powerpack recy unit"
+    },
+    {
+      "id": "Logo3-Q18",
+      "controller": "Logo3",
+      "klem": "Q18",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Vrijgave park regen"
+    },
+    {
+      "id": "Logo4-I1",
+      "controller": "Logo4",
+      "klem": "I1",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Open venturi valve"
+    },
+    {
+      "id": "Logo4-I2",
+      "controller": "Logo4",
+      "klem": "I2",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Close venturi valve"
+    },
+    {
+      "id": "Logo4-I3",
+      "controller": "Logo4",
+      "klem": "I3",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Open hopper valve"
+    },
+    {
+      "id": "Logo4-I4",
+      "controller": "Logo4",
+      "klem": "I4",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Close hopper valve"
+    },
+    {
+      "id": "Logo4-I5",
+      "controller": "Logo4",
+      "klem": "I5",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Open Hopper hose valve"
+    },
+    {
+      "id": "Logo4-I6",
+      "controller": "Logo4",
+      "klem": "I6",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Close Hopper hose valve"
+    },
+    {
+      "id": "Logo4-I7",
+      "controller": "Logo4",
+      "klem": "I7",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "MBS water vulpomp 16A"
+    },
+    {
+      "id": "Logo4-I8",
+      "controller": "Logo4",
+      "klem": "I8",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "MBS PowerP recyc."
+    },
+    {
+      "id": "Logo4-I9",
+      "controller": "Logo4",
+      "klem": "I9",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Bypassklep dicht"
+    },
+    {
+      "id": "Logo4-I10",
+      "controller": "Logo4",
+      "klem": "I10",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "Voordrukklep open"
+    },
+    {
+      "id": "Logo4-I11",
+      "controller": "Logo4",
+      "klem": "I11",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "MBS PowerP Kraan"
+    },
+    {
+      "id": "Logo4-I12",
+      "controller": "Logo4",
+      "klem": "I12",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "MBS HogeD reiniger"
+    },
+    {
+      "id": "Logo4-I13",
+      "controller": "Logo4",
+      "klem": "I13",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "MBS Shale shakers"
+    },
+    {
+      "id": "Logo4-I14",
+      "controller": "Logo4",
+      "klem": "I14",
+      "richting": "in",
+      "soort": "digitaal",
+      "functie": "MBS Mud shakers"
+    },
+    {
+      "id": "Logo4-Q1",
+      "controller": "Logo4",
+      "klem": "Q1",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Venturi valve"
+    },
+    {
+      "id": "Logo4-Q2",
+      "controller": "Logo4",
+      "klem": "Q2",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Hopper valve"
+    },
+    {
+      "id": "Logo4-Q3",
+      "controller": "Logo4",
+      "klem": "Q3",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Hopper Hose valve"
+    },
+    {
+      "id": "Logo4-Q4",
+      "controller": "Logo4",
+      "klem": "Q4",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Water inlet valve"
+    },
+    {
+      "id": "Logo4-Q5",
+      "controller": "Logo4",
+      "klem": "Q5",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Bypass valve"
+    },
+    {
+      "id": "Logo4-Q6",
+      "controller": "Logo4",
+      "klem": "Q6",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Voordruk valve"
+    },
+    {
+      "id": "Logo4-Q7",
+      "controller": "Logo4",
+      "klem": "Q7",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Recirculatie vavle"
+    },
+    {
+      "id": "Logo4-Q8",
+      "controller": "Logo4",
+      "klem": "Q8",
+      "richting": "uit",
+      "soort": "digitaal",
+      "functie": "Pitpomp valve"
+    }
+  ]
+}

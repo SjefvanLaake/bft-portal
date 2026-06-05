@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IBN I/O-Test — Import-voorbeeld</title>
+<style>
+  :root{ --zwart:#111; --goud:#e8a000; --blauw:#1a6ec7; --groen:#1e9e5e; --rood:#d63030; --grijs:#7a849a;
+         --bg:#f4f5f7; --surface:#fff; --border:#e1e4e8; --text:#1a1f2e; --text2:#3d4558; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+  header{background:var(--zwart);color:#fff;padding:14px 22px;border-bottom:3px solid var(--goud);display:flex;align-items:baseline;gap:14px}
+  header h1{font-size:16px;margin:0;font-weight:700} header span{font-size:11px;color:#c9ccd2;font-family:ui-monospace,monospace}
+  .wrap{max-width:980px;margin:0 auto;padding:18px 22px 80px}
+  .mock{background:rgba(232,160,0,0.10);border:1px solid rgba(232,160,0,0.4);border-radius:7px;padding:9px 14px;margin-bottom:14px;font-size:12px;color:#8a6500}
+  .drop{border:2px dashed var(--blauw);border-radius:10px;background:rgba(26,110,199,0.05);padding:22px;text-align:center;cursor:pointer}
+  .drop:hover,.drop.over{background:rgba(26,110,199,0.12)} .drop b{color:var(--blauw)}
+  .bar{position:sticky;top:0;z-index:5;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:14px;box-shadow:var(--shadow)}
+  .prog{flex:1;height:8px;background:#eef1f5;border-radius:5px;overflow:hidden}
+  .prog>i{display:block;height:100%;background:var(--groen);width:0;transition:.2s}
+  .pct{font-family:ui-monospace,monospace;font-size:12px;color:var(--text2);min-width:120px;text-align:right}
+  .filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+  .filters button{font:inherit;font-size:11px;border:1px solid var(--border);background:#fff;border-radius:14px;padding:3px 11px;cursor:pointer}
+  .filters button.aan{background:var(--blauw);color:#fff;border-color:var(--blauw)}
+  .sectie{background:var(--surface);border:1px solid var(--border);border-radius:9px;margin-bottom:14px;overflow:hidden}
+  .sectie-kop{padding:10px 16px;background:#fafbfc;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+  .sectie-kop h2{font-size:14px;margin:0;flex:1} .sectie-kop .telt{font-family:ui-monospace,monospace;font-size:11px;color:var(--grijs)}
+  .item{display:flex;align-items:center;gap:12px;padding:8px 16px;border-bottom:1px solid #f0f2f5}
+  .item:last-child{border-bottom:none}
+  .item.ok{background:rgba(30,158,94,0.06)} .item.nvt{background:rgba(122,132,154,0.07);opacity:.7}
+  .klem{font-family:ui-monospace,monospace;font-weight:700;min-width:42px;color:var(--text)}
+  .rich{font-family:ui-monospace,monospace;font-size:10px;padding:1px 7px;border-radius:10px;white-space:nowrap}
+  .rich.in{background:rgba(26,110,199,0.12);color:var(--blauw)} .rich.uit{background:rgba(232,160,0,0.16);color:#a87400}
+  .fn{flex:1} .fn small{color:var(--grijs);font-family:ui-monospace,monospace;font-size:10px}
+  .acts{display:flex;gap:4px}
+  .acts button{font:inherit;font-size:11px;border:1px solid var(--border);background:#fff;border-radius:5px;padding:3px 9px;cursor:pointer}
+  .acts button.ok.aan{background:var(--groen);color:#fff;border-color:var(--groen)}
+  .acts button.nvt.aan{background:var(--grijs);color:#fff;border-color:var(--grijs)}
+  .leeg{color:var(--grijs);font-style:italic}
+</style>
+</head>
+<body>
+<header><h1>IBN I/O-Test</h1><span>Import-voorbeeld · Fase 3 "Droog — I/O Test"</span></header>
+<div class="wrap">
+  <div class="mock">⚠ <b>VOORBEELD — nog niet definitief.</b> Dit prototype simuleert hoe een geïmporteerde <code>io.json</code> als afvinkbare I/O-lijst in het IBN-protocol verschijnt. Geen opslag, geen koppeling aan de echte tool.</div>
+
+  <div class="drop" id="drop">
+    <div style="font-size:26px">📥</div>
+    <div>Sleep <b>io.json</b> hierheen of <b>klik</b> — bv. <code>voorbeeld_io_BFMPR750EG-201221.json</code></div>
+    <input type="file" id="file" accept=".json" hidden>
+  </div>
+  <div id="uit"></div>
+</div>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const drop = $('#drop'), inp = $('#file');
+let IO = [], status = {}, filter = 'alle';
+
+drop.onclick = () => inp.click();
+['dragover','dragenter'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add('over'); }));
+['dragleave','drop'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', ev => laad(ev.dataTransfer.files[0]));
+inp.onchange = () => laad(inp.files[0]);
+
+async function laad(f){
+  if (!f) return;
+  let doc; try { doc = JSON.parse(await f.text()); } catch(e){ alert('Geen geldige JSON.'); return; }
+  IO = Array.isArray(doc.io) ? doc.io : [];
+  status = {};
+  drop.style.display = 'none';
+  render(doc);
+}
+
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function render(doc){
+  const ctrls = [...new Set(IO.map(x => x.controller))];
+  const zichtbaar = x =>
+    filter === 'alle' ? true :
+    filter === 'in'   ? x.richting === 'in' :
+    filter === 'uit'  ? x.richting === 'uit' :
+    filter === 'analoog' ? x.soort === 'analoog' : true;
+
+  const getest = IO.filter(x => status[x.id]).length;
+  const pct = IO.length ? Math.round(getest / IO.length * 100) : 0;
+
+  let h = `<div class="bar">
+    <div><b>${esc(doc.machineId||'—')}</b> <span style="color:var(--grijs);font-size:12px">· ${IO.length} I/O</span></div>
+    <div class="prog"><i style="width:${pct}%"></i></div>
+    <div class="pct">${getest} / ${IO.length} getest (${pct}%)</div>
+  </div>`;
+
+  h += `<div class="filters">
+    ${['alle','in','uit','analoog'].map(f => `<button class="${filter===f?'aan':''}" onclick="zetFilter('${f}')">${f==='alle'?'Alles':f==='in'?'◀ Ingangen':f==='uit'?'▶ Uitgangen':'~ Analoog'}</button>`).join('')}
+  </div>`;
+
+  ctrls.forEach(c => {
+    const items = IO.filter(x => x.controller === c && zichtbaar(x));
+    if (!items.length) return;
+    const klaar = IO.filter(x => x.controller === c && status[x.id]).length;
+    const tot = IO.filter(x => x.controller === c).length;
+    h += `<div class="sectie"><div class="sectie-kop"><h2>🔌 ${esc(c)}</h2><span class="telt">${klaar}/${tot} getest</span></div>`;
+    items.forEach(x => {
+      const st = status[x.id] || '';
+      h += `<div class="item ${st}" id="row-${esc(x.id)}">
+        <span class="klem">${esc(x.klem)}</span>
+        <span class="rich ${x.richting}">${x.richting==='in'?'◀ in':'▶ uit'}${x.soort==='analoog'?' ~':''}</span>
+        <span class="fn">${esc(x.functie)}</span>
+        <span class="acts">
+          <button class="ok ${st==='ok'?'aan':''}" onclick="zet('${esc(x.id)}','ok')">✓ Gedaan</button>
+          <button class="nvt ${st==='nvt'?'aan':''}" onclick="zet('${esc(x.id)}','nvt')">N.v.t.</button>
+        </span></div>`;
+    });
+    h += `</div>`;
+  });
+  $('#uit').innerHTML = h;
+  window._doc = doc;
+}
+
+function zet(id, modus){ status[id] = (status[id] === modus) ? '' : modus; render(window._doc); }
+function zetFilter(f){ filter = f; render(window._doc); }
+</script>
+</body>
+</html>
