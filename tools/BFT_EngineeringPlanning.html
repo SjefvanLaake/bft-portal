@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Engineering Planning — BFT</title>
+  <link rel="stylesheet" href="../library/css/bofram-style.css">
+  <script src="../library/js/bft-medewerkers.js"></script>
+  <script src="../library/js/bft-projects.js"></script>
+  <script src="../library/js/bft-klanten.js"></script>
+  <script src="../library/js/bft-engplanning.js"></script>
+  <script src="../library/js/bft-dialog.js" defer></script>
+  <style>
+    /* Tool-specifieke stijlen — ALLEEN aanvullingen op de library */
+    .ep-page { padding: 16px 20px 60px; }
+
+    /* ── Legenda ── */
+    .bft-ep-legenda {
+      display: flex; flex-wrap: wrap; gap: 16px;
+      margin-bottom: 14px; padding: 12px 14px;
+      background: #fff; border: 1px solid var(--border, #e1e4e8);
+      border-radius: 6px; box-shadow: var(--shadow-md);
+    }
+    .bft-ep-leg-item { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text2, #3d4558); }
+    .bft-ep-leg-swatch { width: 18px; height: 14px; border-radius: 3px; border: 1px solid rgba(0,0,0,.25); display: inline-block; }
+    .bft-ep-leg-half { background: linear-gradient(135deg, #FF0000 0 50%, #fff 50% 100%); }
+
+    /* ── Bewerk-balk (engineer + horizon) ── */
+    .bft-ep-bar {
+      display: flex; flex-wrap: wrap; gap: 22px; align-items: center;
+      margin-bottom: 14px; padding: 12px 14px;
+      background: #fff; border: 1px solid var(--border, #e1e4e8);
+      border-radius: 6px; box-shadow: var(--shadow-md);
+    }
+    .bft-ep-bar-grp { display: inline-flex; align-items: center; gap: 8px; }
+    .bft-ep-bar-grp label {
+      font-family: var(--mono, monospace); font-size: 11px; font-weight: 600;
+      color: var(--muted, #8a909c); text-transform: uppercase;
+    }
+    .bft-ep-bar input {
+      padding: 7px 9px; border: 1px solid var(--border, #c8ccd4); border-radius: 6px;
+      font-size: 13px; font-family: var(--sans, "IBM Plex Sans", sans-serif); color: var(--text, #1a1f2e);
+    }
+    .bft-ep-bar input:focus { outline: 2px solid var(--accent, #e8a000); outline-offset: 1px; border-color: var(--accent, #e8a000); }
+    .bft-ep-dash { color: var(--muted, #8a909c); }
+
+    /* ── Acties-balk ── */
+    .bft-ep-acties { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+    .bft-ep-hint { font-family: var(--mono, monospace); font-size: 11px; color: var(--muted, #8a909c); margin-left: auto; }
+
+    /* ── Grid ── */
+    .bft-ep-scroll {
+      overflow: auto; width: 100%;
+      border: 1px solid var(--border, #e1e4e8); border-radius: 6px;
+      background: #fff; box-shadow: var(--shadow-md);
+      max-height: calc(100vh - 230px);
+    }
+    .bft-ep-table { border-collapse: separate; border-spacing: 0; font-size: 12px; width: max-content; min-width: 100%; }
+    .bft-ep-table th {
+      position: sticky; top: 0; z-index: 2;
+      background: var(--accent-dk, #00509e); color: #fff; font-weight: 600;
+      padding: 6px 9px; text-align: left; white-space: nowrap;
+      border-right: 1px solid var(--border, #e1e4e8);
+    }
+    .bft-ep-table th.bft-ep-wk { text-align: center; font-family: var(--mono, monospace); font-size: 11px; min-width: 52px; }
+    .bft-ep-table th.bft-ep-act { width: 30px; min-width: 30px; }
+    .bft-ep-table td { padding: 6px 9px; border-right: 1px solid var(--border, #eef0f4); border-bottom: 1px solid var(--border, #eef0f4); }
+    .bft-ep-table td.bft-ep-act { text-align: center; padding: 2px; white-space: nowrap; }
+    /* Projectrij (altijd zichtbaar): klikbaar, dik lijntje erboven als scheiding.
+       Tekst alleen vet als het project geopend is (focus). */
+    .bft-ep-table tr.bft-ep-prow { cursor: pointer; }
+    .bft-ep-table tr.bft-ep-prow > td { border-top: 2px solid var(--accent-dk, #00509e); background: #f4f6f9; }
+    .bft-ep-table tr.bft-ep-prow:hover > td { background: #eaf0f7; }
+    .bft-ep-table tr.bft-ep-prow.bft-ep-open > td { font-weight: 700; }
+    .bft-ep-caret { border: none; background: transparent; cursor: pointer; font-size: 11px; color: var(--text2, #3d4558); padding: 2px 4px; }
+    /* Week-samenvatting (ingeklapt): cel volledig verdeeld in N gelijke kleurvlakken
+       = aantal disciplines die die week geschilderd zijn (overlap-verdeling).
+       Absoluut over de hele cel zodat de vlakken altijd de volle hoogte vullen. */
+    .bft-ep-table td.bft-ep-sum { min-width: 52px; padding: 0; position: relative; height: 22px; }
+    .bft-ep-segs { position: absolute; inset: 0; display: flex; flex-direction: column; }
+    .bft-ep-seg { flex: 1 1 0; }
+    /* Discipline-subrij: label in meta-kolom 0 */
+    .bft-ep-table tr.bft-ep-drow > td { background: #fcfcfd; }
+    .bft-ep-disclabel { white-space: nowrap; color: var(--text2, #3d4558); font-weight: 500; }
+    .bft-ep-disc-sw { width: 11px; height: 11px; border-radius: 2px; border: 1px solid rgba(0,0,0,.25); display: inline-block; margin-right: 6px; vertical-align: -1px; }
+    .bft-ep-table td.bft-ep-cel {
+      min-width: 52px; text-align: center; cursor: pointer; user-select: none;
+      font-size: 10px; font-weight: 600; color: #1a1f2e; line-height: 1.1;
+    }
+    .bft-ep-table td.bft-ep-cel.painted { color: #1a1f2e; }
+    .bft-ep-table td.bft-ep-cel:hover { outline: 2px solid rgba(232,160,0,.55); outline-offset: -2px; }
+    .bft-ep-fase-in {
+      width: 100%; box-sizing: border-box; border: 1px solid var(--accent, #e8a000);
+      border-radius: 3px; padding: 2px 3px; font-size: 11px; text-align: center;
+      font-family: var(--sans, "IBM Plex Sans", sans-serif);
+    }
+    .bft-ep-empty td { color: var(--muted, #8a909c); font-style: italic; text-align: center; padding: 22px; }
+
+    /* ── Vrij/vakantie-band (engineer-niveau) ── */
+    .bft-ep-vakrow td.bft-ep-vaklabel {
+      font-family: var(--mono, monospace); font-size: 11px; font-weight: 700;
+      color: #b00020; text-transform: uppercase; background: #fff5f5;
+      position: sticky; left: 0;
+    }
+    .bft-ep-vakcel { min-width: 52px; cursor: pointer; user-select: none; background: #fff5f5; }
+    .bft-ep-vakcel:hover { outline: 2px solid rgba(176,0,32,.45); outline-offset: -2px; }
+    .bft-ep-vakcel.vakfull { background: #FF0000; }
+    .bft-ep-vakcel.vakhalf { background: linear-gradient(135deg, #FF0000 0 50%, #fff5f5 50% 100%); }
+    /* Kolom-tint: vakantieweek schemert door alle rijen (niet-geschilderde cellen) */
+    .bft-ep-table td.bft-ep-cel.vak:not(.painted) { background: rgba(255,0,0,0.10); }
+    .bft-ep-table td.bft-ep-sum.vak { background: rgba(255,0,0,0.10); }
+
+    /* ── Huidige week: kleur-tint op de hele kolom (geen randen) ── */
+    .bft-ep-table th.bft-ep-wk.huidig { background: var(--accent, #e8a000); color: #1a1f2e; }
+    .bft-ep-table td.bft-ep-cel.huidig:not(.painted) { background: rgba(232,160,0,0.16); }
+    .bft-ep-table td.bft-ep-sum.huidig { background: rgba(232,160,0,0.16); }
+    .bft-ep-vakcel.huidig:not(.vakfull):not(.vakhalf) { background: rgba(232,160,0,0.16); }
+    .bft-ep-del {
+      border: none; background: transparent; color: var(--muted, #8a909c);
+      cursor: pointer; font-size: 13px; line-height: 1; padding: 4px 6px; border-radius: 4px;
+    }
+    .bft-ep-del:hover { background: var(--danger, #d63030); color: #fff; }
+  </style>
+</head>
+<body>
+
+<header class="bf-header">
+  <div class="bf-header-left">
+    <a href="../index.html" title="Terug naar portaal"
+       style="color:rgba(255,255,255,0.55);font-family:var(--mono);font-size:11px;text-decoration:none;display:flex;align-items:center;gap:4px;flex-shrink:0">
+      ← Portaal
+    </a>
+    <div class="bf-logo"></div>
+    <div class="bf-header-div"></div>
+    <div class="bf-header-title">
+      <h1>Engineering Planning</h1>
+      <p id="hdrSub">Per engineer · week-planning · disciplines</p>
+    </div>
+  </div>
+  <span class="bf-badge">v0.23</span>
+</header>
+
+<div class="ep-page">
+
+  <div style="margin-bottom:16px">
+    <p style="font-family:var(--mono);font-size:11px;color:var(--muted)">
+      Per-engineer view op de gedeelde planning. Kies je engineer, sync je projecten en schilder per discipline — wijzigingen staan direct in OverallPlanning (één bron).
+    </p>
+  </div>
+
+  <!-- Grid-engine rendert hierin -->
+  <main id="ep-root"></main>
+
+</div>
+
+<script>
+  window.addEventListener('load', function () {
+    if (!window.BFTEngPlanning) { console.error('BFTEngPlanning niet geladen'); return; }
+    window.epLane = BFTEngPlanning.register({
+      container: '#ep-root',
+      jaar: (new Date()).getFullYear(),   // huidig jaar, gelijk aan OverallPlanning
+      startWeek: 23,
+      eindWeek: 52
+    });
+  });
+
+  /* Live bijwerken: EngPlanning leest de planning uit de gedeelde bron
+     (bft_overallplanning_). Wijzigt die (disciplines of projecten/planning),
+     dan herladen zodat Eng en Overall synchroon blijven. 'storage' vuurt alleen
+     in andere tabs → geen lus. Debounced. */
+  (function () {
+    var t = null;
+    window.addEventListener('storage', function (e) {
+      if (!e.key || e.key.indexOf('bft_overallplanning_') !== 0) return;
+      clearTimeout(t);
+      t = setTimeout(function () { location.reload(); }, 400);
+    });
+  })();
+</script>
+</body>
+</html>

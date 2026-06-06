@@ -109,6 +109,11 @@
       font-weight:700; color:#1a1f2e; text-shadow:0 0 2px rgba(255,255,255,0.9);
       pointer-events:none;
     }
+    .og-fase {  /* fase-tekst per weekcel — zelfde als Engineering Planning */
+      display:block; text-align:center; font-size:9px; font-weight:600;
+      color:#1a1f2e; line-height:1; text-shadow:0 0 2px rgba(255,255,255,0.9);
+      overflow:hidden; white-space:nowrap; pointer-events:none;
+    }
     /* Personen-knop in het discipline-label */
     .og-pers-btn {
       margin-left:6px; border:1px solid rgba(124,58,237,0.35);
@@ -913,6 +918,21 @@ herstelMetadataUitBron();
    (knoppen/deadlines/capaciteit/resource) op de verse DOM. */
 grid.render();
 scrollNaarHuidig();
+
+/* ── Live bijwerken bij externe wijziging ──────────────────────────────────
+   Als een andere tool (bv. Engineering Planning → ⟱ Naar Overall) de gedeelde
+   planning-opslag wijzigt, herlaadt deze pagina zodat de nieuwe data verschijnt.
+   Het 'storage'-event vuurt ALLEEN in andere tabs/vensters (niet in de tab die
+   zelf schrijft) → geen reload-lus. Debounced, want een roll-up schrijft meerdere
+   sleutels (config + index + proj_<id>). */
+(function () {
+  var t = null;
+  window.addEventListener('storage', function (e) {
+    if (!e.key || e.key.indexOf('bft_overallplanning_') !== 0) return;
+    clearTimeout(t);
+    t = setTimeout(function () { location.reload(); }, 400);
+  });
+})();
 
 /* ================================================================
    EXCEL-IMPORT — BFTOverallExcelIO + conversie datum→week

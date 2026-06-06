@@ -567,7 +567,21 @@
     // de oude blob blijft als 'document_backup' bewaard.
     function persistConfig()   { store.set('config', { versie: doc.versie, jaar: doc.jaar, disciplines: doc.disciplines }); }
     function persistIndex()    { store.set('index', doc.projecten.map(function (p) { return p.id; })); }
-    function persistProject(p) { if (p && p.id) store.set('proj_' + p.id, p); }
+    function persistProject(p) {
+      if (!p || !p.id) return;
+      store.set('proj_' + p.id, p);
+      /* Plan-snapshot meteen bij élke project-opslag bijwerken (cross-tool: Projectoverzicht/
+         deadlines), zodat het niet afhangt van de onChange-hook van de tool. */
+      var bftId = p.bftId || p.servnr || p.wo || '';
+      if (bftId) {
+        try {
+          var jr = (typeof doc !== 'undefined' && doc) ? doc.jaar : (new Date()).getFullYear();
+          var snap = planSnapshot(p, jr);
+          if (snap) localStorage.setItem('bft_v2_snap_plan_' + bftId, JSON.stringify(snap));
+          else localStorage.removeItem('bft_v2_snap_plan_' + bftId);
+        } catch (e) {}
+      }
+    }
     function emitChange()      { if (typeof opts.onChange === 'function') { try { opts.onChange(getState()); } catch (e) {} } }
 
     function laadDoc() {
@@ -640,6 +654,15 @@
         if (r.jaar === doc.jaar) for (var w = r.startWeek; w <= r.eindWeek; w++) s[w] = 1;
       });
       return s;
+    }
+    /* Notitie/fase-tekst per week (uit de reeksen, jaar-gated) — voor weergave in
+       de cel zodat OverallPlanning dezelfde celtekst toont als de Engineering Planning. */
+    function weekNotitieFor(p, key) {
+      var m = {};
+      (p.weken[key] || []).forEach(function (r) {
+        if (r.jaar === doc.jaar && r.notitie) for (var w = r.startWeek; w <= r.eindWeek; w++) m[w] = r.notitie;
+      });
+      return m;
     }
     function commitSet(p, key, setObj) {
       var weken = Object.keys(setObj).map(Number).filter(function (n) { return setObj[n]; })
@@ -770,6 +793,7 @@
           if (open) {
             doc.disciplines.forEach(function (d) {
               var set = weekSetFor(p, d.key);
+              var notes = weekNotitieFor(p, d.key);   /* fase-tekst per week (uit Engineering Planning) */
               html += '<tr class="og-row-disc" data-id="' + esc(p.id) + '" data-disc="' + esc(d.key) + '">';
               html += stickyTd('og-td-act', 0, STICKY_ACT, BG_DISC, '');
               var nPers = bezettingVoor(p, d.key).length;
@@ -791,8 +815,12 @@
                 var hCls = isHuidig ? ' og-td-huidig' : '';
                 if (c.type === 'week') {
                   var on = !!set[c.week];
+                  /* Celtekst = fase-tekst (zelfde als Engineering Planning); personen → tooltip. */
+                  var fase = on ? (notes[c.week] || '') : '';
+                  var tip = on ? esc(d.label + (fase ? ' — ' + fase : '') + (nPers ? ' · ' + nPers + ' pers.' : '')) : '';
                   html += '<td class="og-td-tijd og-paint-cell' + (on ? ' painted' : '') + hCls + '" data-week="' + c.week + '"'
-                    + (on ? ' style="background:' + esc(d.color) + '"' : '') + '>' + (on ? persLabel : '') + '</td>';
+                    + (on ? ' style="background:' + esc(d.color) + '"' : '') + (tip ? ' title="' + tip + '"' : '')
+                    + '>' + (fase ? '<span class="og-fase">' + esc(fase) + '</span>' : '') + '</td>';
                 } else {
                   var any = false;
                   for (var w in set) { if (set[w] && maandVanWeek(doc.jaar, Number(w)) === c.maand) { any = true; break; } }
@@ -967,21 +995,26 @@
     function openDisciplineMgr() {
       return openDisciplineManager(doc.disciplines).then(function (nieuwe) {
         if (!nieuwe) return null;
-        // verwijderde disciplines → bijbehorende weken uit projecten halen
         var behoudKeys = nieuwe.map(function (d) { return d.key; });
-        doc.projecten.forEach(function (p) {
-          Object.keys(p.weken || {}).forEach(function (k) {
-            if (behoudKeys.indexOf(k) === -1) delete p.weken[k];
-          });
-          /* Ook de bezetting van verwijderde disciplines opruimen (anders blijft
-             die verweesd in de opslag staan). */
-          Object.keys(p.bezetting || {}).forEach(function (k) {
-            if (behoudKeys.indexOf(k) === -1) delete p.bezetting[k];
-          });
+        /* H4: verwijderde discipline(s) met geplande weken → eerst bevestigen (geen stil dataverlies). */
+        var verwijderdMetData = doc.disciplines.filter(function (d) {
+          return behoudKeys.indexOf(d.key) === -1 &&
+            doc.projecten.some(function (p) { return p.weken && p.weken[d.key] && p.weken[d.key].length; });
         });
-        doc.disciplines = nieuwe;
-        save(); render();
-        return nieuwe;
+        function pasToe() {
+          doc.projecten.forEach(function (p) {
+            Object.keys(p.weken || {}).forEach(function (k) { if (behoudKeys.indexOf(k) === -1) delete p.weken[k]; });
+            Object.keys(p.bezetting || {}).forEach(function (k) { if (behoudKeys.indexOf(k) === -1) delete p.bezetting[k]; });
+          });
+          doc.disciplines = nieuwe;
+          save(); render();   /* save() → persistProject schrijft ook de plan-snapshots opnieuw */
+          return nieuwe;
+        }
+        if (!verwijderdMetData.length) return pasToe();
+        var labels = verwijderdMetData.map(function (d) { return d.label; }).join(', ');
+        return confirmDlg('Discipline(s) “' + labels + '” bevatten geplande weken. Verwijderen wist die planning definitief (ook in de Engineering Planning). Doorgaan?',
+          { title: 'Discipline verwijderen', okLabel: 'Verwijderen', danger: true })
+          .then(function (ok) { return ok ? pasToe() : null; });
       });
     }
 
