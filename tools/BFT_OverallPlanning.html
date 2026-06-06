@@ -662,7 +662,8 @@ function herstelMetadataUitBron() {
       servnr:       bp.servicenr || '',
       pl:           bp.pl || '',
       eng:          bp.eng || '',
-      wvb:          bp.wvb || ''
+      wvb:          bp.wvb || '',
+      verantwoordelijke: bp.verantwoordelijke || bp.eng || ''   /* beheerder/planner — gedeeld met Personeelsplanning */
     };
     Object.keys(bron).forEach(function (k) {
       if (p[k] !== bron[k]) { p[k] = bron[k]; gewijzigd = true; }

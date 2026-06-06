@@ -1,8 +1,9 @@
 /**
- * bft-engplanning.js — BFTEngPlanning v0.24 (M-3: Medewerkers-beheerknop)
+ * bft-engplanning.js — BFTEngPlanning v0.26 (P-4: verantwoordelijke (her)toewijzen in de tool)
  * ────────────────────────────────────────────────────────────────────────
- * Persoon-gerichte engineering-planning ("Planning engineering TOTAAL").
- * Eén engineer = één lane: metadata-kolommen links, week-kolommen rechts.
+ * Personeelsplanning: planning PER PERSOON op de gedeelde bron. De gekozen
+ * persoon = filter op project.verantwoordelijke (de beheerder/planner, los van
+ * rol-tags pl/eng/wvb). Eén persoon = één lane: metadata links, weken rechts.
  * Elk project heeft één SUBRIJ per werk-discipline (engineering/wvb/randtaken/
  * begeleiding) zodat disciplines in dezelfde week kunnen OVERLAPPEN — net als
  * de huidige OverallPlanning. Eigen HTML-render. Werkt onder file://.
@@ -55,7 +56,7 @@
 (function (global) {
   'use strict';
 
-  var VERSION = '0.24';
+  var VERSION = '0.26';
   var SCHEMA_VERSIE = 1;
 
   // Vaste legenda — kleuren 1-op-1 uit het directief-Excel.
@@ -200,10 +201,10 @@
     }
   }
 
-  // Engineer-datalist uit bft-medewerkers (discipline 'Engineering'); leeg indien module afwezig.
-  function engineerOptions() {
+  // Persoon-datalist = ALLE medewerkers (iedereen kan verantwoordelijke zijn voor een project).
+  function persoonOptions() {
     if (typeof global.bftMedewerkerOptions === 'function') {
-      try { return global.bftMedewerkerOptions('Engineering'); } catch (e) {}
+      try { return global.bftMedewerkerOptions(); } catch (e) {}
     }
     return '';
   }
@@ -224,27 +225,51 @@
     return '';
   }
 
-  // Engineer-codes (naam + initialen, lowercased) voor matching op project.eng.
+  // Persoon-codes (naam + initialen, lowercased) voor matching op project.verantwoordelijke.
   function engineerCodes(doc) {
     return [doc.engineer.naam, doc.engineer.initialen]
       .map(function (s) { return (s || '').trim().toLowerCase(); })
       .filter(Boolean);
   }
-  // Actieve projecten van DEZE engineer (project.eng === een van de codes). Eén engineer per project.
+  // Verantwoordelijke (eigenaar) van een project: bron-of-truth = BFT_PROJECTEN
+  // (verantwoordelijke, default eng). Fallback op het planning-record.
+  function projectVerantwoordelijke(bftId, recFallback) {
+    if (bftId && typeof global.bftAlleProjecten === 'function') {
+      try {
+        var bp = global.bftAlleProjecten().filter(function (x) { return x.id === bftId; })[0];
+        if (bp) return (bp.verantwoordelijke || bp.eng || '').trim().toLowerCase();
+      } catch (e) {}
+    }
+    return ((recFallback && (recFallback.verantwoordelijke || recFallback.eng)) || '').trim().toLowerCase();
+  }
+  // <option>s voor de verantwoordelijke-select (alle medewerkers; huidige geselecteerd).
+  function verantwSelectHtml(huidigeCode) {
+    var h = (huidigeCode || '').trim().toLowerCase();
+    var list = (typeof global.bftAlleMedewerkers === 'function') ? global.bftAlleMedewerkers() : [];
+    var inLijst = list.some(function (m) { return (m.naam || '').trim().toLowerCase() === h; });
+    var opts = list.map(function (m) {
+      var sel = (m.naam || '').trim().toLowerCase() === h ? ' selected' : '';
+      return '<option value="' + esc(m.naam) + '"' + sel + '>' + esc(m.naam) + '</option>';
+    }).join('');
+    // huidige waarde die (nog) niet in de lijst staat toch tonen
+    if (h && !inLijst) opts = '<option value="' + esc(huidigeCode) + '" selected>' + esc(huidigeCode) + '</option>' + opts;
+    return '<option value=""' + (h ? '' : ' selected') + '>—</option>' + opts;
+  }
+  // Actieve projecten waarvoor DEZE persoon verantwoordelijke is. Eén verantwoordelijke per project.
   function mijnProjecten(codes) {
     if (!codes.length || typeof global.bftAlleProjecten !== 'function') return [];
     try {
       return global.bftAlleProjecten().filter(function (p) {
         var actief = !p.status || p.status === 'actief';
-        return actief && codes.indexOf((p.eng || '').trim().toLowerCase()) !== -1;
+        return actief && codes.indexOf((p.verantwoordelijke || p.eng || '').trim().toLowerCase()) !== -1;
       });
     } catch (e) { return []; }
   }
-  // Project-<select>-opties — alleen de projecten van deze engineer.
+  // Project-<select>-opties — alleen de projecten van deze persoon.
   function projectOptionsVoor(codes, gekozenId) {
     var lijst = mijnProjecten(codes);
-    if (!codes.length) return '<option value="">— vul eerst de engineer in —</option>';
-    if (!lijst.length) return '<option value="">— geen projecten voor deze engineer —</option>';
+    if (!codes.length) return '<option value="">— vul eerst de persoon in —</option>';
+    if (!lijst.length) return '<option value="">— geen projecten voor deze persoon —</option>';
     return '<option value="">— Kies project —</option>' + lijst.map(function (p) {
       return '<option value="' + esc(p.id) + '"' + (p.id === gekozenId ? ' selected' : '') + '>'
         + esc((p.projectnr || '') + ' · ' + (p.naam || '')) + '</option>';
@@ -361,14 +386,14 @@
     });
     return out;
   }
-  // Projecten van DEZE engineer uit de gedeelde planning-bron (S1: read-only view).
-  // Mapt elk Overall-project (eng in codes) → lane-project (id = Overall-record-id,
-  // projectId = bftId, weken = reeksen→per-week voor het lane-jaar).
+  // Projecten waarvoor DEZE persoon verantwoordelijke is, uit de gedeelde planning-bron.
+  // Eigenaarschap volgt de bron (BFT_PROJECTEN.verantwoordelijke); record is fallback.
+  // Mapt elk record → lane-project (id = record-id, projectId = bftId, weken = reeksen→per-week).
   function ogProjectenVoorEngineer(codes, jaar) {
     if (!codes.length) return [];
     var ogdoc = ogLaadDoc(jaar);
     return ogdoc.projecten.filter(function (op) {
-      return codes.indexOf((op.eng || '').trim().toLowerCase()) !== -1;
+      return codes.indexOf(projectVerantwoordelijke(op.bftId, op)) !== -1;
     }).map(function (op) {
       var p = { id: op.id, projectId: op.bftId || '', weken: rangesToWeken(op.weken, jaar) };
       META_KOLOMMEN.forEach(function (k) { p[k.veld] = op[k.veld] != null ? String(op[k.veld]) : ''; });
@@ -529,7 +554,7 @@
         + '<div class="bft-ep-modal" role="dialog" aria-modal="true">'
         +   '<div class="bft-ep-top"><span class="ic">+</span><span class="bft-ep-ttl">Project toevoegen</span></div>'
         +   '<div class="bft-ep-mbody">'
-        +     '<div class="bft-ep-field full"><label>Project van deze engineer (vult de velden)</label>'
+        +     '<div class="bft-ep-field full"><label>Project van deze persoon (vult de velden)</label>'
         +       '<select data-veld="__pick">' + projectOptionsVoor(codes, '') + '</select></div>'
         +     metaInputs
         +   '</div>'
@@ -658,9 +683,9 @@
     return ''
       + '<div class="bft-ep-bar">'
       +   '<div class="bft-ep-bar-grp">'
-      +     '<label>Engineer</label>'
+      +     '<label>Persoon</label>'
       +     '<input type="text" id="bft-ep-naam" list="bft-ep-mdw" placeholder="naam" value="' + esc(e.naam) + '">'
-      +     '<datalist id="bft-ep-mdw">' + engineerOptions() + '</datalist>'
+      +     '<datalist id="bft-ep-mdw">' + persoonOptions() + '</datalist>'
       +     '<input type="text" id="bft-ep-init" placeholder="init." maxlength="6" value="' + esc(e.initialen) + '" style="width:70px">'
       +   '</div>'
       +   '<div class="bft-ep-bar-grp">'
@@ -724,6 +749,7 @@
           + '<td class="bft-ep-act">'
           +   '<button type="button" class="bft-ep-caret" data-caret="' + esc(p.id) + '" title="Uit-/inklappen">' + (open ? '▼' : '▶') + '</button>'
           +   '<button type="button" class="bft-ep-del" data-del="' + esc(p.id) + '" title="Verwijderen">✕</button>'
+          +   '<select class="bft-ep-resp" data-pid="' + esc(p.projectId) + '" title="Verantwoordelijke — wie beheert/plant dit project">' + verantwSelectHtml(projectVerantwoordelijke(p.projectId, null)) + '</select>'
           + '</td>';
         META_KOLOMMEN.forEach(function (k) { pr += '<td class="bft-ep-meta">' + esc(p[k.veld]) + '</td>'; });
         weken.forEach(function (w) {
@@ -836,32 +862,36 @@
     function persist() { store.set(opts.storeKey, doc); }   // prefs: engineer/horizon/vakantie (lane-store)
     function saveUi()  { store.set(opts.uiKey, ui); }
 
-    // EN (engineer) terugschrijven naar de gedeelde projectenlijst — EngPlanning leidend voor EN.
-    function pushEngNaarBron(lp) {
-      var en = (lp.eng || '').trim();
-      if (!en || typeof global.bftAlleProjecten !== 'function' || typeof global.bftSlaProjectOp !== 'function') return;
+    // Huidige persoon (lane-eigenaar) als code voor matching/verantwoordelijke.
+    function persoonCode() { return (doc.engineer.naam || doc.engineer.initialen || '').trim(); }
+
+    // VERANTWOORDELIJKE terugschrijven naar de gedeelde projectenlijst: deze persoon
+    // beheert dit project (claim). Losgekoppeld van de rol-tags pl/eng/wvb.
+    function pushVerantwoordelijke(projectId) {
+      var v = persoonCode();
+      if (!v || !projectId || typeof global.bftAlleProjecten !== 'function' || typeof global.bftSlaProjectOp !== 'function') return;
       try {
-        var bp = global.bftAlleProjecten().filter(function (x) { return x.id === lp.projectId; })[0];
-        if (bp && (bp.eng || '').trim() !== en) {
-          var upd = {}; Object.keys(bp).forEach(function (k) { upd[k] = bp[k]; }); upd.eng = en;
+        var bp = global.bftAlleProjecten().filter(function (x) { return x.id === projectId; })[0];
+        if (bp && (bp.verantwoordelijke || '').trim() !== v) {
+          var upd = {}; Object.keys(bp).forEach(function (k) { upd[k] = bp[k]; }); upd.verantwoordelijke = v;
           global.bftSlaProjectOp(upd);
         }
       } catch (e) {}
     }
 
-    // S2: schrijf één lane-project naar de gedeelde planning-bron (bft_overallplanning_).
+    // Schrijf één lane-project naar de gedeelde planning-bron (bft_overallplanning_).
     // weken (per-week) → reeksen (fase-bewust); behoud bezetting, andere jaren en
-    // (bestaande) metadata; EN → projectenlijst. Maakt config/index aan indien nodig.
+    // (bestaande) metadata. Eigenaar (verantwoordelijke) → projectenlijst. Config/index indien nodig.
     function persistProjectNaarBron(lp) {
       if (!lp) return;
       var jaar = doc.horizon.jaar;
       var bestond = ogGet('proj_' + lp.id);
       var rec = bestond || { id: lp.id, bftId: lp.projectId || '', weken: {}, bezetting: {} };
       if (!rec.weken || typeof rec.weken !== 'object') rec.weken = {};
-      // Metadata: bij een NIEUW record uit Eng overnemen; bestaande records volgen de
-      // projectenlijst (herstelMetadataUitBron) — dus ongemoeid laten, behalve EN.
+      // Metadata: bij een NIEUW record uit de tool overnemen; bestaande records volgen de
+      // projectenlijst (herstelMetadataUitBron) — dus ongemoeid laten.
       if (!bestond) { META_KOLOMMEN.forEach(function (k) { rec[k.veld] = lp[k.veld] != null ? String(lp[k.veld]) : ''; }); }
-      if ((lp.eng || '') !== '') rec.eng = lp.eng;
+      rec.verantwoordelijke = persoonCode();   // record-eigenaar (cosmetisch; bron is leidend)
       // Per discipline: reeksen van DIT jaar vervangen, andere jaren behouden.
       doc.disciplines.forEach(function (d) {
         var anders = (rec.weken[d.key] || []).filter(function (r) { return r.jaar !== jaar; });
@@ -873,7 +903,7 @@
       var idx = ogGet('index') || [];
       if (idx.indexOf(lp.id) === -1) { idx.push(lp.id); ogSet('index', idx); }
       if (!ogGet('config')) ogSet('config', { versie: 1, jaar: jaar, disciplines: doc.disciplines });
-      pushEngNaarBron(lp);
+      pushVerantwoordelijke(lp.projectId);   // claim: deze persoon beheert dit project
       schrijfSnapPlan(rec);                 // cross-tool plan-snapshot bijwerken (Projectoverzicht/deadlines)
     }
     // Plan-snapshot voor een record schrijven/verwijderen (bft_v2_snap_plan_<bftId>).
@@ -1098,8 +1128,16 @@
       });
       Array.prototype.forEach.call(el.querySelectorAll('tr.bft-ep-prow'), function (tr) {
         tr.addEventListener('click', function (e) {
-          if (e.target.closest('button')) return;
+          if (e.target.closest('button, select')) return;   // knoppen + verantwoordelijke-select niet als uit-/inklap
           toggleExpand(tr.getAttribute('data-id'));
+        });
+      });
+      // Verantwoordelijke (her)toewijzen — schrijft naar de gedeelde projectenlijst.
+      Array.prototype.forEach.call(el.querySelectorAll('.bft-ep-resp'), function (sel) {
+        sel.addEventListener('click', function (e) { e.stopPropagation(); });
+        sel.addEventListener('change', function (e) {
+          e.stopPropagation();
+          api.setVerantwoordelijke(sel.getAttribute('data-pid'), sel.value);
         });
       });
 
@@ -1135,9 +1173,10 @@
       version: VERSION,
       getState: function () { return doc; },
       // Project toevoegen aan de planning = direct in de gedeelde bron schrijven.
+      // De persoon wordt verantwoordelijke (claim) via persistProjectNaarBron; rol-tags
+      // (pl/eng/wvb) komen uit de projectenlijst, niet geforceerd.
       addProject: function (data) {
         data = data || {};
-        if (!data.eng) data.eng = (doc.engineer.naam || doc.engineer.initialen || '');   // EngPlanning leidend voor EN
         var p = nieuwProject(data);
         persistProjectNaarBron(p);
         herlaadProjecten(); fireChange(); api.render();
@@ -1153,7 +1192,7 @@
       // planning-bron staan (lege records aanmaken indien afwezig; bestaande ongemoeid).
       syncProjecten: function () {
         var codes = engineerCodes(doc);
-        if (!codes.length) { feedback('Vul eerst de Engineer in (naam/initialen).', true); return { toegevoegd: 0 }; }
+        if (!codes.length) { feedback('Vul eerst de Persoon in (naam/initialen).', true); return { toegevoegd: 0 }; }
         var lijst = mijnProjecten(codes);
         var bestaandeBft = (ogGet('index') || []).map(function (id) { var r = ogGet('proj_' + id); return r && r.bftId; }).filter(Boolean);
         var toeg = 0;
@@ -1163,8 +1202,22 @@
           persistProjectNaarBron(nieuwProject(meta)); toeg++;       // leeg record in de bron
         });
         herlaadProjecten(); fireChange(); api.render();
-        feedback('Sync klaar: ' + toeg + ' project(en) toegevoegd aan de planning' + (lijst.length ? '' : ' (geen projecten voor deze engineer)') + '.');
+        feedback('Sync klaar: ' + toeg + ' project(en) toegevoegd aan de planning' + (lijst.length ? '' : ' (geen projecten voor deze persoon)') + '.');
         return { toegevoegd: toeg };
+      },
+      // Verantwoordelijke (her)toewijzen → schrijft naar de gedeelde projectenlijst (bron).
+      // Daarna verlaat het project de huidige lane als de persoon wijzigt.
+      setVerantwoordelijke: function (projectId, naam) {
+        if (!projectId) return;
+        var v = (naam || '').trim();
+        if (typeof global.bftAlleProjecten === 'function' && typeof global.bftSlaProjectOp === 'function') {
+          try {
+            var bp = global.bftAlleProjecten().filter(function (x) { return x.id === projectId; })[0];
+            if (bp) { var upd = {}; Object.keys(bp).forEach(function (k) { upd[k] = bp[k]; }); upd.verantwoordelijke = v; global.bftSlaProjectOp(upd); }
+          } catch (e) {}
+        }
+        herlaadProjecten(); fireChange(); api.render();
+        feedback(v ? ('Verantwoordelijke gewijzigd naar ' + v + '.') : 'Verantwoordelijke leeggemaakt (valt terug op de Engineer).');
       },
       removeProject: function (id) {
         removeProjectUitBron(id);

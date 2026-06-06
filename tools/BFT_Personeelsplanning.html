@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Engineering Planning — BFT</title>
+  <title>Personeelsplanning — BFT</title>
   <link rel="stylesheet" href="../library/css/bofram-style.css">
   <script src="../library/js/bft-medewerkers.js"></script>
   <script src="../library/js/bft-projects.js"></script>
@@ -63,9 +63,12 @@
       border-right: 1px solid var(--border, #e1e4e8);
     }
     .bft-ep-table th.bft-ep-wk { text-align: center; font-family: var(--mono, monospace); font-size: 11px; min-width: 52px; }
-    .bft-ep-table th.bft-ep-act { width: 30px; min-width: 30px; }
+    .bft-ep-table th.bft-ep-act { width: 1%; min-width: 96px; }
     .bft-ep-table td { padding: 6px 9px; border-right: 1px solid var(--border, #eef0f4); border-bottom: 1px solid var(--border, #eef0f4); }
-    .bft-ep-table td.bft-ep-act { text-align: center; padding: 2px; white-space: nowrap; }
+    .bft-ep-table td.bft-ep-act { text-align: left; padding: 2px 4px; white-space: nowrap; }
+    /* Verantwoordelijke-keuze per project (her)toewijzen */
+    .bft-ep-resp { display: inline-block; max-width: 60px; font-size: 9px; padding: 1px 2px; margin-left: 3px;
+      border: 1px solid var(--border, #c8ccd4); border-radius: 4px; vertical-align: middle; background: #fff; cursor: pointer; }
     /* Projectrij (altijd zichtbaar): klikbaar, dik lijntje erboven als scheiding.
        Tekst alleen vet als het project geopend is (focus). */
     .bft-ep-table tr.bft-ep-prow { cursor: pointer; }
@@ -133,18 +136,18 @@
     <div class="bf-logo"></div>
     <div class="bf-header-div"></div>
     <div class="bf-header-title">
-      <h1>Engineering Planning</h1>
-      <p id="hdrSub">Per engineer · week-planning · disciplines</p>
+      <h1>Personeelsplanning</h1>
+      <p id="hdrSub">Per persoon · week-planning · disciplines</p>
     </div>
   </div>
-  <span class="bf-badge">v0.24</span>
+  <span class="bf-badge">v0.26</span>
 </header>
 
 <div class="ep-page">
 
   <div style="margin-bottom:16px">
     <p style="font-family:var(--mono);font-size:11px;color:var(--muted)">
-      Per-engineer view op de gedeelde planning. Kies je engineer, sync je projecten en schilder per discipline — wijzigingen staan direct in OverallPlanning (één bron).
+      Planning per persoon op de gedeelde bron. Kies een persoon, sync de projecten waarvoor die verantwoordelijk is en schilder per discipline — wijzigingen staan direct in OverallPlanning (één bron).
     </p>
   </div>
 

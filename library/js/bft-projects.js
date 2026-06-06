@@ -98,11 +98,20 @@ function bftCustomProjecten() {
   catch (e) { return []; }
 }
 
+/* Normaliseer een project: zorg dat 'verantwoordelijke' (= de persoon die de
+   planning beheert) bestaat. Migratie: ontbreekt → default de huidige engineer (eng).
+   Losgekoppeld van de rol-tags pl/eng/wvb; gebruikt door de Personeelsplanning-filter. */
+function bftNormProject(p) {
+  if (!p) return p;
+  if (p.verantwoordelijke == null || p.verantwoordelijke === '') p.verantwoordelijke = p.eng || '';
+  return p;
+}
+
 /* Samengevoegde lijst: seed + custom (custom op id wint, bv. bij bewerken) */
 function bftAlleProjecten() {
   const custom = bftCustomProjecten();
   const ids = custom.map(p => p.id);
-  return BFT_PROJECTEN.filter(p => ids.indexOf(p.id) === -1).concat(custom);
+  return BFT_PROJECTEN.filter(p => ids.indexOf(p.id) === -1).concat(custom).map(bftNormProject);
 }
 
 /* Upsert een (custom) project in de runtime-store */

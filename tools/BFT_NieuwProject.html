@@ -103,6 +103,11 @@
         <datalist id="dl_wvb"></datalist>
       </div>
       <div class="field">
+        <label>Verantwoordelijke <span style="color:var(--muted);font-weight:400">(beheert de planning)</span></label>
+        <input type="text" id="f_verantwoordelijke" list="dl_verantw" maxlength="3" placeholder="2-3 ltr; leeg = de Engineer" oninput="updatePreview()">
+        <datalist id="dl_verantw"></datalist>
+      </div>
+      <div class="field">
         <label>Geplande oplevering</label>
         <input type="date" id="f_oplevering" oninput="updatePreview()">
       </div>
@@ -177,6 +182,7 @@ function huidigProjectObj(){
     projectnr: nr, servicenr, naam, klant,
     oplevering: gv('f_oplevering') || '',
     pl: gv('f_pl') || '', eng: gv('f_eng') || '', wvb: gv('f_wvb') || '',
+    verantwoordelijke: gv('f_verantwoordelijke') || gv('f_eng') || '',   // beheert de planning; leeg → de Engineer
     machineType: type,
     aangemaakt: gv('f_aangemaakt') || new Date().toISOString().slice(0,10),
     status: gv('f_status') || 'actief',
@@ -206,7 +212,7 @@ function genereer(){
     return;
   }
 
-  const code = `  ,{\n    id: '${p.id}',\n    projectnr: '${p.projectnr}',\n    servicenr: '${p.servicenr}',\n    naam: '${p.naam}',\n    klant: '${p.klant}',\n    oplevering: '${p.oplevering}',\n    pl: '${p.pl}',\n    eng: '${p.eng}',\n    wvb: '${p.wvb}',\n    machineType: '${p.machineType}',\n    aangemaakt: '${p.aangemaakt}',\n    status: '${p.status}',\n    plannerUrl: '${p.plannerUrl}'\n  }`;
+  const code = `  ,{\n    id: '${p.id}',\n    projectnr: '${p.projectnr}',\n    servicenr: '${p.servicenr}',\n    naam: '${p.naam}',\n    klant: '${p.klant}',\n    oplevering: '${p.oplevering}',\n    pl: '${p.pl}',\n    eng: '${p.eng}',\n    wvb: '${p.wvb}',\n    verantwoordelijke: '${p.verantwoordelijke}',\n    machineType: '${p.machineType}',\n    aangemaakt: '${p.aangemaakt}',\n    status: '${p.status}',\n    plannerUrl: '${p.plannerUrl}'\n  }`;
   const nr = p.projectnr, naam = p.naam;
 
   const gitCommands = `git -C "C:\\Users\\sjefv\\OneDrive\\Documenten\\Claude\\Projects\\BFT-V2" add library/js/bft-projects.js\ngit -C "C:\\Users\\sjefv\\OneDrive\\Documenten\\Claude\\Projects\\BFT-V2" commit -m "Nieuw project: ${nr} ${naam}"\ngit -C "C:\\Users\\sjefv\\OneDrive\\Documenten\\Claude\\Projects\\BFT-V2" push`;
@@ -234,6 +240,7 @@ if (typeof bftMedewerkerOptions === 'function') {
   document.getElementById('dl_pl').innerHTML  = bftMedewerkerOptions('Projectleider');
   document.getElementById('dl_eng').innerHTML = bftMedewerkerOptions('Engineering');
   document.getElementById('dl_wvb').innerHTML = bftMedewerkerOptions('WVB');
+  var dlv = document.getElementById('dl_verantw'); if (dlv) dlv.innerHTML = bftMedewerkerOptions();   // verantwoordelijke = elke medewerker
 }
 if (typeof bftKlantOptions === 'function') {
   document.getElementById('dl_klant').innerHTML = bftKlantOptions();

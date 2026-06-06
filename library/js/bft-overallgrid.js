@@ -432,13 +432,11 @@
         var master = masterLijst();
         var rows = master.map(function (m) {
           var on = !!gekozen[m.id];
-          var beheer = kanBeheren
-            ? '<button class="og-bz-act" data-edit="' + esc(m.id) + '" title="Naam/rollen bewerken">✎</button>'
-              + '<button class="og-bz-act og-bz-del" data-del="' + esc(m.id) + '" title="Verwijderen uit personeelslijst">×</button>'
-            : '';
+          /* Alleen aan-/afvinken wie meedraait; toevoegen/bewerken/rollen = de gedeelde
+             medewerker-modal (geen native prompts hier). */
           return '<label class="og-bz-row"><input type="checkbox" data-id="' + esc(m.id) + '" data-naam="' + esc(m.naam) + '"' + (on ? ' checked' : '') + '>'
             + '<span class="og-bz-naam">' + esc(m.naam) + '</span><span class="og-bz-disc">' + esc((m.rollen || []).join(' · ')) + '</span>'
-            + beheer + '</label>';
+            + '</label>';
         }).join('');
         /* Gekozen personen die (niet meer) in de master staan — toch tonen. */
         var weesIds = Object.keys(gekozen).filter(function (k) { return !master.some(function (m) { return m.id === k; }); });
@@ -446,7 +444,7 @@
           return '<label class="og-bz-row"><input type="checkbox" data-id="' + esc(k) + '" data-naam="' + esc(gekozen[k].naam) + '" checked>'
             + '<span class="og-bz-naam">' + esc(gekozen[k].naam) + '</span><span class="og-bz-disc">—</span></label>';
         }).join('');
-        var leeg = (!rows && !wees) ? '<p class="og-bz-leeg">Nog geen personen. Klik “+ Nieuwe persoon”.</p>' : '';
+        var leeg = (!rows && !wees) ? '<p class="og-bz-leeg">Nog geen personen. Klik “👥 Personen / rollen beheren”.</p>' : '';
         return rows + wees + leeg;
       }
       function syncFromInputs() {
@@ -461,40 +459,6 @@
       }
       function paint() {
         ov.querySelector('#og-bz-list').innerHTML = rowsHtml();
-        wireRows();
-      }
-      function wireRows() {
-        ov.querySelectorAll('.og-bz-act[data-edit]').forEach(function (b) {
-          b.addEventListener('click', function (e) {
-            e.preventDefault(); e.stopPropagation();
-            syncFromInputs();
-            var id = b.getAttribute('data-edit');
-            var m = masterLijst().filter(function (x) { return x.id === id; })[0];
-            if (!m) return;
-            var naam = global.prompt ? global.prompt('Naam:', m.naam) : null;
-            if (naam === null) return;
-            naam = naam.trim(); if (!naam) return;
-            var huidigeRollen = (m.rollen || []).join(', ');
-            var rollenTxt = global.prompt ? global.prompt('Rollen (komma-gescheiden, bv. Projectleider, Engineering, WVB):', huidigeRollen) : huidigeRollen;
-            var rollen = (rollenTxt || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
-            bftSlaMedewerkerOp({ id: id, naam: naam, rollen: rollen });
-            if (gekozen[id]) gekozen[id].naam = naam;
-            paint();
-          });
-        });
-        ov.querySelectorAll('.og-bz-act[data-del]').forEach(function (b) {
-          b.addEventListener('click', function (e) {
-            e.preventDefault(); e.stopPropagation();
-            syncFromInputs();
-            var id = b.getAttribute('data-del');
-            var m = masterLijst().filter(function (x) { return x.id === id; })[0];
-            var naam = m ? m.naam : 'deze persoon';
-            if (global.confirm && !global.confirm('“' + naam + '” verwijderen uit de personeelslijst?')) return;
-            if (typeof bftVerwijderMedewerker === 'function') bftVerwijderMedewerker(id);
-            delete gekozen[id];
-            paint();
-          });
-        });
       }
 
       ov.innerHTML = ''
@@ -502,7 +466,7 @@
         +   '<div class="bft-og-top"><div class="ic">👤</div><div class="bft-og-ttl">' + esc(titel) + '</div></div>'
         +   '<div class="bft-og-body og-dm-body" style="display:block">'
         +     '<div id="og-bz-list" class="og-bz-list"></div>'
-        +     (kanBeheren ? '<button class="bft-og-btn og-dm-add" type="button" id="og-bz-nieuw" style="margin-top:12px">+ Nieuwe persoon</button>' : '')
+        +     (kanBeheren ? '<button class="bft-og-btn og-dm-add" type="button" id="og-bz-beheer" style="margin-top:12px">👥 Personen / rollen beheren</button>' : '')
         +   '</div>'
         +   '<div class="bft-og-actions">'
         +     '<button class="bft-og-btn" data-act="cancel">Annuleer</button>'
@@ -519,17 +483,12 @@
       }
       function onKey(e) { if (e.key === 'Escape') { e.preventDefault(); close(null); } }
 
-      var nieuwBtn = ov.querySelector('#og-bz-nieuw');
-      if (nieuwBtn) nieuwBtn.addEventListener('click', function () {
-        syncFromInputs();
-        var naam = global.prompt ? global.prompt('Naam nieuwe persoon:') : '';
-        if (!naam || !naam.trim()) return;
-        var rollenTxt = global.prompt ? global.prompt('Rollen (komma-gescheiden, bv. Projectleider, Engineering, WVB):', '') : '';
-        var rollen = (rollenTxt || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
-        var id = (typeof bftNieuwMedewerkerId === 'function') ? bftNieuwMedewerkerId() : ('mdw_' + Date.now().toString(36));
-        bftSlaMedewerkerOp({ id: id, naam: naam.trim(), rollen: rollen });
-        gekozen[id] = { persoonId: id, naam: naam.trim() };  /* nieuw = meteen aangevinkt */
-        paint();
+      var beheerBtn = ov.querySelector('#og-bz-beheer');
+      if (beheerBtn) beheerBtn.addEventListener('click', function () {
+        syncFromInputs();   /* bewaar aanvinkingen vóór het her-renderen */
+        if (global.BFTMedewerkers && typeof global.BFTMedewerkers.openBeheer === 'function') {
+          global.BFTMedewerkers.openBeheer({ onChange: function () { paint(); } }).then(function () { paint(); });
+        }
       });
       ov.addEventListener('click', function (e) { if (e.target === ov) close(null); });
       ov.querySelectorAll('.bft-og-actions .bft-og-btn').forEach(function (b) {
