@@ -238,6 +238,7 @@
   <div class="toolbar">
     <button class="bf-btn bf-btn-sec"     id="btnSync" title="Importeer actieve projecten uit BFT_PROJECTEN">⟳ Sync projecten</button>
     <button class="bf-btn bf-btn-ghost"   id="btnDisc">⚙ Disciplines</button>
+    <button class="bf-btn bf-btn-ghost"   id="btnMdw" title="Medewerkers + rollen (PL/EN/WVB) beheren — gedeeld met alle tools">👥 Medewerkers</button>
     <button class="bf-btn bf-btn-ghost"   id="btnRes">↔ Week/Maand</button>
     <button class="bf-btn bf-btn-ghost"   id="btnHeelJaar" title="Toon het hele jaar i.p.v. focus vanaf huidige week/maand −1">⟲ Heel jaar</button>
     <span class="op-jaar" title="Toon-jaar wisselen" style="display:inline-flex;align-items:center;gap:2px">
@@ -731,6 +732,16 @@ document.getElementById('btnSync').addEventListener('click', function () {
    ================================================================ */
 document.getElementById('btnDisc').addEventListener('click', function () {
   grid.openDisciplineManager();
+});
+
+document.getElementById('btnMdw').addEventListener('click', function () {
+  if (window.BFTMedewerkers && typeof BFTMedewerkers.openBeheer === 'function') {
+    /* Gedeelde medewerkers/rollen-modal (PL/EN/WVB). De datalists in formulieren/bezetting
+       lezen live uit de lijst, dus re-render volstaat. */
+    BFTMedewerkers.openBeheer({ onChange: function () { grid.render(); } }).then(function () { grid.render(); });
+  } else {
+    showToast('Medewerker-beheer niet beschikbaar', 'var(--danger)');
+  }
 });
 
 document.getElementById('btnRes').addEventListener('click', function () {

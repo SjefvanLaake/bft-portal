@@ -433,11 +433,11 @@
         var rows = master.map(function (m) {
           var on = !!gekozen[m.id];
           var beheer = kanBeheren
-            ? '<button class="og-bz-act" data-edit="' + esc(m.id) + '" title="Naam/discipline bewerken">✎</button>'
+            ? '<button class="og-bz-act" data-edit="' + esc(m.id) + '" title="Naam/rollen bewerken">✎</button>'
               + '<button class="og-bz-act og-bz-del" data-del="' + esc(m.id) + '" title="Verwijderen uit personeelslijst">×</button>'
             : '';
           return '<label class="og-bz-row"><input type="checkbox" data-id="' + esc(m.id) + '" data-naam="' + esc(m.naam) + '"' + (on ? ' checked' : '') + '>'
-            + '<span class="og-bz-naam">' + esc(m.naam) + '</span><span class="og-bz-disc">' + esc(m.discipline) + '</span>'
+            + '<span class="og-bz-naam">' + esc(m.naam) + '</span><span class="og-bz-disc">' + esc((m.rollen || []).join(' · ')) + '</span>'
             + beheer + '</label>';
         }).join('');
         /* Gekozen personen die (niet meer) in de master staan — toch tonen. */
@@ -474,8 +474,10 @@
             var naam = global.prompt ? global.prompt('Naam:', m.naam) : null;
             if (naam === null) return;
             naam = naam.trim(); if (!naam) return;
-            var disc = global.prompt ? global.prompt('Discipline:', m.discipline || '') : m.discipline;
-            bftSlaMedewerkerOp({ id: id, naam: naam, discipline: (disc || '').trim() || 'Overig' });
+            var huidigeRollen = (m.rollen || []).join(', ');
+            var rollenTxt = global.prompt ? global.prompt('Rollen (komma-gescheiden, bv. Projectleider, Engineering, WVB):', huidigeRollen) : huidigeRollen;
+            var rollen = (rollenTxt || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+            bftSlaMedewerkerOp({ id: id, naam: naam, rollen: rollen });
             if (gekozen[id]) gekozen[id].naam = naam;
             paint();
           });
@@ -522,9 +524,10 @@
         syncFromInputs();
         var naam = global.prompt ? global.prompt('Naam nieuwe persoon:') : '';
         if (!naam || !naam.trim()) return;
-        var disc = global.prompt ? global.prompt('Discipline (bv. Engineering / WVB / extern):', '') : '';
+        var rollenTxt = global.prompt ? global.prompt('Rollen (komma-gescheiden, bv. Projectleider, Engineering, WVB):', '') : '';
+        var rollen = (rollenTxt || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
         var id = (typeof bftNieuwMedewerkerId === 'function') ? bftNieuwMedewerkerId() : ('mdw_' + Date.now().toString(36));
-        bftSlaMedewerkerOp({ id: id, naam: naam.trim(), discipline: (disc || '').trim() || 'Overig' });
+        bftSlaMedewerkerOp({ id: id, naam: naam.trim(), rollen: rollen });
         gekozen[id] = { persoonId: id, naam: naam.trim() };  /* nieuw = meteen aangevinkt */
         paint();
       });

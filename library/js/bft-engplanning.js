@@ -1,5 +1,5 @@
 /**
- * bft-engplanning.js — BFTEngPlanning v0.23 (S7-audit: dode code weg; revisie afgerond)
+ * bft-engplanning.js — BFTEngPlanning v0.24 (M-3: Medewerkers-beheerknop)
  * ────────────────────────────────────────────────────────────────────────
  * Persoon-gerichte engineering-planning ("Planning engineering TOTAAL").
  * Eén engineer = één lane: metadata-kolommen links, week-kolommen rechts.
@@ -55,7 +55,7 @@
 (function (global) {
   'use strict';
 
-  var VERSION = '0.23';
+  var VERSION = '0.24';
   var SCHEMA_VERSIE = 1;
 
   // Vaste legenda — kleuren 1-op-1 uit het directief-Excel.
@@ -679,6 +679,7 @@
       + '<button type="button" class="bf-btn bf-btn-primary" id="bft-ep-add">+ Project</button>'
       + '<button type="button" class="bf-btn bf-btn-sec" id="bft-ep-sync" title="Projecten van deze engineer in de planning zetten">⟳ Sync projecten</button>'
       + '<button type="button" class="bf-btn bf-btn-ghost" id="bft-ep-disc">⚙ Disciplines</button>'
+      + '<button type="button" class="bf-btn bf-btn-ghost" id="bft-ep-mdw">👥 Medewerkers</button>'
       + '<button type="button" class="bf-btn bf-btn-ghost" id="bft-ep-export" title="Lane als JSON downloaden">⤓ JSON</button>'
       + '<button type="button" class="bf-btn bf-btn-ghost" id="bft-ep-import" title="Lane uit JSON laden (vervangt)">⤒ JSON</button>'
       + '<span class="bft-ep-hint">Klik project = uit-/inklappen · schilder per discipline-rij (klik/sleep) · dubbelklik = fase · vakantie-rij: shift+klik = halve week</span>'
@@ -1083,6 +1084,12 @@
             : Promise.resolve(true);
           bevestig.then(function (ok) { if (ok) api.setDisciplines(list); });
         });
+      });
+      var bmw = el.querySelector('#bft-ep-mdw');
+      if (bmw) bmw.addEventListener('click', function () {
+        if (global.BFTMedewerkers && typeof global.BFTMedewerkers.openBeheer === 'function') {
+          global.BFTMedewerkers.openBeheer({ onChange: function () { api.render(); } }).then(function () { api.render(); });
+        } else { feedback('Medewerker-beheer niet beschikbaar (bft-medewerkers.js niet geladen).', true); }
       });
 
       // Uit-/inklappen: caret-knop én klik op de projectrij (behalve op knoppen)
