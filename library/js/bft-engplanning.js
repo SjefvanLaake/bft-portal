@@ -1,5 +1,5 @@
 /**
- * bft-engplanning.js — BFTEngPlanning v0.27 (persoon = één veld; los initialen-vakje verwijderd)
+ * bft-engplanning.js — BFTEngPlanning v0.28 (persoon = echte <select>; datalist-filterval weg)
  * ────────────────────────────────────────────────────────────────────────
  * Personeelsplanning: planning PER PERSOON op de gedeelde bron. De gekozen
  * persoon = filter op project.verantwoordelijke (de beheerder/planner, los van
@@ -56,7 +56,7 @@
 (function (global) {
   'use strict';
 
-  var VERSION = '0.27';
+  var VERSION = '0.28';
   var SCHEMA_VERSIE = 1;
 
   // Vaste legenda — kleuren 1-op-1 uit het directief-Excel.
@@ -199,14 +199,6 @@
       td.textContent = '';
       td.removeAttribute('title');
     }
-  }
-
-  // Persoon-datalist = ALLE medewerkers (iedereen kan verantwoordelijke zijn voor een project).
-  function persoonOptions() {
-    if (typeof global.bftMedewerkerOptions === 'function') {
-      try { return global.bftMedewerkerOptions(); } catch (e) {}
-    }
-    return '';
   }
 
   // Medewerker-datalist voor PL/Eng/WVB (optioneel gefilterd op discipline).
@@ -684,8 +676,7 @@
       + '<div class="bft-ep-bar">'
       +   '<div class="bft-ep-bar-grp">'
       +     '<label>Persoon</label>'
-      +     '<input type="text" id="bft-ep-naam" list="bft-ep-mdw" placeholder="kies persoon" value="' + esc(e.naam) + '">'
-      +     '<datalist id="bft-ep-mdw">' + persoonOptions() + '</datalist>'
+      +     '<select id="bft-ep-naam">' + verantwSelectHtml(e.naam) + '</select>'
       +   '</div>'
       +   '<div class="bft-ep-bar-grp">'
       +     '<label>Jaar</label>'

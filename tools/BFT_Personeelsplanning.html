@@ -37,11 +37,13 @@
       font-family: var(--mono, monospace); font-size: 11px; font-weight: 600;
       color: var(--muted, #8a909c); text-transform: uppercase;
     }
-    .bft-ep-bar input {
+    .bft-ep-bar input, .bft-ep-bar select {
       padding: 7px 9px; border: 1px solid var(--border, #c8ccd4); border-radius: 6px;
       font-size: 13px; font-family: var(--sans, "IBM Plex Sans", sans-serif); color: var(--text, #1a1f2e);
+      background: #fff;
     }
-    .bft-ep-bar input:focus { outline: 2px solid var(--accent, #e8a000); outline-offset: 1px; border-color: var(--accent, #e8a000); }
+    .bft-ep-bar select { min-width: 140px; cursor: pointer; }
+    .bft-ep-bar input:focus, .bft-ep-bar select:focus { outline: 2px solid var(--accent, #e8a000); outline-offset: 1px; border-color: var(--accent, #e8a000); }
     .bft-ep-dash { color: var(--muted, #8a909c); }
 
     /* ── Acties-balk ── */
@@ -140,7 +142,7 @@
       <p id="hdrSub">Per persoon · week-planning · disciplines</p>
     </div>
   </div>
-  <span class="bf-badge">v0.27</span>
+  <span class="bf-badge">v0.28</span>
 </header>
 
 <div class="ep-page">
