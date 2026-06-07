@@ -205,13 +205,6 @@
     tr.res-rij td { background: #f7f4fd; }
     tr.res-rij:hover td { background: #efe9fb; }
 
-    /* Sync-badge */
-    .sync-badge {
-      font-family:var(--mono); font-size:10px; color:var(--muted); padding:3px 8px;
-      background:var(--bg2); border-radius:4px; border:1px solid var(--border);
-    }
-    .sync-badge.nieuw { color:var(--success); border-color:var(--success); background:rgba(30,158,94,0.08); }
-
     /* Toast */
     .toast {
       position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
@@ -256,7 +249,6 @@
       <span id="jaarLabel" style="font-family:var(--mono);font-size:12px;font-weight:600;min-width:46px;text-align:center;color:var(--text)">—</span>
       <button class="bf-btn bf-btn-ghost" id="btnJaarNext" title="Volgend jaar">▶</button>
     </span>
-    <span class="sync-badge" id="syncBadge">BFT_PROJECTEN: ${BFT_PROJECTEN?.length ?? 0} beschikbaar</span>
     <div class="spacer"></div>
     <button class="bf-btn bf-btn-ghost" id="btnExport">⤓ JSON</button>
     <button class="bf-btn bf-btn-ghost" id="btnImport">⤒ JSON</button>
@@ -807,14 +799,6 @@ document.getElementById('btnSync').addEventListener('click', function () {
   });
 
   showToast(nieuw.length + ' project' + (nieuw.length !== 1 ? 'en' : '') + ' gesynchroniseerd');
-
-  var badge = document.getElementById('syncBadge');
-  badge.textContent = nieuw.length + ' nieuw toegevoegd';
-  badge.className = 'sync-badge nieuw';
-  setTimeout(function () {
-    badge.textContent = 'BFT_PROJECTEN: ' + bftAlleProjecten().length + ' beschikbaar';
-    badge.className = 'sync-badge';
-  }, 3000);
 });
 
 /* ================================================================
@@ -1145,10 +1129,6 @@ document.getElementById('xlsxInput').addEventListener('change', function (e) {
   _voerExcelImportUit(file);
   e.target.value = '';
 });
-
-/* Sync-badge initial */
-document.getElementById('syncBadge').textContent =
-  'BFT_PROJECTEN: ' + bftAlleProjecten().length + ' beschikbaar';
 
 /* Injectors draaien via de onRender-hook van het grid (zie register hierboven) —
    geen MutationObserver meer, dus geen re-entrancy/loop. */
