@@ -75,15 +75,11 @@
                oninput="this.value=this.value.replace(/\D/g,'').slice(0,6)">
       </div>
       <div class="field">
-        <label>Machine type <span class="req">*</span></label>
-        <input type="text" id="f_type" maxlength="14" placeholder="bijv. BFMR2000EK" oninput="updatePreview()">
+        <label>Machine type / naam <span class="req">*</span></label>
+        <input type="text" id="f_type" maxlength="14" placeholder="bijv. BFMR2000EK (max 14)" oninput="updatePreview()">
       </div>
     </div>
     <div class="fg" style="margin-bottom:14px">
-      <div class="field">
-        <label>Machine naam <span class="req">*</span></label>
-        <input type="text" id="f_naam" maxlength="14" placeholder="bijv. BFMR2000EK (max 14)" oninput="updatePreview()">
-      </div>
       <div class="field">
         <label>Klant <span class="req">*</span>
           <button type="button" id="btnKlanten" title="Klanten beheren (toevoegen/bewerken/verwijderen)"
@@ -168,12 +164,7 @@
 <script>
 function gv(id){ return document.getElementById(id)?.value?.trim() || ''; }
 
-function updatePreview(){
-  const nr = gv('f_nr'), type = gv('f_type');
-  if (nr && type) {
-    document.getElementById('f_naam').placeholder = type;
-  }
-}
+function updatePreview(){ /* no-op (machine naam = type; geen apart naamveld meer) */ }
 
 /* Naam-afleiders uit de bronnen (id → naam) voor het denormaliseren bij opslaan. */
 function _klNaam(id){ if(!id||typeof bftAlleKlanten!=='function')return ''; var k=bftAlleKlanten().filter(x=>x.id===id)[0]; return k?k.naam:''; }
@@ -183,13 +174,13 @@ function _mdNaam(id){ if(!id||typeof bftAlleMedewerkers!=='function')return ''; 
    F4: selects leveren STABIELE id's; naam wordt afgeleid en gedenormaliseerd
    opgeslagen (bftNormProject houdt 'm bij read synchroon met de bron). */
 function huidigProjectObj(){
-  const nr = gv('f_nr'), type = gv('f_type'), naam = gv('f_naam');
+  const nr = gv('f_nr'), type = gv('f_type');
+  const naam = type;   // machine naam = type (één veld; ze waren altijd gelijk)
   const klantId = gv('f_klant');
   const geenKlanten = (typeof bftAlleKlanten === 'function') && bftAlleKlanten().length === 0;
   const mist = [];
   if (!nr)   mist.push('projectnummer');
-  if (!type) mist.push('machine type');
-  if (!naam) mist.push('machine naam');
+  if (!type) mist.push('machine type / naam');
   if (!klantId) mist.push(geenKlanten ? 'klant — er zijn nog geen klanten; voeg er één toe via “🏢 Beheer” naast het klant-veld' : 'klant');
   if (mist.length) { alert('Vul nog in: ' + mist.join('; ') + '.'); return null; }
   if (!/^\d{6}$/.test(nr)) { alert('Projectnummer moet uit precies 6 cijfers bestaan.'); return null; }
