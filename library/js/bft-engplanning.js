@@ -1,5 +1,5 @@
 /**
- * bft-engplanning.js — BFTEngPlanning v0.26 (P-4: verantwoordelijke (her)toewijzen in de tool)
+ * bft-engplanning.js — BFTEngPlanning v0.27 (persoon = één veld; los initialen-vakje verwijderd)
  * ────────────────────────────────────────────────────────────────────────
  * Personeelsplanning: planning PER PERSOON op de gedeelde bron. De gekozen
  * persoon = filter op project.verantwoordelijke (de beheerder/planner, los van
@@ -56,7 +56,7 @@
 (function (global) {
   'use strict';
 
-  var VERSION = '0.26';
+  var VERSION = '0.27';
   var SCHEMA_VERSIE = 1;
 
   // Vaste legenda — kleuren 1-op-1 uit het directief-Excel.
@@ -684,9 +684,8 @@
       + '<div class="bft-ep-bar">'
       +   '<div class="bft-ep-bar-grp">'
       +     '<label>Persoon</label>'
-      +     '<input type="text" id="bft-ep-naam" list="bft-ep-mdw" placeholder="naam" value="' + esc(e.naam) + '">'
+      +     '<input type="text" id="bft-ep-naam" list="bft-ep-mdw" placeholder="kies persoon" value="' + esc(e.naam) + '">'
       +     '<datalist id="bft-ep-mdw">' + persoonOptions() + '</datalist>'
-      +     '<input type="text" id="bft-ep-init" placeholder="init." maxlength="6" value="' + esc(e.initialen) + '" style="width:70px">'
       +   '</div>'
       +   '<div class="bft-ep-bar-grp">'
       +     '<label>Jaar</label>'
@@ -939,7 +938,6 @@
 
     function bindBar() {
       var naam = el.querySelector('#bft-ep-naam');
-      var init = el.querySelector('#bft-ep-init');
       var jaar = el.querySelector('#bft-ep-jaar');
       var wa   = el.querySelector('#bft-ep-wa');
       var wb   = el.querySelector('#bft-ep-wb');
@@ -947,10 +945,7 @@
       if (naam) naam.addEventListener('change', function () {
         doc.engineer.naam = naam.value.trim();
         doc.engineer.mdwId = mdwIdVoorNaam(doc.engineer.naam);
-        persist(); herlaadProjecten(); fireChange(); api.render();   // andere engineer → andere projecten
-      });
-      if (init) init.addEventListener('change', function () {
-        doc.engineer.initialen = init.value.trim(); persist(); herlaadProjecten(); fireChange(); api.render();
+        persist(); herlaadProjecten(); fireChange(); api.render();   // andere persoon → andere projecten
       });
 
       function applyHorizon() {
@@ -1192,7 +1187,7 @@
       // planning-bron staan (lege records aanmaken indien afwezig; bestaande ongemoeid).
       syncProjecten: function () {
         var codes = engineerCodes(doc);
-        if (!codes.length) { feedback('Vul eerst de Persoon in (naam/initialen).', true); return { toegevoegd: 0 }; }
+        if (!codes.length) { feedback('Kies eerst een persoon.', true); return { toegevoegd: 0 }; }
         var lijst = mijnProjecten(codes);
         var bestaandeBft = (ogGet('index') || []).map(function (id) { var r = ogGet('proj_' + id); return r && r.bftId; }).filter(Boolean);
         var toeg = 0;
