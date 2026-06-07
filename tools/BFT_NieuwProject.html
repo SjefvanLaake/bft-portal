@@ -58,6 +58,10 @@
     ℹ Twee opties: <strong>Opslaan</strong> = direct beschikbaar in alle tools, maar alléén in <strong>deze browser</strong> (mock-fase). <strong>Genereer code</strong> = permanent / voor iedereen, via een git-push naar <code>bft-projects.js</code>. Zodra SharePoint/Graph live is, vervangt één gedeelde store beide.
   </div>
 
+  <div style="margin-bottom:12px">
+    <button type="button" id="btnProjecten" class="bf-btn bf-btn-ghost" style="font-size:12px">📋 Projecten beheren (verwijderen)</button>
+  </div>
+
   <div class="card">
     <div class="fg fg3" style="margin-bottom:14px">
       <div class="field">
@@ -85,30 +89,28 @@
           <button type="button" id="btnKlanten" title="Klanten beheren (toevoegen/bewerken/verwijderen)"
             style="margin-left:6px;border:1px solid var(--border,#c8ccd4);background:#fff;border-radius:4px;padding:0 6px;font-size:10px;cursor:pointer;color:var(--accent2,#00509e);vertical-align:middle">🏢 Beheer</button>
         </label>
-        <input type="text" id="f_klant" list="dl_klant" placeholder="Kies of typ klant / bedrijf" oninput="updatePreview()">
-        <datalist id="dl_klant"></datalist>
+        <select id="f_klant" onchange="updatePreview()"><option value="">— kies klant —</option></select>
       </div>
     </div>
     <div class="fg fg2" style="margin-bottom:14px">
       <div class="field">
-        <label>Projectleider</label>
-        <input type="text" id="f_pl" list="dl_pl" maxlength="3" placeholder="2-3 ltr, bv. JdV" oninput="updatePreview()">
-        <datalist id="dl_pl"></datalist>
+        <label>Projectleider
+          <button type="button" id="btnPersoneel" title="Personeel beheren (toevoegen/bewerken/verwijderen)"
+            style="margin-left:6px;border:1px solid var(--border,#c8ccd4);background:#fff;border-radius:4px;padding:0 6px;font-size:10px;cursor:pointer;color:var(--accent2,#00509e);vertical-align:middle">👥 Beheer</button>
+        </label>
+        <select id="f_pl" onchange="updatePreview()"><option value="">— (geen) —</option></select>
       </div>
       <div class="field">
         <label>Engineer</label>
-        <input type="text" id="f_eng" list="dl_eng" maxlength="3" placeholder="2-3 ltr, bv. SH" oninput="updatePreview()">
-        <datalist id="dl_eng"></datalist>
+        <select id="f_eng" onchange="updatePreview()"><option value="">— (geen) —</option></select>
       </div>
       <div class="field">
         <label>WVB (werkvoorbereiding)</label>
-        <input type="text" id="f_wvb" list="dl_wvb" maxlength="3" placeholder="2-3 ltr, bv. TW" oninput="updatePreview()">
-        <datalist id="dl_wvb"></datalist>
+        <select id="f_wvb" onchange="updatePreview()"><option value="">— (geen) —</option></select>
       </div>
       <div class="field">
         <label>Verantwoordelijke <span style="color:var(--muted);font-weight:400">(beheert de planning)</span></label>
-        <input type="text" id="f_verantwoordelijke" list="dl_verantw" maxlength="3" placeholder="2-3 ltr; leeg = de Engineer" oninput="updatePreview()">
-        <datalist id="dl_verantw"></datalist>
+        <select id="f_verantwoordelijke" onchange="updatePreview()"><option value="">— leeg = de Engineer —</option></select>
       </div>
       <div class="field">
         <label>Geplande oplevering</label>
@@ -238,29 +240,47 @@ function kopieer(){
 /* Datum standaard vandaag */
 document.getElementById('f_aangemaakt').value = new Date().toISOString().slice(0,10);
 
+/* Selectopties uit de gedeelde bronnen — referentieel, geen vrije tekst meer.
+   value = naam (back-compat; F4 zet om naar id). */
+function _persOpties(rol) {
+  if (typeof bftAlleMedewerkers !== 'function') return '';
+  return bftAlleMedewerkers()
+    .filter(function (m) { return !rol || m.rollen.indexOf(rol) !== -1; })
+    .map(function (m) { return '<option value="' + m.naam + '">' + m.naam + '</option>'; }).join('');
+}
+function _klantOpties() {
+  if (typeof bftAlleKlanten !== 'function') return '';
+  return bftAlleKlanten()
+    .map(function (k) { return '<option value="' + k.naam + '">' + k.naam + (k.plaats ? ' · ' + k.plaats : '') + '</option>'; }).join('');
+}
+/* Vul een <select>, behoud de huidige keuze als die nog bestaat. */
+function _vulSelect(id, leeg, opties) {
+  var sel = document.getElementById(id); if (!sel) return;
+  var huidig = sel.value;
+  sel.innerHTML = leeg + opties;
+  sel.value = huidig;
+}
+
 /* Keuzelijsten vullen uit de gedeelde bronnen (medewerkers + klanten). */
 function vulKeuzelijsten() {
-  if (typeof bftMedewerkerOptions === 'function') {
-    document.getElementById('dl_pl').innerHTML  = bftMedewerkerOptions('Projectleider');
-    document.getElementById('dl_eng').innerHTML = bftMedewerkerOptions('Engineering');
-    document.getElementById('dl_wvb').innerHTML = bftMedewerkerOptions('WVB');
-    var dlv = document.getElementById('dl_verantw'); if (dlv) dlv.innerHTML = bftMedewerkerOptions();   // verantwoordelijke = elke medewerker
-  }
-  if (typeof bftKlantOptions === 'function') {
-    document.getElementById('dl_klant').innerHTML = bftKlantOptions();
-  }
+  _vulSelect('f_klant', '<option value="">— kies klant —</option>', _klantOpties());
+  _vulSelect('f_pl',  '<option value="">— (geen) —</option>', _persOpties('Projectleider'));
+  _vulSelect('f_eng', '<option value="">— (geen) —</option>', _persOpties('Engineering'));
+  _vulSelect('f_wvb', '<option value="">— (geen) —</option>', _persOpties('WVB'));
+  _vulSelect('f_verantwoordelijke', '<option value="">— leeg = de Engineer —</option>', _persOpties(''));
 }
 vulKeuzelijsten();
 
-/* Klanten beheren → modal uit de gedeelde klantenbron; ververs de keuzelijst na wijziging. */
-var btnK = document.getElementById('btnKlanten');
-if (btnK && window.BFTKlanten && typeof BFTKlanten.openBeheer === 'function') {
-  btnK.addEventListener('click', function () {
-    BFTKlanten.openBeheer({ onChange: vulKeuzelijsten }).then(vulKeuzelijsten);
-  });
-} else if (btnK) {
-  btnK.style.display = 'none';
+/* Beheer-modals uit de gedeelde bronnen; ververs de keuzelijsten na wijziging. */
+function _koppelBeheer(btnId, ns) {
+  var b = document.getElementById(btnId);
+  if (b && window[ns] && typeof window[ns].openBeheer === 'function') {
+    b.addEventListener('click', function () { window[ns].openBeheer({ onChange: vulKeuzelijsten }).then(vulKeuzelijsten); });
+  } else if (b) { b.style.display = 'none'; }
 }
+_koppelBeheer('btnKlanten', 'BFTKlanten');
+_koppelBeheer('btnPersoneel', 'BFTMedewerkers');
+_koppelBeheer('btnProjecten', 'BFTProjecten');
 </script>
 </body>
 </html>
