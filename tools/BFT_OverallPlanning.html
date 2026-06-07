@@ -240,6 +240,7 @@
     <button class="bf-btn bf-btn-ghost"   id="btnDisc">⚙ Disciplines</button>
     <button class="bf-btn bf-btn-ghost"   id="btnMdw" title="Medewerkers + rollen (PL/EN/WVB) beheren — gedeeld met alle tools">👥 Medewerkers</button>
     <button class="bf-btn bf-btn-ghost"   id="btnRes">↔ Week/Maand</button>
+    <button class="bf-btn bf-btn-ghost"   id="btnAlles" title="Alle projecten ineens open- of dichtklappen voor totaaloverzicht">⇕ Alles open</button>
     <button class="bf-btn bf-btn-ghost"   id="btnHeelJaar" title="Toon het hele jaar i.p.v. focus vanaf huidige week/maand −1">⟲ Heel jaar</button>
     <span class="op-jaar" title="Toon-jaar wisselen" style="display:inline-flex;align-items:center;gap:2px">
       <button class="bf-btn bf-btn-ghost" id="btnJaarPrev" title="Vorig jaar">◀</button>
@@ -300,6 +301,7 @@ var grid = BFTOverallGrid.register({
     injectFeitenStatus();      /* werkelijke status (MBCL + Bouwvolgorde) in het label */
     injectCapaciteitsRijen();
     pasKolomBreedteAan();  /* kolommen breed genoeg voor de focus (week ±8 / maand ±7) */
+    ververseAllesKnop();   /* "Alles open/dicht"-label volgt de echte staat */
   }
 });
 
@@ -748,6 +750,21 @@ document.getElementById('btnMdw').addEventListener('click', function () {
 document.getElementById('btnRes').addEventListener('click', function () {
   grid.toggleResolutie();
   scrollNaarHuidig();
+});
+
+/* Alles open/dicht — totaaloverzicht. Knoplabel volgt de huidige staat. */
+function ververseAllesKnop() {
+  var b = document.getElementById('btnAlles');
+  if (!b || !grid) return;
+  var open = grid.allesOpen();
+  b.textContent = open ? '⇕ Alles dicht' : '⇕ Alles open';
+  b.style.background  = open ? 'rgba(232,160,0,0.12)' : '';
+  b.style.color       = open ? 'var(--accent-dk,#b87d00)' : '';
+  b.style.borderColor = open ? 'rgba(232,160,0,0.45)' : '';
+}
+document.getElementById('btnAlles').addEventListener('click', function () {
+  grid.setAllExpanded(!grid.allesOpen());
+  ververseAllesKnop();
 });
 
 /* "Heel jaar"-toggle: vanafHuidig uit = heel jaar zichtbaar; aan = focus vanaf

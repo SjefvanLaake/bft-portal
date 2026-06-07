@@ -1,5 +1,5 @@
 /**
- * bft-overallgrid.js — BFTOverallGrid v0.1 (Stap G1)
+ * bft-overallgrid.js — BFTOverallGrid v0.2 (Verantw.-kolom + alles open/dicht)
  * ────────────────────────────────────────────────────────────────────────
  * Grid-tabel voor de OverAll Projecten-planning. Eigen HTML-render (geen
  * vis-timeline). Vaste metadata-kolommen links, maandkolommen rechts,
@@ -39,7 +39,7 @@
 (function (global) {
   'use strict';
 
-  var VERSION = '0.1';
+  var VERSION = '0.2';
   var SCHEMA_VERSIE = 1;
 
   var DEFAULT_DISCIPLINES = [
@@ -59,7 +59,8 @@
     { veld: 'servnr',       label: 'Service-nr' },
     { veld: 'pl',           label: 'PL' },
     { veld: 'eng',          label: 'EN' },
-    { veld: 'wvb',          label: 'WVB' }
+    { veld: 'wvb',          label: 'WVB' },
+    { veld: 'verantwoordelijke', label: 'Verantw.' }
   ];
 
   var DEFAULT_OPTS = {
@@ -146,7 +147,7 @@
   var STICKY_ACT  = 52;
   // breedte per meta-kolom (klant, omschrijving, wo, servnr, pl, eng, wvb).
   // PL/EN/WVB smal: hun waarden zijn 2-letter codes → 30/30/36px (WVB-kop = 3 ltr).
-  var STICKY_META = [90, 130, 56, 64, 30, 30, 36];
+  var STICKY_META = [90, 130, 56, 64, 30, 30, 36, 48];
   var STICKY_LEFT = [STICKY_ACT];                     // cumulatieve left-offset per meta-kolom
   STICKY_META.forEach(function (w, i) { STICKY_LEFT.push(STICKY_LEFT[i] + STICKY_META[i]); });
   var STATUS_W = 78;   // breedte van de optionele status/feiten-kolom (ná WVB)
@@ -882,6 +883,18 @@
       saveUi(); render();
     }
 
+    /* Totaaloverzicht: alle projecten ineens open- of dichtklappen (negeert de
+       accordion-modus — dit is een bewuste globale staat, geen focus-klik). */
+    function setAllExpanded(open) {
+      ui.expanded = {};
+      if (open) doc.projecten.forEach(function (p) { ui.expanded[p.id] = true; });
+      saveUi(); render();
+    }
+    function allesOpen() {
+      return doc.projecten.length > 0
+        && doc.projecten.every(function (p) { return !!ui.expanded[p.id]; });
+    }
+
     function addProject(data) {
       var p = nieuwProject(data);
       doc.projecten.push(p);
@@ -992,6 +1005,8 @@
       setBezetting: setBezetting,
       openBezetting: openBezetting,
       toggleExpand: toggleExpand,
+      setAllExpanded: setAllExpanded,
+      allesOpen: allesOpen,
       openDisciplineManager: openDisciplineMgr,
       setResolutie: setResolutie,
       getResolutie: getResolutie,
