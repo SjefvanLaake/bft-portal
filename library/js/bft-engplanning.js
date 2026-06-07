@@ -201,22 +201,6 @@
     }
   }
 
-  // Medewerker-datalist voor PL/Eng/WVB (optioneel gefilterd op discipline).
-  function medewerkerOptions(discipline) {
-    if (typeof global.bftMedewerkerOptions === 'function') {
-      try { return global.bftMedewerkerOptions(discipline); } catch (e) {}
-    }
-    return '';
-  }
-
-  // Klant-datalist uit bft-klanten; leeg indien module afwezig.
-  function klantOptions() {
-    if (typeof global.bftKlantOptions === 'function') {
-      try { return global.bftKlantOptions(); } catch (e) {}
-    }
-    return '';
-  }
-
   // Persoon-codes (naam + initialen, lowercased) voor matching op project.verantwoordelijke.
   function engineerCodes(doc) {
     return [doc.engineer.naam, doc.engineer.initialen]
@@ -516,6 +500,7 @@
       + '.bft-ep-btn:hover{background:#f1f3f6;border-color:#9ca3ad;}'
       + '.bft-ep-btn.primary{background:#e8a000;color:#000;border-color:#e8a000;}'
       + '.bft-ep-btn.primary:hover{background:#d49000;border-color:#d49000;}'
+      + '.bft-ep-btn[disabled]{opacity:.4;cursor:not-allowed;}'
       // discipline-manager
       + '.bft-ep-dm-body{padding:24px 30px;flex:1;overflow:auto;display:flex;flex-direction:column;gap:12px;}'
       + '.bft-ep-dm-list{display:flex;flex-direction:column;gap:8px;}'
@@ -533,46 +518,35 @@
 
   // Opent formulier-modal voor een nieuw project. Resolve(data) of resolve(null).
   // codes = engineer-codes; de project-keuzelijst toont alleen projecten van deze engineer.
+  // Zuivere kiezer: kies één aan deze persoon toegewezen project dat nog niet in
+  // de planning staat. Géén vrije invoer meer — nieuwe projecten maak je aan in
+  // "Nieuw project" (bron). De metadata komt volledig uit de projectenlijst.
   function openProjectForm(codes) {
     injectModalCss();
     codes = codes || [];
     return new Promise(function (resolve) {
       var ov = document.createElement('div');
       ov.className = 'bft-ep-ov';
-      var metaInputs = META_KOLOMMEN.map(function (k) {
-        var list = '';
-        if (k.veld === 'klant') list = ' list="bft-ep-dl-klant"';
-        else if (k.veld === 'pl') list = ' list="bft-ep-dl-pl"';
-        else if (k.veld === 'eng') list = ' list="bft-ep-dl-eng"';
-        else if (k.veld === 'wvb') list = ' list="bft-ep-dl-wvb"';
-        var full = (k.veld === 'omschrijving') ? ' full' : '';
-        return '<div class="bft-ep-field' + full + '">'
-          + '<label>' + esc(k.label) + '</label>'
-          + '<input type="text" data-veld="' + k.veld + '"' + list + '>'
-          + '</div>';
-      }).join('');
       ov.innerHTML = ''
         + '<div class="bft-ep-modal" role="dialog" aria-modal="true">'
-        +   '<div class="bft-ep-top"><span class="ic">+</span><span class="bft-ep-ttl">Project toevoegen</span></div>'
+        +   '<div class="bft-ep-top"><span class="ic">+</span><span class="bft-ep-ttl">Project in de planning zetten</span></div>'
         +   '<div class="bft-ep-mbody">'
-        +     '<div class="bft-ep-field full"><label>Project van deze persoon (vult de velden)</label>'
+        +     '<div class="bft-ep-field full"><label>Kies een project van deze persoon</label>'
         +       '<select data-veld="__pick">' + projectOptionsVoor(codes, '') + '</select></div>'
-        +     metaInputs
+        +     '<p style="margin:8px 2px 0;font-family:var(--mono,monospace);font-size:11px;color:var(--muted,#8a909c);line-height:1.5">'
+        +       'Alleen aan deze persoon toegewezen projecten die nog niet in de planning staan. '
+        +       'Nieuwe projecten maak je aan in “Nieuw project”; toewijzen via de verantwoordelijke.</p>'
         +   '</div>'
         +   '<div class="bft-ep-actions">'
         +     '<button class="bft-ep-btn" data-act="annuleer">Annuleren</button>'
-        +     '<button class="bft-ep-btn primary" data-act="ok">Toevoegen</button>'
+        +     '<button class="bft-ep-btn primary" data-act="ok" disabled>Toevoegen</button>'
         +   '</div>'
-        +   '<datalist id="bft-ep-dl-klant">' + klantOptions() + '</datalist>'
-        +   '<datalist id="bft-ep-dl-pl">' + medewerkerOptions('Projectleider') + '</datalist>'
-        +   '<datalist id="bft-ep-dl-eng">' + medewerkerOptions('Engineering') + '</datalist>'
-        +   '<datalist id="bft-ep-dl-wvb">' + medewerkerOptions('WVB') + '</datalist>'
         + '</div>';
       document.body.appendChild(ov);
       requestAnimationFrame(function () { ov.classList.add('open'); });
 
-      var projectId = '';
-      function veldInput(v) { return ov.querySelector('input[data-veld="' + v + '"]'); }
+      var pick = ov.querySelector('select[data-veld="__pick"]');
+      var okBtn = ov.querySelector('[data-act="ok"]');
       function close(val) {
         ov.classList.remove('open');
         setTimeout(function () { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 150);
@@ -582,19 +556,14 @@
       function onKey(e) { if (e.key === 'Escape') close(null); }
       document.addEventListener('keydown', onKey);
 
-      ov.querySelector('select[data-veld="__pick"]').addEventListener('change', function (e) {
-        var meta = projectNaarMeta(e.target.value);
-        projectId = meta ? meta.projectId : '';
-        if (meta) META_KOLOMMEN.forEach(function (k) { var inp = veldInput(k.veld); if (inp) inp.value = meta[k.veld] || ''; });
-      });
+      pick.addEventListener('change', function () { okBtn.disabled = !pick.value; });
       ov.addEventListener('click', function (e) { if (e.target === ov) close(null); });
       ov.querySelector('[data-act="annuleer"]').addEventListener('click', function () { close(null); });
-      ov.querySelector('[data-act="ok"]').addEventListener('click', function () {
-        var data = { projectId: projectId };
-        META_KOLOMMEN.forEach(function (k) { var inp = veldInput(k.veld); data[k.veld] = inp ? inp.value.trim() : ''; });
-        close(data);
+      okBtn.addEventListener('click', function () {
+        if (!pick.value) return;                       // niets gekozen → niets doen
+        close(projectNaarMeta(pick.value) || null);     // metadata volledig uit de bron
       });
-      setTimeout(function () { var f = veldInput('klant'); if (f) f.focus(); }, 60);
+      setTimeout(function () { pick.focus(); }, 60);
     });
   }
 
