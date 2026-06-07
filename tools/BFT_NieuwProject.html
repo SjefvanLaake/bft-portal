@@ -81,7 +81,10 @@
         <input type="text" id="f_naam" maxlength="14" placeholder="bijv. BFMR2000EK (max 14)" oninput="updatePreview()">
       </div>
       <div class="field">
-        <label>Klant <span class="req">*</span></label>
+        <label>Klant <span class="req">*</span>
+          <button type="button" id="btnKlanten" title="Klanten beheren (toevoegen/bewerken/verwijderen)"
+            style="margin-left:6px;border:1px solid var(--border,#c8ccd4);background:#fff;border-radius:4px;padding:0 6px;font-size:10px;cursor:pointer;color:var(--accent2,#00509e);vertical-align:middle">🏢 Beheer</button>
+        </label>
         <input type="text" id="f_klant" list="dl_klant" placeholder="Kies of typ klant / bedrijf" oninput="updatePreview()">
         <datalist id="dl_klant"></datalist>
       </div>
@@ -235,15 +238,28 @@ function kopieer(){
 /* Datum standaard vandaag */
 document.getElementById('f_aangemaakt').value = new Date().toISOString().slice(0,10);
 
-/* Keuzelijsten vullen uit de gedeelde medewerkerslijst (gefilterd op discipline) */
-if (typeof bftMedewerkerOptions === 'function') {
-  document.getElementById('dl_pl').innerHTML  = bftMedewerkerOptions('Projectleider');
-  document.getElementById('dl_eng').innerHTML = bftMedewerkerOptions('Engineering');
-  document.getElementById('dl_wvb').innerHTML = bftMedewerkerOptions('WVB');
-  var dlv = document.getElementById('dl_verantw'); if (dlv) dlv.innerHTML = bftMedewerkerOptions();   // verantwoordelijke = elke medewerker
+/* Keuzelijsten vullen uit de gedeelde bronnen (medewerkers + klanten). */
+function vulKeuzelijsten() {
+  if (typeof bftMedewerkerOptions === 'function') {
+    document.getElementById('dl_pl').innerHTML  = bftMedewerkerOptions('Projectleider');
+    document.getElementById('dl_eng').innerHTML = bftMedewerkerOptions('Engineering');
+    document.getElementById('dl_wvb').innerHTML = bftMedewerkerOptions('WVB');
+    var dlv = document.getElementById('dl_verantw'); if (dlv) dlv.innerHTML = bftMedewerkerOptions();   // verantwoordelijke = elke medewerker
+  }
+  if (typeof bftKlantOptions === 'function') {
+    document.getElementById('dl_klant').innerHTML = bftKlantOptions();
+  }
 }
-if (typeof bftKlantOptions === 'function') {
-  document.getElementById('dl_klant').innerHTML = bftKlantOptions();
+vulKeuzelijsten();
+
+/* Klanten beheren → modal uit de gedeelde klantenbron; ververs de keuzelijst na wijziging. */
+var btnK = document.getElementById('btnKlanten');
+if (btnK && window.BFTKlanten && typeof BFTKlanten.openBeheer === 'function') {
+  btnK.addEventListener('click', function () {
+    BFTKlanten.openBeheer({ onChange: vulKeuzelijsten }).then(vulKeuzelijsten);
+  });
+} else if (btnK) {
+  btnK.style.display = 'none';
 }
 </script>
 </body>
