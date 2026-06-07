@@ -1,5 +1,5 @@
 /**
- * bft-engplanning.js — BFTEngPlanning v0.29 (vakantie → gedeelde bron bft_v2_vakantie, per persoon+jaar)
+ * bft-engplanning.js — BFTEngPlanning v0.31 (vakantie → gedeelde bron + dedupe project-toewijzing)
  * ────────────────────────────────────────────────────────────────────────
  * Personeelsplanning: planning PER PERSOON op de gedeelde bron. De gekozen
  * persoon = filter op project.verantwoordelijke (de beheerder/planner, los van
@@ -56,7 +56,7 @@
 (function (global) {
   'use strict';
 
-  var VERSION = '0.29';
+  var VERSION = '0.31';
   var SCHEMA_VERSIE = 1;
 
   // Vaste legenda — kleuren 1-op-1 uit het directief-Excel.
@@ -266,11 +266,14 @@
       });
     } catch (e) { return []; }
   }
-  // Project-<select>-opties — alleen de projecten van deze persoon.
+  // Project-<select>-opties — alleen de projecten van deze persoon die nog NIET
+  // in de planning staan. Een project kan maar één keer worden toegevoegd, dus
+  // verdwijnt het uit de lijst zodra het gebruikt is.
   function projectOptionsVoor(codes, gekozenId) {
-    var lijst = mijnProjecten(codes);
     if (!codes.length) return '<option value="">— vul eerst de persoon in —</option>';
-    if (!lijst.length) return '<option value="">— geen projecten voor deze persoon —</option>';
+    var planned = plannedBftIds();
+    var lijst = mijnProjecten(codes).filter(function (p) { return planned.indexOf(p.id) === -1; });
+    if (!lijst.length) return '<option value="">— geen (nieuwe) projecten voor deze persoon —</option>';
     return '<option value="">— Kies project —</option>' + lijst.map(function (p) {
       return '<option value="' + esc(p.id) + '"' + (p.id === gekozenId ? ' selected' : '') + '>'
         + esc((p.projectnr || '') + ' · ' + (p.naam || '')) + '</option>';
@@ -301,6 +304,12 @@
   function ogGet(k) { try { var r = localStorage.getItem(OG_PREFIX + k); return r === null ? null : JSON.parse(r); } catch (e) { return null; } }
   function ogSet(k, v) { try { localStorage.setItem(OG_PREFIX + k, JSON.stringify(v)); return true; } catch (e) { return false; } }
   function ogDel(k) { try { localStorage.removeItem(OG_PREFIX + k); } catch (e) {} }
+
+  // bftId's die AL in de gedeelde planning-bron staan — basis voor dedupe.
+  // Eén bronproject = één planning-record; voorkomt dubbele toewijzing.
+  function plannedBftIds() {
+    return (ogGet('index') || []).map(function (id) { var r = ogGet('proj_' + id); return r && r.bftId; }).filter(Boolean);
+  }
 
   // Losse weken [{week,fase}] → OverallPlanning-reeksen [{startWeek,eindWeek,jaar,notitie}].
   // Fase-bewust: een reeks breekt af bij een week-gat ÉN bij een fase-wisseling, zodat
@@ -1188,6 +1197,12 @@
       // (pl/eng/wvb) komen uit de projectenlijst, niet geforceerd.
       addProject: function (data) {
         data = data || {};
+        // Dedupe: een bronproject kan maar ÉÉN planning-record hebben. Staat de
+        // bftId al in de bron, dan niet nóg een keer toevoegen.
+        if (data.projectId && plannedBftIds().indexOf(data.projectId) !== -1) {
+          feedback('Dit project staat al in de planning — een project kan maar één keer worden toegevoegd.', true);
+          return null;
+        }
         var p = nieuwProject(data);
         persistProjectNaarBron(p);
         herlaadProjecten(); fireChange(); api.render();
@@ -1205,7 +1220,7 @@
         var codes = engineerCodes(doc);
         if (!codes.length) { feedback('Kies eerst een persoon.', true); return { toegevoegd: 0 }; }
         var lijst = mijnProjecten(codes);
-        var bestaandeBft = (ogGet('index') || []).map(function (id) { var r = ogGet('proj_' + id); return r && r.bftId; }).filter(Boolean);
+        var bestaandeBft = plannedBftIds();
         var toeg = 0;
         lijst.forEach(function (bp) {
           if (bestaandeBft.indexOf(bp.id) !== -1) return;          // al in de planning
