@@ -1,5 +1,5 @@
 /**
- * bft-engplanning.js — BFTEngPlanning v0.28 (persoon = echte <select>; datalist-filterval weg)
+ * bft-engplanning.js — BFTEngPlanning v0.29 (vakantie → gedeelde bron bft_v2_vakantie, per persoon+jaar)
  * ────────────────────────────────────────────────────────────────────────
  * Personeelsplanning: planning PER PERSOON op de gedeelde bron. De gekozen
  * persoon = filter op project.verantwoordelijke (de beheerder/planner, los van
@@ -56,7 +56,7 @@
 (function (global) {
   'use strict';
 
-  var VERSION = '0.28';
+  var VERSION = '0.29';
   var SCHEMA_VERSIE = 1;
 
   // Vaste legenda — kleuren 1-op-1 uit het directief-Excel.
@@ -171,12 +171,21 @@
     for (var i = 0; i < arr.length; i++) { if (Number(arr[i].week) === week) return arr[i]; }
     return null;
   }
-  // Vakantie-entry voor een week (engineer-niveau) — of null.
+  // Stabiele persoon-id van de huidige lane (voor de gedeelde vakantie-bron).
+  // Prefereer de bewaarde mdwId; val terug op naam→id.
+  function huidigePersoonId(doc) {
+    var e = doc && doc.engineer;
+    if (e && e.mdwId) return e.mdwId;
+    if (typeof bftMedewerkerIdVoorNaam === 'function') return bftMedewerkerIdVoorNaam(e && e.naam) || '';
+    return '';
+  }
+  // Vakantie-entry voor een week (persoon-niveau) uit de GEDEELDE bron
+  // (bft_v2_vakantie), gesleuteld op persoon-id + horizon-jaar — of null.
   function vakEntry(doc, week) {
-    week = Number(week);
-    var a = doc.vakantie || [];
-    for (var i = 0; i < a.length; i++) { if (Number(a[i].week) === week) return a[i]; }
-    return null;
+    if (typeof bftVakantieEntry !== 'function') return null;
+    var id = huidigePersoonId(doc);
+    if (!id) return null;
+    return bftVakantieEntry(id, doc.horizon.jaar, week);
   }
   // Style een vakantie-cel (in de band-rij) volgens entry.
   function styleVakDom(td, entry) {
@@ -841,6 +850,21 @@
     // De startWeek/eindWeek-prefs blijven; alleen het jaar wordt gelijkgetrokken.
     doc.horizon.jaar = (new Date()).getFullYear();
 
+    // Eenmalige, additieve migratie: oude lane-vakantie (jaarloos, per-browser) →
+    // gedeelde bron bft_v2_vakantie onder de huidige persoon + huidig jaar. De
+    // lane-array blijft intact (rollback-veilig); markeer met _vakGemigreerd.
+    (function () {
+      if (doc._vakGemigreerd) return;
+      var oud = Array.isArray(doc.vakantie) ? doc.vakantie : [];
+      var id = huidigePersoonId(doc);
+      if (oud.length && id && typeof bftVakantieZet === 'function'
+          && typeof bftVakantieVoor === 'function' && !bftVakantieVoor(id, doc.horizon.jaar).length) {
+        oud.forEach(function (e) { bftVakantieZet(id, doc.horizon.jaar, e.week, !!e.half); });
+      }
+      doc._vakGemigreerd = true;
+      store.set(opts.storeKey, doc);
+    })();
+
     // Projecten komen uit de gedeelde bron (OverallPlanning-store), gefilterd op de
     // engineer en het horizon-jaar (reeksen→per-week). Read+write via de bron (S2).
     function herlaadProjecten() {
@@ -988,17 +1012,18 @@
       if (!drag) return;
       var wasVak = drag.vak, pid = drag.pid;
       drag = null;
-      if (wasVak) { persist(); fireChange(); api.render(); }     // vakantie = engineer-prefs (lane)
+      if (wasVak) { fireChange(); api.render(); }                // vakantie → gedeelde bron (al weggeschreven)
       else { persistProjectNaarBron(projectById(pid)); fireChange(); }   // schilderwerk → gedeelde bron
     }
 
-    // ── vrij/vakantie-band (engineer-niveau) ─────────────────────────────────
+    // ── vrij/vakantie-band (persoon-niveau, GEDEELDE bron bft_v2_vakantie) ────
     function zetVak(week, half) {
-      var e = vakEntry(doc, week);
-      if (e) { e.half = !!half; } else { doc.vakantie.push({ week: Number(week), half: !!half }); }
+      var id = huidigePersoonId(doc); if (!id || typeof bftVakantieZet !== 'function') return;
+      bftVakantieZet(id, doc.horizon.jaar, week, !!half);
     }
     function wisVak(week) {
-      doc.vakantie = (doc.vakantie || []).filter(function (x) { return Number(x.week) !== Number(week); });
+      var id = huidigePersoonId(doc); if (!id || typeof bftVakantieWis !== 'function') return;
+      bftVakantieWis(id, doc.horizon.jaar, week);
     }
     function schilderVakCel(td) {
       if (!drag || !drag.vak) return;
