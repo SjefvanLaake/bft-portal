@@ -159,6 +159,14 @@
     tr.cap-rij td { font-family: var(--mono); font-size: 10px; font-weight: 700; text-align: center; min-height: 30px; }
     tr.cap-rij .cap-naam { text-align: left; padding: 4px 8px; color: var(--muted); font-size: 10px; }
 
+    /* ── Groeperen op verantwoordelijke: kop-rij + per-persoon vakantie-rij ── */
+    tr.vw-groep td { background: var(--accent-dk,#00509e); color:#fff; padding: 4px 16px;
+      font-family: var(--mono); font-size: 11px; letter-spacing: .04em; border-top: 2px solid #fff; }
+    tr.vw-vak td { background:#fff5f5; padding: 0; height: 20px; }
+    tr.vw-vak .vw-vak-cel { min-width:46px; }
+    tr.vw-vak .vw-vak-cel.vol  { background:#FF0000; }
+    tr.vw-vak .vw-vak-cel.half { background: linear-gradient(135deg,#FF0000 0 50%,#fff5f5 50% 100%); }
+
     /* ── Feitenlaag: werkelijke status (MBCL + Bouwvolgorde) in een eigen kolom ──
        Feiten zijn scalair-nu (geen tijd-as); ze staan in de gereserveerde
        Status-kolom (.og-td-status, ná WVB, in het bevroren blok) — NIET in de
@@ -242,6 +250,7 @@
     <button class="bf-btn bf-btn-ghost"   id="btnMdw" title="Medewerkers + rollen (PL/EN/WVB) beheren — gedeeld met alle tools">👥 Medewerkers</button>
     <button class="bf-btn bf-btn-ghost"   id="btnRes">↔ Week/Maand</button>
     <button class="bf-btn bf-btn-ghost"   id="btnAlles" title="Alle projecten ineens open- of dichtklappen voor totaaloverzicht">⇕ Alles open</button>
+    <button class="bf-btn bf-btn-ghost"   id="btnGroep" title="Groepeer projecten per verantwoordelijke, met per persoon een vakantie-rij (rode weken)">👤 Groepeer op verantwoordelijke</button>
     <button class="bf-btn bf-btn-ghost"   id="btnHeelJaar" title="Toon het hele jaar i.p.v. focus vanaf huidige week/maand −1">⟲ Heel jaar</button>
     <span class="op-jaar" title="Toon-jaar wisselen" style="display:inline-flex;align-items:center;gap:2px">
       <button class="bf-btn bf-btn-ghost" id="btnJaarPrev" title="Vorig jaar">◀</button>
@@ -303,8 +312,10 @@ var grid = BFTOverallGrid.register({
     injectFeitenStatus();      /* werkelijke status (MBCL + Bouwvolgorde) in het label */
     injectCapaciteitsRijen();
     injectVakantieBand();  /* afwezigheids-band (per persoon, gedeelde bron) */
+    injectVerantwGroepen(); /* groepskoppen + per-persoon vakantie-rijen (indien gegroepeerd) */
     pasKolomBreedteAan();  /* kolommen breed genoeg voor de focus (week ±8 / maand ±7) */
     ververseAllesKnop();   /* "Alles open/dicht"-label volgt de echte staat */
+    ververseGroepKnop();   /* groepeer-knop volgt de staat */
   }
 });
 
@@ -728,6 +739,93 @@ function injectVakantieBand() {
   tbody.insertBefore(sep, tbody.firstChild);
 }
 
+/* ── Groeperen op verantwoordelijke ──────────────────────────────────────
+   De engine sorteert de projecten op verantwoordelijke (aaneengesloten).
+   Hier injecteren we per groep een kop-rij + een per-persoon vakantie-rij
+   (rode weken, net als de Personeelsplanning). Zo zie je per planner z'n
+   werklast én beschikbaarheid in één blok. */
+function ververseGroepKnop() {
+  var b = document.getElementById('btnGroep'); if (!b || !grid) return;
+  var aan = grid.getGroepeerVerantw();
+  b.style.background  = aan ? 'rgba(0,80,158,0.10)' : '';
+  b.style.color       = aan ? 'var(--accent2,#00509e)' : '';
+  b.style.borderColor = aan ? 'rgba(0,80,158,0.4)' : '';
+}
+function injectVerantwGroepen() {
+  var tabel = document.querySelector('table.og-tbl');
+  if (!tabel) return;
+  tabel.querySelectorAll('tr.vw-groep, tr.vw-vak').forEach(function (r) { r.remove(); });
+  if (!grid.getGroepeerVerantw() || typeof bftVakantieVoor !== 'function') return;
+
+  var doc = grid.getState();
+  var ths = Array.prototype.slice.call(tabel.querySelectorAll('thead th'));
+  var tijdThs = ths.filter(function (th) { return th.classList.contains('og-th-week') || th.classList.contains('og-th-maand'); });
+  var hdrAct = tabel.querySelector('thead th.og-th-act');
+  var hdrMeta = Array.prototype.slice.call(tabel.querySelectorAll('thead th.og-th-meta'));
+  var maanden = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+  var projById = {}; doc.projecten.forEach(function (p) { projById[p.id] = p; });
+
+  /* Per-persoon vakantie-rij (rode weekcellen). */
+  function vakRijVoor(naam) {
+    var id = naam ? bftMedewerkerIdVoorNaam(naam) : '';
+    var perWeek = {};   // week → half?
+    (id ? bftVakantieVoor(id, doc.jaar) : []).forEach(function (e) { perWeek[e.week] = e.half; });
+    var tr = document.createElement('tr'); tr.className = 'vw-vak';
+    var tdAct = document.createElement('td');
+    tdAct.style.cssText = 'position:sticky;left:0;z-index:2;background:#fff5f5;min-width:' + (hdrAct ? hdrAct.style.minWidth : '52px');
+    tr.appendChild(tdAct);
+    hdrMeta.forEach(function (hth, i) {
+      var td = document.createElement('td');
+      if (i === 0) { td.textContent = 'Vrij/vakantie'; }
+      td.style.cssText = 'position:sticky;left:' + hth.style.left + ';z-index:2;background:#fff5f5;min-width:' + hth.style.minWidth + ';color:#b00020;font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;';
+      tr.appendChild(td);
+    });
+    tijdThs.forEach(function (th) {
+      var weken = [];
+      if (th.classList.contains('og-th-week')) {
+        weken = [parseInt(th.textContent.trim().replace('w',''), 10)];
+      } else {
+        var mi = maanden.findIndex(function (m) { return th.textContent.trim().toLowerCase().startsWith(m); });
+        Object.keys(perWeek).forEach(function (w) { if (maandVanWeekLocaal(doc.jaar, Number(w)) === mi) weken.push(Number(w)); });
+      }
+      var vol = false, half = false;
+      weken.forEach(function (w) { if (w in perWeek) { if (perWeek[w]) half = true; else vol = true; } });
+      var td = document.createElement('td');
+      td.className = 'vw-vak-cel' + (th.classList.contains('og-th-huidig') ? ' og-td-huidig' : '');
+      if (vol) td.classList.add('vol'); else if (half) td.classList.add('half');
+      tr.appendChild(td);
+    });
+    return tr;
+  }
+  /* Groepskop-rij (volle breedte, sticky label). */
+  function kopRij(naam, aantal) {
+    var tr = document.createElement('tr'); tr.className = 'vw-groep';
+    var td = document.createElement('td'); td.colSpan = ths.length;
+    var span = document.createElement('span');
+    span.style.cssText = 'position:sticky;left:8px;display:inline-block;font-weight:700;';
+    span.textContent = '👤 ' + (naam || '— niet toegewezen —') + '  ·  ' + aantal + ' project' + (aantal !== 1 ? 'en' : '');
+    td.appendChild(span); tr.appendChild(td);
+    return tr;
+  }
+
+  var rows = Array.prototype.slice.call(tabel.querySelectorAll('tbody tr.og-row-project'));
+  /* tel projecten per verantwoordelijke (voor het kop-label) */
+  var telPer = {};
+  rows.forEach(function (tr) { var p = projById[tr.dataset.pid || tr.dataset.id]; var n = (p && p.verantwoordelijke || '').trim(); telPer[n] = (telPer[n] || 0) + 1; });
+
+  var huidige = null;
+  rows.forEach(function (tr) {
+    var p = projById[tr.dataset.pid || tr.dataset.id];
+    var naam = (p && p.verantwoordelijke || '').trim();
+    var key = naam.toLowerCase();
+    if (key !== huidige) {
+      huidige = key;
+      tr.parentNode.insertBefore(kopRij(naam, telPer[naam] || 0), tr);
+      tr.parentNode.insertBefore(vakRijVoor(naam), tr);
+    }
+  });
+}
+
 /* Koppel een planning-project aan zijn BFT-project-id. Voorkeur: het aparte
    bftId-veld. Back-compat: oude records droegen de bftId nog in servnr. Laatste
    redmiddel: match op WO-nr = projectnr. (servnr toont nu het 6-cijferige
@@ -871,6 +969,12 @@ function ververseAllesKnop() {
 document.getElementById('btnAlles').addEventListener('click', function () {
   grid.setAllExpanded(!grid.allesOpen());
   ververseAllesKnop();
+});
+
+/* Groeperen op verantwoordelijke — engine sorteert + re-rendert; onRender injecteert de groepen. */
+document.getElementById('btnGroep').addEventListener('click', function () {
+  grid.setGroepeerVerantw(!grid.getGroepeerVerantw());
+  ververseGroepKnop();
 });
 
 /* Afwezigheids-band — 3 standen: uit ▸ verantwoordelijken ▸ heel personeel. */
@@ -1075,7 +1179,7 @@ scrollNaarHuidig();
     if (!e.key) return;
     /* Vakantie wijzigt in een andere tab (Personeelsplanning) → alleen de band
        herinjecteren, geen reload (behoudt de gekozen afwezigheids-modus). */
-    if (e.key === 'bft_v2_vakantie') { injectVakantieBand(); return; }
+    if (e.key === 'bft_v2_vakantie') { injectVakantieBand(); injectVerantwGroepen(); return; }
     if (e.key.indexOf('bft_overallplanning_') !== 0) return;
     clearTimeout(t);
     t = setTimeout(function () { location.reload(); }, 400);

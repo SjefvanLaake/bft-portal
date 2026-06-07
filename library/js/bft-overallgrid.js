@@ -1,5 +1,5 @@
 /**
- * bft-overallgrid.js — BFTOverallGrid v0.2 (Verantw.-kolom + alles open/dicht)
+ * bft-overallgrid.js — BFTOverallGrid v0.3 (groeperen op verantwoordelijke)
  * ────────────────────────────────────────────────────────────────────────
  * Grid-tabel voor de OverAll Projecten-planning. Eigen HTML-render (geen
  * vis-timeline). Vaste metadata-kolommen links, maandkolommen rechts,
@@ -39,7 +39,7 @@
 (function (global) {
   'use strict';
 
-  var VERSION = '0.2';
+  var VERSION = '0.3';
   var SCHEMA_VERSIE = 1;
 
   var DEFAULT_DISCIPLINES = [
@@ -698,6 +698,18 @@
               || (f.servnr && p.servnr === f.servnr);
         });
       }
+      /* Optioneel groeperen op verantwoordelijke: sorteer zodat dezelfde
+         verantwoordelijke aaneengesloten staat. De tool injecteert dan per
+         groep een kop + per-persoon vakantie-rij. Niet-toegewezen onderaan. */
+      if (ui.groepeerVerantw && !opts.filterProject) {
+        zichtbaar = zichtbaar.slice().sort(function (a, b) {
+          var va = (a.verantwoordelijke || '').trim().toLowerCase();
+          var vb = (b.verantwoordelijke || '').trim().toLowerCase();
+          if (!va && vb) return 1;
+          if (va && !vb) return -1;
+          return va < vb ? -1 : (va > vb ? 1 : 0);
+        });
+      }
 
       if (!zichtbaar.length) {
         var span = 1 + META_KOLOMMEN.length + (opts.statusKolom ? 1 : 0) + kol.length;
@@ -870,6 +882,10 @@
     function getResolutie() { return ui.resolutie; }
     function toggleResolutie() { setResolutie(ui.resolutie === 'week' ? 'maand' : 'week'); }
 
+    /* Groeperen op verantwoordelijke (sorteert; de tool injecteert koppen + vakantie-rijen). */
+    function setGroepeerVerantw(b) { ui.groepeerVerantw = !!b; saveUi(); render(); }
+    function getGroepeerVerantw() { return !!ui.groepeerVerantw; }
+
     function toggleExpand(id) {
       if (opts.accordion) {
         /* Sluit alle andere projecten — één render */
@@ -1011,6 +1027,8 @@
       setResolutie: setResolutie,
       getResolutie: getResolutie,
       toggleResolutie: toggleResolutie,
+      setGroepeerVerantw: setGroepeerVerantw,
+      getGroepeerVerantw: getGroepeerVerantw,
       render: render,
       exportJSON: exportJSON,
       importJSON: importJSON,
