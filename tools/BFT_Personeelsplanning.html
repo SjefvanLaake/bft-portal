@@ -85,6 +85,14 @@
     .bft-ep-table td.bft-ep-sum { min-width: 52px; padding: 0; position: relative; height: 22px; }
     .bft-ep-segs { position: absolute; inset: 0; display: flex; flex-direction: column; }
     .bft-ep-seg { flex: 1 1 0; }
+    /* Opleverdatum-deadline: rode lijn in de weekcel + datumlabel (zoals OverallPlanning) */
+    .bft-ep-table td.bft-ep-sum.bft-ep-deadline { border-right: 3px solid var(--danger, #d63030) !important; }
+    .bft-ep-table td.bft-ep-sum.bft-ep-deadline::after {
+      content: attr(data-dl); position: absolute; top: 0; right: 3px; z-index: 1;
+      font-family: var(--mono, monospace); font-size: 8px; font-weight: 700;
+      color: var(--danger, #d63030); white-space: nowrap; pointer-events: none;
+      text-shadow: 0 0 2px #fff, 0 0 2px #fff;
+    }
     /* Discipline-subrij: label in meta-kolom 0 */
     .bft-ep-table tr.bft-ep-drow > td { background: #fcfcfd; }
     .bft-ep-disclabel { white-space: nowrap; color: var(--text2, #3d4558); font-weight: 500; }
@@ -143,7 +151,7 @@
       <p id="hdrSub">Per persoon · week-planning · disciplines</p>
     </div>
   </div>
-  <span class="bf-badge">v0.31</span>
+  <span class="bf-badge">v0.32</span>
 </header>
 
 <div class="ep-page">

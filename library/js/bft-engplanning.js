@@ -1,5 +1,5 @@
 /**
- * bft-engplanning.js — BFTEngPlanning v0.31 (vakantie → gedeelde bron + dedupe project-toewijzing)
+ * bft-engplanning.js — BFTEngPlanning v0.32 (opleverdatum-deadline-marker in het weekgrid)
  * ────────────────────────────────────────────────────────────────────────
  * Personeelsplanning: planning PER PERSOON op de gedeelde bron. De gekozen
  * persoon = filter op project.verantwoordelijke (de beheerder/planner, los van
@@ -56,7 +56,7 @@
 (function (global) {
   'use strict';
 
-  var VERSION = '0.31';
+  var VERSION = '0.32';
   var SCHEMA_VERSIE = 1;
 
   // Vaste legenda — kleuren 1-op-1 uit het directief-Excel.
@@ -156,6 +156,22 @@
     t.setUTCDate(t.getUTCDate() + 4 - day);
     var ys = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
     return { week: Math.ceil((((t - ys) / 86400000) + 1) / 7), jaar: t.getUTCFullYear() };
+  }
+
+  // ISO-week + jaar van een datum-string (yyyy-mm-dd) — of null.
+  function isoWeekVanDatum(s) {
+    var d = new Date(s); if (isNaN(d.getTime())) return null;
+    var t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    var day = t.getUTCDay() || 7;
+    t.setUTCDate(t.getUTCDate() + 4 - day);
+    var ys = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+    return { week: Math.ceil((((t - ys) / 86400000) + 1) / 7), jaar: t.getUTCFullYear() };
+  }
+  // "2026-06-16" → "16 jun".
+  function fmtOplever(s) {
+    var d = new Date(s); if (isNaN(d.getTime())) return '';
+    var mnd = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+    return d.getDate() + ' ' + mnd[d.getMonth()];
   }
 
   // Weken-array voor een discipline binnen een project (altijd een array).
@@ -695,6 +711,17 @@
     var nu = isoWeekNu();
     var huidigW = (doc.horizon.jaar === nu.jaar) ? nu.week : -1;   // huidige week markeren (alleen in huidig jaar)
     function hk(w) { return (w === huidigW) ? ' huidig' : ''; }
+    // Opleverdatum-deadline uit de bron (alleen in het getoonde jaar) → {week,label,datum} of null.
+    function opleverInfo(p) {
+      if (!p || !p.projectId || typeof global.bftAlleProjecten !== 'function') return null;
+      try {
+        var bp = global.bftAlleProjecten().filter(function (x) { return x.id === p.projectId; })[0];
+        if (!bp || !bp.oplevering) return null;
+        var iso = isoWeekVanDatum(bp.oplevering);
+        if (!iso || iso.jaar !== doc.horizon.jaar) return null;
+        return { week: iso.week, label: fmtOplever(bp.oplevering), datum: bp.oplevering };
+      } catch (e) { return null; }
+    }
 
     var head = '<tr><th class="bft-ep-act"></th>';
     META_KOLOMMEN.forEach(function (k) { head += '<th class="bft-ep-meta">' + esc(k.label) + '</th>'; });
@@ -729,15 +756,20 @@
           +   '<select class="bft-ep-resp" data-pid="' + esc(p.projectId) + '" title="Verantwoordelijke — wie beheert/plant dit project">' + verantwSelectHtml(projectVerantwoordelijke(p.projectId, null)) + '</select>'
           + '</td>';
         META_KOLOMMEN.forEach(function (k) { pr += '<td class="bft-ep-meta">' + esc(p[k.veld]) + '</td>'; });
+        var dl = opleverInfo(p);   // opleverdatum-deadline (marker in de weekcel)
         weken.forEach(function (w) {
           var actief = doc.disciplines.filter(function (d) { return !!celEntry(p, d.key, w); });
           var vk = (vakEntry(doc, w) ? ' vak' : '') + hk(w);
-          if (!actief.length) { pr += '<td class="bft-ep-sum' + vk + '"></td>'; }
+          var isDl = dl && dl.week === w;
+          var dlc = isDl ? ' bft-ep-deadline' : '';
+          var dlAttr = isDl ? ' data-dl="' + esc(dl.label) + '"' : '';
+          var dlTip = isDl ? 'Opleverdatum: ' + esc(dl.datum) : '';
+          if (!actief.length) { pr += '<td class="bft-ep-sum' + vk + dlc + '"' + dlAttr + (dlTip ? ' title="' + dlTip + '"' : '') + '></td>'; }
           else {
             // Cel verdeeld in N gelijke kleurvlakken (verdeling), zoals OverallPlanning.
             var segs = actief.map(function (d) { return '<div class="bft-ep-seg" style="background:' + d.color + '"></div>'; }).join('');
-            var titel = actief.map(function (d) { return d.label; }).join(', ');
-            pr += '<td class="bft-ep-sum' + vk + '" title="' + esc(titel) + '"><div class="bft-ep-segs">' + segs + '</div></td>';
+            var titel = (dlTip ? dlTip + ' · ' : '') + esc(actief.map(function (d) { return d.label; }).join(', '));
+            pr += '<td class="bft-ep-sum' + vk + dlc + '" title="' + titel + '"' + dlAttr + '><div class="bft-ep-segs">' + segs + '</div></td>';
           }
         });
         pr += '</tr>';
