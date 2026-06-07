@@ -175,19 +175,31 @@ function updatePreview(){
   }
 }
 
-/* Bouwt het projectobject uit het formulier (of null bij ontbrekende velden) */
+/* Naam-afleiders uit de bronnen (id → naam) voor het denormaliseren bij opslaan. */
+function _klNaam(id){ if(!id||typeof bftAlleKlanten!=='function')return ''; var k=bftAlleKlanten().filter(x=>x.id===id)[0]; return k?k.naam:''; }
+function _mdNaam(id){ if(!id||typeof bftAlleMedewerkers!=='function')return ''; var m=bftAlleMedewerkers().filter(x=>x.id===id)[0]; return m?m.naam:''; }
+
+/* Bouwt het projectobject uit het formulier (of null bij ontbrekende velden).
+   F4: selects leveren STABIELE id's; naam wordt afgeleid en gedenormaliseerd
+   opgeslagen (bftNormProject houdt 'm bij read synchroon met de bron). */
 function huidigProjectObj(){
-  const nr = gv('f_nr'), type = gv('f_type'), naam = gv('f_naam'), klant = gv('f_klant');
-  if (!nr || !type || !naam || !klant) { alert('Vul minimaal projectnummer, type, naam en klant in.'); return null; }
+  const nr = gv('f_nr'), type = gv('f_type'), naam = gv('f_naam');
+  const klantId = gv('f_klant');
+  if (!nr || !type || !naam || !klantId) { alert('Vul minimaal projectnummer, type, naam en klant in.'); return null; }
   if (!/^\d{6}$/.test(nr)) { alert('Projectnummer moet uit precies 6 cijfers bestaan.'); return null; }
   const servicenr = gv('f_servicenr');
   if (servicenr && !/^\d{6}$/.test(servicenr)) { alert('Servicenummer moet 6 cijfers zijn (of leeg laten).'); return null; }
+  const plId = gv('f_pl'), engId = gv('f_eng'), wvbId = gv('f_wvb');
+  const verantwId = gv('f_verantwoordelijke') || engId;   // leeg → de Engineer
   return {
     id: `${nr}_${type.replace(/[^a-zA-Z0-9]/g,'').toUpperCase()}`,
-    projectnr: nr, servicenr, naam, klant,
+    projectnr: nr, servicenr, naam,
+    klantId: klantId, klant: _klNaam(klantId),
     oplevering: gv('f_oplevering') || '',
-    pl: gv('f_pl') || '', eng: gv('f_eng') || '', wvb: gv('f_wvb') || '',
-    verantwoordelijke: gv('f_verantwoordelijke') || gv('f_eng') || '',   // beheert de planning; leeg → de Engineer
+    plId: plId, pl: _mdNaam(plId),
+    engId: engId, eng: _mdNaam(engId),
+    wvbId: wvbId, wvb: _mdNaam(wvbId),
+    verantwoordelijkeId: verantwId, verantwoordelijke: _mdNaam(verantwId),
     machineType: type,
     aangemaakt: gv('f_aangemaakt') || new Date().toISOString().slice(0,10),
     status: gv('f_status') || 'actief',
@@ -217,7 +229,7 @@ function genereer(){
     return;
   }
 
-  const code = `  ,{\n    id: '${p.id}',\n    projectnr: '${p.projectnr}',\n    servicenr: '${p.servicenr}',\n    naam: '${p.naam}',\n    klant: '${p.klant}',\n    oplevering: '${p.oplevering}',\n    pl: '${p.pl}',\n    eng: '${p.eng}',\n    wvb: '${p.wvb}',\n    verantwoordelijke: '${p.verantwoordelijke}',\n    machineType: '${p.machineType}',\n    aangemaakt: '${p.aangemaakt}',\n    status: '${p.status}',\n    plannerUrl: '${p.plannerUrl}'\n  }`;
+  const code = `  ,{\n    id: '${p.id}',\n    projectnr: '${p.projectnr}',\n    servicenr: '${p.servicenr}',\n    naam: '${p.naam}',\n    klantId: '${p.klantId}',\n    klant: '${p.klant}',\n    oplevering: '${p.oplevering}',\n    plId: '${p.plId}',\n    pl: '${p.pl}',\n    engId: '${p.engId}',\n    eng: '${p.eng}',\n    wvbId: '${p.wvbId}',\n    wvb: '${p.wvb}',\n    verantwoordelijkeId: '${p.verantwoordelijkeId}',\n    verantwoordelijke: '${p.verantwoordelijke}',\n    machineType: '${p.machineType}',\n    aangemaakt: '${p.aangemaakt}',\n    status: '${p.status}',\n    plannerUrl: '${p.plannerUrl}'\n  }`;
   const nr = p.projectnr, naam = p.naam;
 
   const gitCommands = `git -C "C:\\Users\\sjefv\\OneDrive\\Documenten\\Claude\\Projects\\BFT-V2" add library/js/bft-projects.js\ngit -C "C:\\Users\\sjefv\\OneDrive\\Documenten\\Claude\\Projects\\BFT-V2" commit -m "Nieuw project: ${nr} ${naam}"\ngit -C "C:\\Users\\sjefv\\OneDrive\\Documenten\\Claude\\Projects\\BFT-V2" push`;
@@ -246,12 +258,12 @@ function _persOpties(rol) {
   if (typeof bftAlleMedewerkers !== 'function') return '';
   return bftAlleMedewerkers()
     .filter(function (m) { return !rol || m.rollen.indexOf(rol) !== -1; })
-    .map(function (m) { return '<option value="' + m.naam + '">' + m.naam + '</option>'; }).join('');
+    .map(function (m) { return '<option value="' + m.id + '">' + m.naam + '</option>'; }).join('');   // value = stabiele id
 }
 function _klantOpties() {
   if (typeof bftAlleKlanten !== 'function') return '';
   return bftAlleKlanten()
-    .map(function (k) { return '<option value="' + k.naam + '">' + k.naam + (k.plaats ? ' · ' + k.plaats : '') + '</option>'; }).join('');
+    .map(function (k) { return '<option value="' + k.id + '">' + k.naam + (k.plaats ? ' · ' + k.plaats : '') + '</option>'; }).join('');   // value = stabiele id
 }
 /* Vul een <select>, behoud de huidige keuze als die nog bestaat. */
 function _vulSelect(id, leeg, opties) {

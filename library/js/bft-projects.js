@@ -98,12 +98,53 @@ function bftCustomProjecten() {
   catch (e) { return []; }
 }
 
-/* Normaliseer een project: zorg dat 'verantwoordelijke' (= de persoon die de
-   planning beheert) bestaat. Migratie: ontbreekt → default de huidige engineer (eng).
-   Losgekoppeld van de rol-tags pl/eng/wvb; gebruikt door de Personeelsplanning-filter. */
+/* ── Referentie-resolvers (id ↔ naam) ──────────────────────────────────
+   F4: project verwijst naar klant/personen via STABIELE id; de naam is
+   afgeleid (weergave). Hierdoor werkt hernoemen in beheer automatisch door.
+   Defensief + guarded (bronnen kunnen later geladen zijn). */
+function _bftKlantNaam(id) {
+  if (!id || typeof bftAlleKlanten !== 'function') return '';
+  try { var k = bftAlleKlanten().filter(function (x) { return x.id === id; })[0]; return k ? k.naam : ''; }
+  catch (e) { return ''; }
+}
+function _bftKlantId(naam) {
+  if (!naam || typeof bftAlleKlanten !== 'function') return '';
+  try { var h = String(naam).trim().toLowerCase();
+    var k = bftAlleKlanten().filter(function (x) { return (x.naam || '').trim().toLowerCase() === h; })[0];
+    return k ? k.id : ''; } catch (e) { return ''; }
+}
+function _bftMdwNaam(id) {
+  if (!id || typeof bftAlleMedewerkers !== 'function') return '';
+  try { var m = bftAlleMedewerkers().filter(function (x) { return x.id === id; })[0]; return m ? m.naam : ''; }
+  catch (e) { return ''; }
+}
+function _bftMdwId(naam) {
+  if (!naam || typeof bftAlleMedewerkers !== 'function') return '';
+  try { var h = String(naam).trim().toLowerCase();
+    var m = bftAlleMedewerkers().filter(function (x) { return (x.naam || '').trim().toLowerCase() === h; })[0];
+    return m ? m.id : ''; } catch (e) { return ''; }
+}
+
+/* Normaliseer een project: referenties op id leidend, naam afgeleid.
+   - id aanwezig → naam (her)afleiden uit de bron (rename-safe).
+   - alleen legacy naam → id afleiden (migratie naar id, op de read).
+   - 'verantwoordelijke' ontbreekt → default de engineer (id + naam). */
 function bftNormProject(p) {
   if (!p) return p;
-  if (p.verantwoordelijke == null || p.verantwoordelijke === '') p.verantwoordelijke = p.eng || '';
+  // Klant
+  if (p.klantId) { var kn = _bftKlantNaam(p.klantId); if (kn) p.klant = kn; }
+  else if (p.klant) { p.klantId = _bftKlantId(p.klant) || ''; }
+  // Persoonsrollen
+  ['pl', 'eng', 'wvb', 'verantwoordelijke'].forEach(function (rol) {
+    var idKey = rol + 'Id';
+    if (p[idKey]) { var nm = _bftMdwNaam(p[idKey]); if (nm) p[rol] = nm; }
+    else if (p[rol]) { p[idKey] = _bftMdwId(p[rol]) || ''; }
+  });
+  // Verantwoordelijke default = engineer (id én naam)
+  if ((p.verantwoordelijke == null || p.verantwoordelijke === '') && !p.verantwoordelijkeId) {
+    p.verantwoordelijke = p.eng || '';
+    p.verantwoordelijkeId = p.engId || '';
+  }
   return p;
 }
 

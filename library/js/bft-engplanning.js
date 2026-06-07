@@ -870,9 +870,11 @@
       var v = persoonCode();
       if (!v || !projectId || typeof global.bftAlleProjecten !== 'function' || typeof global.bftSlaProjectOp !== 'function') return;
       try {
+        var vId = doc.engineer.mdwId || mdwIdVoorNaam(v) || '';   // F4: id is leidend
         var bp = global.bftAlleProjecten().filter(function (x) { return x.id === projectId; })[0];
-        if (bp && (bp.verantwoordelijke || '').trim() !== v) {
-          var upd = {}; Object.keys(bp).forEach(function (k) { upd[k] = bp[k]; }); upd.verantwoordelijke = v;
+        if (bp && ((bp.verantwoordelijke || '').trim() !== v || (bp.verantwoordelijkeId || '') !== vId)) {
+          var upd = {}; Object.keys(bp).forEach(function (k) { upd[k] = bp[k]; });
+          upd.verantwoordelijke = v; upd.verantwoordelijkeId = vId;
           global.bftSlaProjectOp(upd);
         }
       } catch (e) {}
@@ -1211,10 +1213,12 @@
       setVerantwoordelijke: function (projectId, naam) {
         if (!projectId) return;
         var v = (naam || '').trim();
+        var vId = v ? (mdwIdVoorNaam(v) || '') : '';   // F4: id is leidend (leeg = terug naar engineer)
         if (typeof global.bftAlleProjecten === 'function' && typeof global.bftSlaProjectOp === 'function') {
           try {
             var bp = global.bftAlleProjecten().filter(function (x) { return x.id === projectId; })[0];
-            if (bp) { var upd = {}; Object.keys(bp).forEach(function (k) { upd[k] = bp[k]; }); upd.verantwoordelijke = v; global.bftSlaProjectOp(upd); }
+            if (bp) { var upd = {}; Object.keys(bp).forEach(function (k) { upd[k] = bp[k]; });
+              upd.verantwoordelijke = v; upd.verantwoordelijkeId = vId; global.bftSlaProjectOp(upd); }
           } catch (e) {}
         }
         herlaadProjecten(); fireChange(); api.render();
