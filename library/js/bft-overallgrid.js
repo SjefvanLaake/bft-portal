@@ -698,10 +698,11 @@
               || (f.servnr && p.servnr === f.servnr);
         });
       }
-      /* Optioneel groeperen op verantwoordelijke: sorteer zodat dezelfde
-         verantwoordelijke aaneengesloten staat. De tool injecteert dan per
-         groep een kop + per-persoon vakantie-rij. Niet-toegewezen onderaan. */
-      if (ui.groepeerVerantw && !opts.filterProject) {
+      /* Groeperen op verantwoordelijke is ingebouwd: sorteer zodat dezelfde
+         verantwoordelijke aaneengesloten staat (de tool injecteert per groep
+         een kop + per-persoon vakantie-rij). Niet in de single-project
+         filterweergave. Niet-toegewezen onderaan. */
+      if (!opts.filterProject) {
         zichtbaar = zichtbaar.slice().sort(function (a, b) {
           var va = (a.verantwoordelijke || '').trim().toLowerCase();
           var vb = (b.verantwoordelijke || '').trim().toLowerCase();
@@ -882,10 +883,6 @@
     function getResolutie() { return ui.resolutie; }
     function toggleResolutie() { setResolutie(ui.resolutie === 'week' ? 'maand' : 'week'); }
 
-    /* Groeperen op verantwoordelijke (sorteert; de tool injecteert koppen + vakantie-rijen). */
-    function setGroepeerVerantw(b) { ui.groepeerVerantw = !!b; saveUi(); render(); }
-    function getGroepeerVerantw() { return !!ui.groepeerVerantw; }
-
     function toggleExpand(id) {
       if (opts.accordion) {
         /* Sluit alle andere projecten — één render */
@@ -1027,8 +1024,6 @@
       setResolutie: setResolutie,
       getResolutie: getResolutie,
       toggleResolutie: toggleResolutie,
-      setGroepeerVerantw: setGroepeerVerantw,
-      getGroepeerVerantw: getGroepeerVerantw,
       render: render,
       exportJSON: exportJSON,
       importJSON: importJSON,
