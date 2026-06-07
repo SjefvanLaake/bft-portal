@@ -98,9 +98,9 @@ Spiegel `bft-medewerkers.js`:
 - Migraties **additief**: oude velden (naam) blijven staan als fallback; geen destructieve overschrijving.
 - Per fase een node-test + headless screenshot vóór merge.
 
-## 6. Open beslissingen voor Sjef
-1. **Volgorde/scope:** F1→F5 in deze volgorde, of eerst alleen F1+F3 (klantbeheer + selecties) en F4 (id-refs) later?
-2. **Klant-velden:** alleen naam, of ook plaats/relatienummer (PowerAll-aansluiting)?
-3. **Verplichting:** PL/EN/WVB verplicht bij aanmaken, of mag leeg (nog niet toegewezen)?
-4. **Krafteam/Michels:** echte projecten (laten staan) of demo (mee opruimen in F5)?
+## 6. Besluiten (Sjef, 2026-06-07)
+1. **Volgorde/scope:** F1→F5 volledig, in volgorde. Per fase verifiëren, pas mergen na akkoord.
+2. **Klant-velden:** naam + plaats + **relatienummer** (PowerAll-koppelsleutel).
+3. **Verplichting:** PL/EN/WVB **mogen leeg** bij aanmaken (later toe te wijzen). Verplicht: klant + projectnr + naam/type.
+4. **Krafteam/Michels:** **demo** → mee opruimen in F5.
 ```
