@@ -185,7 +185,13 @@ function _mdNaam(id){ if(!id||typeof bftAlleMedewerkers!=='function')return ''; 
 function huidigProjectObj(){
   const nr = gv('f_nr'), type = gv('f_type'), naam = gv('f_naam');
   const klantId = gv('f_klant');
-  if (!nr || !type || !naam || !klantId) { alert('Vul minimaal projectnummer, type, naam en klant in.'); return null; }
+  const geenKlanten = (typeof bftAlleKlanten === 'function') && bftAlleKlanten().length === 0;
+  const mist = [];
+  if (!nr)   mist.push('projectnummer');
+  if (!type) mist.push('machine type');
+  if (!naam) mist.push('machine naam');
+  if (!klantId) mist.push(geenKlanten ? 'klant — er zijn nog geen klanten; voeg er één toe via “🏢 Beheer” naast het klant-veld' : 'klant');
+  if (mist.length) { alert('Vul nog in: ' + mist.join('; ') + '.'); return null; }
   if (!/^\d{6}$/.test(nr)) { alert('Projectnummer moet uit precies 6 cijfers bestaan.'); return null; }
   const servicenr = gv('f_servicenr');
   if (servicenr && !/^\d{6}$/.test(servicenr)) { alert('Servicenummer moet 6 cijfers zijn (of leeg laten).'); return null; }
