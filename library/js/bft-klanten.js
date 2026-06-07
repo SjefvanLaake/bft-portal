@@ -14,11 +14,11 @@
  *   - relatienr = PowerAll-relatienummer (koppelsleutel go-live), nu vrij.
  * ────────────────────────────────────────────────────────────────────────
  */
-const BFT_KLANTEN = [
-  { id: 'kl_demo',    naam: 'Demo Klant BV',    plaats: '', relatienr: '' },
-  { id: 'kl_ander',   naam: 'Ander Bedrijf NV', plaats: '', relatienr: '' },
-  { id: 'kl_holding', naam: 'Klant C Holding',  plaats: '', relatienr: '' }
-];
+/* GEEN mockup-data. Klanten komen bij go-live uit PowerAll (relatienr =
+   koppelsleutel) — bron-swap: vervang BFT_KLANTEN / bftAlleKlanten() door de
+   PowerAll-relaties. Tot dan via "Klanten beheren" (runtime-store
+   bft_v2_klanten). Vorm: { id:'kl_xxx', naam:'Bedrijf BV', plaats:'', relatienr:'R12345' } */
+const BFT_KLANTEN = [];
 
 const BFT_KLANTEN_LS = 'bft_v2_klanten';
 

@@ -7,82 +7,17 @@
  *   construeer hem NIET zelf (Microsoft migreert Planner-URL's). Leeg = de
  *   "Taken in Planner"-knop verschijnt niet.
  */
-const BFT_PROJECTEN = [
-  {
-    id: '201267_BFMR2000EK',
-    projectnr: '201267',
-    servicenr: '201224',
-    naam: 'BFMR2000EK',
-    klant: 'Demo Klant BV',
-    oplevering: '2026-08-15',
-    pl: 'JdV',
-    eng: 'SH',
-    wvb: 'TW',
-    machineType: 'BFMR2000EK',
-    aangemaakt: '2026-01-10',
-    status: 'actief',
-    plannerUrl: ''
-  },
-  {
-    id: '201268_BFR500',
-    projectnr: '201268',
-    servicenr: '201231',
-    naam: 'BFR500',
-    klant: 'Ander Bedrijf NV',
-    oplevering: '2026-10-01',
-    pl: 'PJ',
-    eng: 'KE',
-    wvb: 'RD',
-    machineType: 'BFR500',
-    aangemaakt: '2026-02-20',
-    status: 'actief',
-    plannerUrl: ''
-  },
-  {
-    id: '201250_BFM800',
-    projectnr: '201250',
-    servicenr: '201205',
-    naam: 'BFM800',
-    klant: 'Klant C Holding',
-    oplevering: '2026-03-01',
-    pl: 'MB',
-    eng: 'SH',
-    wvb: 'TW',
-    machineType: 'BFM800',
-    aangemaakt: '2025-09-15',
-    status: 'klaar',
-    plannerUrl: ''
-  },
-  {
-    id: '201682_MR',
-    projectnr: '201682',
-    servicenr: '201338',
-    naam: 'BFMR1000EK',
-    klant: 'Krafteam',
-    oplevering: '2026-06-16',
-    pl: 'SH',
-    eng: 'SH',
-    wvb: 'SH',
-    machineType: 'MR',
-    aangemaakt: '2026-06-02',
-    status: 'actief',
-    plannerUrl: ''
-  },{
-    id: '201700_MP',
-    projectnr: '201700',
-    servicenr: '201352',
-    naam: 'BFMP750E',
-    klant: 'Michels',
-    oplevering: '2027-01-08',
-    pl: 'SL',
-    eng: 'SL',
-    wvb: 'SL',
-    machineType: 'MP',
-    aangemaakt: '2026-06-02',
-    status: 'actief',
-    plannerUrl: ''
-  }
-];
+/* GEEN mockup-data. Projecten komen bij go-live uit PowerAll ERP — bron-swap:
+   vervang BFT_PROJECTEN / bftAlleProjecten() door BFTGraph/PowerAll.query().
+   Tot dan worden projecten via "Nieuw project" toegevoegd (runtime-store
+   bft_v2_projecten). F4-vorm (referenties op stabiele id; naam afgeleid):
+     { id:'<nr>_<TYPE>', projectnr:'201270', servicenr:'201224', naam:'BFMR2000EK',
+       klantId:'kl_xxx', klant:'(afgeleid)',
+       plId:'mdw_xxx', pl:'', engId:'mdw_xxx', eng:'', wvbId:'', wvb:'',
+       verantwoordelijkeId:'mdw_xxx', verantwoordelijke:'',
+       machineType:'BFMR2000EK', oplevering:'2026-08-15', aangemaakt:'2026-01-10',
+       status:'actief', plannerUrl:'' } */
+const BFT_PROJECTEN = [];
 
 /* ──────────────────────────────────────────────────────────────────────
    Runtime-store (mock-fase): BFT_PROJECTEN = seed in code; nieuw aangemaakte

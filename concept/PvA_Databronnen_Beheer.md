@@ -1,6 +1,8 @@
 # PvA — Databronnen & beheer: project · klant · personeel als één referentieel geheel
 
-Status: concept ter goedkeuring (2026-06-07). Streng, toekomstgericht. Géén mockup-data; alle referenties moeten uit beheerde bronnen komen en op elkaar aansluiten.
+Status: **F1–F5 GEBOUWD** op branch `feature/databronnen-beheer` (2026-06-07), klaar voor lokale test → merge naar main/pages na akkoord. Streng, toekomstgericht. Géén mockup-data; alle referenties komen uit beheerde bronnen en sluiten op elkaar aan.
+
+**Uitvoering samengevat:** F1 klantbeheer (modal+tombstone+relatienr) · F2 projecten-tombstone (verwijderbaar) · F3 NieuwProject datalists→selects gebonden aan bronnen · F4 referenties op stabiele id (rename-safe, naam afgeleid) · F5 mockup-seeds geleegd (projecten+klanten = []; **medewerkers behouden = echte staf**), go-live bron-swap (PowerAll/Graph) in de seed-comments gedocumenteerd. Leftover test-data in localStorage verwijder je via de beheer-modals.
 
 ## 1. Probleemstelling (Sjef)
 
