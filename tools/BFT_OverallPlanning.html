@@ -99,30 +99,19 @@
     .og-paint-cell { cursor:crosshair; }
     .og-paint-cell:hover { box-shadow:inset 0 0 0 1px var(--accent,#e8a000); }
 
-    /* Aantal toegewezen personen, getoond IN de geschilderde cellen */
-    .og-cnt {  /* ingeklapte projectrij: totaal over actieve disciplines */
-      position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-      font-family:var(--mono); font-size:10px; font-weight:700; color:#3d4558;
-      text-shadow:0 0 2px rgba(255,255,255,0.9); pointer-events:none;
-    }
-    .og-pers {  /* uitgeklapte disciplinerij: aantal per discipline-cel */
-      display:block; text-align:center; font-family:var(--mono); font-size:10px;
-      font-weight:700; color:#1a1f2e; text-shadow:0 0 2px rgba(255,255,255,0.9);
-      pointer-events:none;
-    }
     .og-fase {  /* fase-tekst per weekcel — zelfde als Engineering Planning */
       display:block; text-align:center; font-size:9px; font-weight:600;
       color:#1a1f2e; line-height:1; text-shadow:0 0 2px rgba(255,255,255,0.9);
       overflow:hidden; white-space:nowrap; pointer-events:none;
     }
-    /* Personen-knop in het discipline-label */
-    .og-pers-btn {
-      margin-left:6px; border:1px solid rgba(124,58,237,0.35);
-      background:rgba(124,58,237,0.06); color:#7c3aed;
-      border-radius:10px; padding:0 6px; font-family:var(--mono); font-size:9px;
-      font-weight:700; cursor:pointer; line-height:1.5; vertical-align:middle;
+    /* Monteurs-knop in de projectkop (omschrijving-kolom) */
+    .og-mont-btn {
+      margin-left:6px; border:1px solid rgba(232,160,0,0.45);
+      background:rgba(232,160,0,0.10); color:#9a6b00;
+      border-radius:10px; padding:0 7px; font-family:var(--mono); font-size:9px;
+      font-weight:700; cursor:pointer; line-height:1.6; vertical-align:middle;
     }
-    .og-pers-btn:hover { background:#7c3aed; color:#fff; border-color:#7c3aed; }
+    .og-mont-btn:hover { background:#e8a000; color:#000; border-color:#e8a000; }
     .og-empty { text-align:center; color:var(--muted,#8a909c); padding:28px !important; font-style:italic; }
     .og-caret {
       border:none; background:transparent; color:var(--muted,#8a909c);
@@ -507,22 +496,21 @@ function maandVanWeekLocaal(jaar, week) {
   return mon.getUTCMonth();
 }
 
-/* Per-week ingezette mensen (toewijzingen) voor het getoonde jaar, afgeleid uit
-   bezetting: voor elke discipline met personen, tel die personen mee in elke
-   week waarin de discipline geschilderd is. Som over alle projecten/disciplines.
-   NB: telt toewijzingen — iemand die in twee disciplines/projecten zit telt
-   meervoudig (= werklast/overboeking-signaal, niet uniek hoofdtal). */
-function bezettingPerWeek(doc) {
+/* Per-week ingezette monteurs voor het getoonde jaar. Elke monteur draagt een
+   eigen periode (startWeek/eindWeek) → tel 'm mee in elke week binnen die periode.
+   Som over alle projecten. NB: telt toewijzingen — een monteur die in twee
+   projecten dezelfde week zit, telt dubbel (= werklast/overboeking-signaal). */
+function monteursPerWeek(doc) {
   var perWeek = {};
   (doc.projecten || []).forEach(function (p) {
-    var bz = p.bezetting || {};
-    Object.keys(bz).forEach(function (key) {
-      var n = (bz[key] || []).length;
-      if (!n) return;
-      ((p.weken && p.weken[key]) || []).forEach(function (r) {
-        if (r.jaar !== doc.jaar) return;
-        for (var w = r.startWeek; w <= r.eindWeek; w++) perWeek[w] = (perWeek[w] || 0) + n;
-      });
+    (p.monteurs || []).forEach(function (m) {
+      if (m.jaar != null && m.jaar !== doc.jaar) return;
+      var s = m.startWeek, e = m.eindWeek;
+      if (s == null && e == null) return;          /* geen periode ingevuld → telt niet mee */
+      if (s == null) s = e;
+      if (e == null) e = s;
+      if (s > e) { var t = s; s = e; e = t; }
+      for (var w = s; w <= e; w++) perWeek[w] = (perWeek[w] || 0) + 1;
     });
   });
   return perWeek;
@@ -538,9 +526,12 @@ function injectCapaciteitsRijen() {
   var tijdThs = ths.filter(function(th){ return th.classList.contains('og-th-week') || th.classList.contains('og-th-maand'); });
   if (!tijdThs.length) return;
 
-  var perWeek = bezettingPerWeek(doc);
-  /* Beschikbaar = personeelslijst (plafond voor over-/onderboeking). */
-  var headcount = (typeof bftAlleMedewerkers === 'function') ? bftAlleMedewerkers().length : 0;
+  var perWeek = monteursPerWeek(doc);
+  /* Beschikbaar = aantal mensen met de rol 'Monteur' (plafond voor over-/onderboeking).
+     Anderen kunnen bijspringen, maar dit is de realistische montage-capaciteit. */
+  var headcount = (typeof bftAlleMedewerkers === 'function')
+    ? bftAlleMedewerkers().filter(function (m) { return (m.rollen || []).indexOf('Monteur') !== -1; }).length
+    : 0;
 
   /* Scheidingsrij */
   var sep = document.createElement('tr');
@@ -551,7 +542,7 @@ function injectCapaciteitsRijen() {
      scrollen (de colSpan-cel zelf scrollt mee met het grid). */
   var sepInner = document.createElement('span');
   sepInner.style.cssText = 'position:sticky; left:8px; display:inline-block;';
-  sepInner.textContent = 'Capaciteit — bezetting over alle projecten'
+  sepInner.textContent = 'Monteurs — ingezet over alle projecten'
     + (headcount ? ' · ' + headcount + ' beschikbaar' : '');
   sepTd.appendChild(sepInner);
   sep.appendChild(sepTd);
@@ -570,7 +561,7 @@ function injectCapaciteitsRijen() {
 
   hdrMeta.forEach(function(hth, i) {
     var td = document.createElement('td');
-    if (i === 0) { td.className = 'cap-naam'; td.textContent = 'Bezetting'; }
+    if (i === 0) { td.className = 'cap-naam'; td.textContent = 'Monteurs'; }
     td.style.cssText = 'position:sticky;left:' + hth.style.left + ';z-index:2;background:var(--surface2);min-width:' + hth.style.minWidth;
     tr.appendChild(td);
   });
@@ -605,7 +596,7 @@ function injectCapaciteitsRijen() {
       else                          kleur = '#1e9e5e';
       td.style.cssText = 'color:' + kleur + (headcount && val > headcount ? ';background:#d630301a' : '');
       td.textContent = val;
-      td.title = val + ' bezet' + (headcount ? ' van ' + headcount : '');
+      td.title = val + ' monteur(s) ingezet' + (headcount ? ' van ' + headcount + ' beschikbaar' : '');
     } else {
       td.style.color = 'var(--border2)';
       td.textContent = '—';

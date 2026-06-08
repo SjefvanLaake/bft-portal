@@ -165,12 +165,27 @@
     };
   }
 
+  /* Normaliseer één monteur-entry → { persoonId, naam, startWeek, eindWeek, jaar }.
+     Eigen periode per monteur zodat wisselen bij storingen mogelijk is (A w34-37,
+     B w38-41). persoonId = stabiele sleutel (migratie-proof); naam is cosmetisch. */
+  function normMonteur(m) {
+    if (!m || typeof m !== 'object') return null;
+    var id = m.persoonId || m.naam;
+    if (!id) return null;
+    function wk(v) { var n = Number(v); return (v != null && !isNaN(n)) ? n : null; }
+    return { persoonId: id, naam: m.naam || '', startWeek: wk(m.startWeek), eindWeek: wk(m.eindWeek), jaar: wk(m.jaar) };
+  }
+
   function nieuwProject(data) {
     data = data || {};
-    /* bezetting[disciplineKey] = [{persoonId,naam}] — wie draait mee op die
-       discipline. Object-entries (geen kale getallen) zodat per-persoon-weken
-       later toegevoegd kan worden zonder datamigratie. */
-    var p = { id: data.id || ('pr_' + uuid()), weken: data.weken || {}, bezetting: data.bezetting || {} };
+    /* monteurs[] = per-project montagebezetting (los van de disciplines, die door
+       de toegewezen PL/EN/WVB worden gedaan). Elke monteur draagt een eigen periode
+       (startWeek/eindWeek/jaar) → wisselbaar bij storingen. */
+    var p = {
+      id: data.id || ('pr_' + uuid()),
+      weken: data.weken || {},
+      monteurs: (Array.isArray(data.monteurs) ? data.monteurs : []).map(normMonteur).filter(Boolean)
+    };
     /* bftId = stabiele koppelsleutel naar BFT_PROJECTEN (= project.id). Apart van
        servnr (dat nu het zichtbare 6-cijferige servicenummer toont). Niet-kolom-
        veld, daarom expliciet bewaard (anders gooit migreer het weg). */
@@ -231,7 +246,7 @@
       + '.og-dm-del{min-width:auto;padding:8px 14px;font-size:15px;line-height:1;}'
       + '.og-dm-del:hover{background:#d63030;color:#fff;border-color:#d63030;}'
       + '.og-dm-add{align-self:flex-start;min-width:auto;}'
-      // bezetting-picker
+      // monteurs-picker
       + '.og-bz-list{display:flex;flex-direction:column;gap:2px;max-height:50vh;overflow:auto;}'
       + '.og-bz-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;cursor:pointer;'
       +   'font-family:"IBM Plex Sans",sans-serif;font-size:14px;color:#1a1f2e;}'
@@ -243,7 +258,14 @@
       + '.og-bz-act{border:1px solid #c8ccd4;background:#fff;color:#3d4558;border-radius:5px;'
       +   'width:26px;height:26px;line-height:1;cursor:pointer;font-size:13px;flex:none;}'
       + '.og-bz-act:hover{background:#f1f3f6;border-color:#9ca3ad;}'
-      + '.og-bz-del:hover{background:#d63030;color:#fff;border-color:#d63030;}';
+      + '.og-bz-del:hover{background:#d63030;color:#fff;border-color:#d63030;}'
+      // monteurs-picker: gemarkeerde gekozen rij + van/tot-week-inputs
+      + '.og-mz-on{background:#fff7e8;}'
+      + '.og-mz-per{display:flex;align-items:center;gap:3px;font-family:"IBM Plex Mono",monospace;font-size:12px;color:#3d4558;}'
+      + '.og-mz-wk{width:46px;padding:4px 5px;border:1px solid #c8ccd4;border-radius:5px;font-size:13px;'
+      +   'font-family:"IBM Plex Mono",monospace;color:#1a1f2e;}'
+      + '.og-mz-wk:focus{outline:2px solid #e8a000;outline-offset:1px;border-color:#e8a000;}'
+      + '.og-mz-dash{color:#8a909c;}';
     var st = document.createElement('style'); st.id = FORM_CSS_ID; st.textContent = css;
     document.head.appendChild(st);
   }
@@ -407,64 +429,92 @@
     });
   }
 
-  // ── bezetting-picker modal (personen toewijzen aan een discipline) ───────
+  // ── monteurs-picker modal (monteurs toewijzen aan een project) ───────────
   /* Leest de personeelslijst via de runtime-store (bftAlleMedewerkers) en kan
-     personen toevoegen/bewerken/verwijderen via diezelfde store. Alles met
-     typeof-guards: zonder store degradeert het naar een leesbare keuzelijst.
-     Toewijzing bewaart de stabiele persoonId (niet de naam) → migratie-proof. */
+     personen toevoegen/bewerken/rollen wijzigen via de gedeelde medewerker-modal.
+     Alles met typeof-guards: zonder store degradeert het naar een leesbare lijst.
+     Toewijzing bewaart de stabiele persoonId (niet de naam) → migratie-proof.
+     Iedereen is selecteerbaar (geen harde rol-filter): monteurs staan bovenaan,
+     maar een WVB'er/engineer kan bijspringen in de montage. Elke gekozen monteur
+     krijgt een eigen van/tot-week → wisselbaar bij storingen. */
   function masterLijst() {
     if (typeof bftAlleMedewerkers === 'function') return bftAlleMedewerkers();
     if (typeof BFT_MEDEWERKERS !== 'undefined' && Array.isArray(BFT_MEDEWERKERS)) return BFT_MEDEWERKERS;
     return [];
   }
-  function openBezettingPicker(titel, huidige) {
+  function openMonteursPicker(titel, huidige, deflt) {
     injectFormCss();
     var kanBeheren = (typeof bftSlaMedewerkerOp === 'function');
+    deflt = deflt || {};
+    var dJaar = deflt.jaar || new Date().getFullYear();
     var gekozen = {};
     (huidige || []).forEach(function (x) {
-      var id = x.persoonId || x.naam;
-      gekozen[id] = { persoonId: id, naam: x.naam };
+      var id = x.persoonId || x.naam; if (!id) return;
+      gekozen[id] = { persoonId: id, naam: x.naam || '',
+        startWeek: x.startWeek != null ? x.startWeek : (deflt.startWeek || null),
+        eindWeek:  x.eindWeek  != null ? x.eindWeek  : (deflt.eindWeek  || null),
+        jaar:      x.jaar      != null ? x.jaar      : dJaar };
     });
     return new Promise(function (resolve) {
       var ov = document.createElement('div');
       ov.className = 'bft-og-ov open';
 
+      function wkInputs(id) {
+        var g = gekozen[id] || {};
+        return '<span class="og-mz-per">w'
+          + '<input class="og-mz-wk" type="number" min="1" max="53" data-fld="startWeek" data-id="' + esc(id) + '" value="' + (g.startWeek != null ? g.startWeek : '') + '" title="Van week">'
+          + '<span class="og-mz-dash">–</span>w'
+          + '<input class="og-mz-wk" type="number" min="1" max="53" data-fld="eindWeek" data-id="' + esc(id) + '" value="' + (g.eindWeek != null ? g.eindWeek : '') + '" title="Tot en met week">'
+          + '</span>';
+      }
+      function rowHtml(id, naam, rollen, isWees) {
+        var on = !!gekozen[id];
+        return '<div class="og-bz-row' + (on ? ' og-mz-on' : '') + '">'
+          + '<input type="checkbox" class="og-mz-cb" data-id="' + esc(id) + '" data-naam="' + esc(naam) + '"' + (on ? ' checked' : '') + '>'
+          + '<span class="og-bz-naam">' + esc(naam) + '</span>'
+          + '<span class="og-bz-disc">' + (isWees ? '—' : esc((rollen || []).join(' · '))) + '</span>'
+          + (on ? wkInputs(id) : '')
+          + '</div>';
+      }
       function rowsHtml() {
-        var master = masterLijst();
-        var rows = master.map(function (m) {
-          var on = !!gekozen[m.id];
-          /* Alleen aan-/afvinken wie meedraait; toevoegen/bewerken/rollen = de gedeelde
-             medewerker-modal (geen native prompts hier). */
-          return '<label class="og-bz-row"><input type="checkbox" data-id="' + esc(m.id) + '" data-naam="' + esc(m.naam) + '"' + (on ? ' checked' : '') + '>'
-            + '<span class="og-bz-naam">' + esc(m.naam) + '</span><span class="og-bz-disc">' + esc((m.rollen || []).join(' · ')) + '</span>'
-            + '</label>';
-        }).join('');
+        /* Monteurs bovenaan; daarbinnen op naam. */
+        var master = masterLijst().slice().sort(function (a, b) {
+          var am = (a.rollen || []).indexOf('Monteur') !== -1 ? 0 : 1;
+          var bm = (b.rollen || []).indexOf('Monteur') !== -1 ? 0 : 1;
+          if (am !== bm) return am - bm;
+          return (a.naam || '') < (b.naam || '') ? -1 : 1;
+        });
+        var rows = master.map(function (m) { return rowHtml(m.id, m.naam, m.rollen, false); }).join('');
         /* Gekozen personen die (niet meer) in de master staan — toch tonen. */
         var weesIds = Object.keys(gekozen).filter(function (k) { return !master.some(function (m) { return m.id === k; }); });
-        var wees = weesIds.map(function (k) {
-          return '<label class="og-bz-row"><input type="checkbox" data-id="' + esc(k) + '" data-naam="' + esc(gekozen[k].naam) + '" checked>'
-            + '<span class="og-bz-naam">' + esc(gekozen[k].naam) + '</span><span class="og-bz-disc">—</span></label>';
-        }).join('');
+        var wees = weesIds.map(function (k) { return rowHtml(k, gekozen[k].naam, [], true); }).join('');
         var leeg = (!rows && !wees) ? '<p class="og-bz-leeg">Nog geen personen. Klik “👥 Personen / rollen beheren”.</p>' : '';
         return rows + wees + leeg;
       }
-      function syncFromInputs() {
-        var nieuw = {};
-        ov.querySelectorAll('.og-bz-row input[type=checkbox]').forEach(function (cb) {
-          if (cb.checked) {
+      function bind() {
+        ov.querySelectorAll('.og-mz-cb').forEach(function (cb) {
+          cb.addEventListener('change', function () {
             var id = cb.getAttribute('data-id');
-            nieuw[id] = { persoonId: id, naam: cb.getAttribute('data-naam') };
-          }
+            if (cb.checked) {
+              gekozen[id] = { persoonId: id, naam: cb.getAttribute('data-naam'),
+                startWeek: deflt.startWeek || null, eindWeek: deflt.eindWeek || null, jaar: dJaar };
+            } else { delete gekozen[id]; }
+            paint();   /* week-inputs tonen/verbergen */
+          });
         });
-        gekozen = nieuw;
+        ov.querySelectorAll('.og-mz-wk').forEach(function (inp) {
+          inp.addEventListener('input', function () {
+            var id = inp.getAttribute('data-id'); if (!gekozen[id]) return;
+            var v = inp.value.trim(); var n = Number(v);
+            gekozen[id][inp.getAttribute('data-fld')] = (v && !isNaN(n)) ? n : null;
+          });
+        });
       }
-      function paint() {
-        ov.querySelector('#og-bz-list').innerHTML = rowsHtml();
-      }
+      function paint() { ov.querySelector('#og-bz-list').innerHTML = rowsHtml(); bind(); }
 
       ov.innerHTML = ''
-        + '<div class="bft-og-modal" role="dialog" aria-modal="true" style="max-width:520px;min-height:auto">'
-        +   '<div class="bft-og-top"><div class="ic">👤</div><div class="bft-og-ttl">' + esc(titel) + '</div></div>'
+        + '<div class="bft-og-modal" role="dialog" aria-modal="true" style="max-width:560px;min-height:auto">'
+        +   '<div class="bft-og-top"><div class="ic">👷</div><div class="bft-og-ttl">' + esc(titel) + '</div></div>'
         +   '<div class="bft-og-body og-dm-body" style="display:block">'
         +     '<div id="og-bz-list" class="og-bz-list"></div>'
         +     (kanBeheren ? '<button class="bft-og-btn og-dm-add" type="button" id="og-bz-beheer" style="margin-top:12px">👥 Personen / rollen beheren</button>' : '')
@@ -486,7 +536,6 @@
 
       var beheerBtn = ov.querySelector('#og-bz-beheer');
       if (beheerBtn) beheerBtn.addEventListener('click', function () {
-        syncFromInputs();   /* bewaar aanvinkingen vóór het her-renderen */
         if (global.BFTMedewerkers && typeof global.BFTMedewerkers.openBeheer === 'function') {
           global.BFTMedewerkers.openBeheer({ onChange: function () { paint(); } }).then(function () { paint(); });
         }
@@ -495,8 +544,10 @@
       ov.querySelectorAll('.bft-og-actions .bft-og-btn').forEach(function (b) {
         b.addEventListener('click', function () {
           if (b.getAttribute('data-act') === 'ok') {
-            syncFromInputs();
-            close(Object.keys(gekozen).map(function (k) { return gekozen[k]; }));
+            close(Object.keys(gekozen).map(function (k) {
+              var g = gekozen[k];
+              return { persoonId: g.persoonId, naam: g.naam, startWeek: g.startWeek, eindWeek: g.eindWeek, jaar: g.jaar };
+            }));
           } else close(null);
         });
       });
@@ -525,7 +576,7 @@
     // rij-per-project). Keys (achter de store-prefix):
     //   'config'    = { versie, jaar, disciplines }   (globaal)
     //   'index'     = [projectId, …]                  (volgorde + welke bestaan)
-    //   'proj_<id>' = volledig project                (meta + weken + bezetting)
+    //   'proj_<id>' = volledig project                (meta + weken + monteurs)
     // Legacy 'document' (één blob) wordt bij de eerste load éénmalig gesplitst;
     // de oude blob blijft als 'document_backup' bewaard.
     function persistConfig()   { store.set('config', { versie: doc.versie, jaar: doc.jaar, disciplines: doc.disciplines }); }
@@ -645,11 +696,6 @@
       if (samen.length) p.weken[key] = samen; else delete p.weken[key];
     }
 
-    function bezettingVoor(p, key) {
-      var b = (p.bezetting && p.bezetting[key]) || [];
-      return Array.isArray(b) ? b : [];
-    }
-
     function isoWeekNummer(d) {
       var jan4 = new Date(Date.UTC(d.getFullYear(), 0, 4));
       var day  = jan4.getUTCDay() || 7;
@@ -727,7 +773,14 @@
           html += stickyTd('og-td-act', 0, STICKY_ACT, BG_ROW,
             '<button class="og-caret" data-id="' + esc(p.id) + '" title="Uit-/inklappen">' + (open ? '▼' : '▶') + '</button>'
             + '<button class="og-del" data-id="' + esc(p.id) + '" title="Verwijder project">×</button>');
-          META_KOLOMMEN.forEach(function (k, i) { html += stickyTd('og-td-meta', STICKY_LEFT[i], STICKY_META[i], BG_ROW, esc(p[k.veld])); });
+          var nMont = (p.monteurs || []).length;
+          META_KOLOMMEN.forEach(function (k, i) {
+            var cel = esc(p[k.veld]);
+            /* Monteurs-knop in de projectkop (omschrijving-kolom). Monteurs zijn
+               projectniveau — los van de disciplines. */
+            if (i === 1) cel += '<button class="og-mont-btn" data-id="' + esc(p.id) + '" title="Monteurs toewijzen">👷 ' + nMont + '</button>';
+            html += stickyTd('og-td-meta', STICKY_LEFT[i], STICKY_META[i], BG_ROW, cel);
+          });
           /* Lege status-cel — de tool vult 'm (injectFeitenStatus). */
           if (opts.statusKolom) html += stickyTd('og-td-meta og-td-status', statusLeft, STATUS_W, BG_ROW, '');
           kol.forEach(function (c) {
@@ -747,21 +800,14 @@
             if (actief.length === 0) {
               html += '<td class="og-td-tijd' + hCls + '"></td>';
             } else {
-              /* Gestapelde gekleurde balkjes per discipline */
+              /* Gestapelde gekleurde balkjes per discipline (planning per discipline;
+                 personen-telling per discipline is vervallen — disciplines worden
+                 door de toegewezen PL/EN/WVB gedaan). */
               var bars = actief.map(function (d) {
                 return '<div style="flex:1;background:' + esc(d.color) + ';opacity:0.85"></div>';
               }).join('');
-              /* Aantal UNIEKE personen over de actieve disciplines deze kolom —
-                 dedup op persoonId, zodat iemand in twee disciplines niet
-                 dubbel telt (dit is een hoofdtal, geen werklast). */
-              var uniek = {};
-              actief.forEach(function (d) {
-                bezettingVoor(p, d.key).forEach(function (x) { uniek[x.persoonId || x.naam] = 1; });
-              });
-              var totPers = Object.keys(uniek).length;
-              var badge = totPers > 0 ? '<span class="og-cnt">' + totPers + '</span>' : '';
-              html += '<td class="og-td-tijd' + hCls + '" style="padding:0;vertical-align:top;position:relative">'
-                + '<div style="height:100%;min-height:22px;display:flex;flex-direction:column">' + bars + '</div>' + badge + '</td>';
+              html += '<td class="og-td-tijd' + hCls + '" style="padding:0;vertical-align:top">'
+                + '<div style="height:100%;min-height:22px;display:flex;flex-direction:column">' + bars + '</div></td>';
             }
           });
           html += '</tr>';
@@ -772,28 +818,23 @@
               var notes = weekNotitieFor(p, d.key);   /* fase-tekst per week (uit Engineering Planning) */
               html += '<tr class="og-row-disc" data-id="' + esc(p.id) + '" data-disc="' + esc(d.key) + '">';
               html += stickyTd('og-td-act', 0, STICKY_ACT, BG_DISC, '');
-              var nPers = bezettingVoor(p, d.key).length;
               META_KOLOMMEN.forEach(function (k, i) {
                 var content = '';
                 if (i === 0) {
                   content = '<span class="og-disc-sw" style="background:' + esc(d.color) + '"></span>'
                     + '<span class="og-disc-label">' + esc(d.label) + '</span>';
-                } else if (i === 1) {
-                  /* Personen-knop in de (verder lege) omschrijving-kolom — ruimer dan klant. */
-                  content = '<button class="og-pers-btn" data-id="' + esc(p.id) + '" data-disc="' + esc(d.key) + '" title="Personen toewijzen">👤 ' + nPers + (nPers === 1 ? ' persoon' : ' personen') + '</button>';
                 }
                 html += stickyTd('og-td-disc', STICKY_LEFT[i], STICKY_META[i], BG_DISC, content);
               });
               if (opts.statusKolom) html += stickyTd('og-td-disc og-td-status', statusLeft, STATUS_W, BG_DISC, '');
-              var persLabel = nPers > 0 ? '<span class="og-pers">' + nPers + '</span>' : '';
               kol.forEach(function (c) {
                 var isHuidig = toonHuidig && ((c.type === 'week' && c.week === huidigWeek) || (c.type === 'maand' && c.maand === huidigMaand));
                 var hCls = isHuidig ? ' og-td-huidig' : '';
                 if (c.type === 'week') {
                   var on = !!set[c.week];
-                  /* Celtekst = fase-tekst (zelfde als Engineering Planning); personen → tooltip. */
+                  /* Celtekst = fase-tekst (zelfde als Engineering Planning). */
                   var fase = on ? (notes[c.week] || '') : '';
-                  var tip = on ? esc(d.label + (fase ? ' — ' + fase : '') + (nPers ? ' · ' + nPers + ' pers.' : '')) : '';
+                  var tip = on ? esc(d.label + (fase ? ' — ' + fase : '')) : '';
                   html += '<td class="og-td-tijd og-paint-cell' + (on ? ' painted' : '') + hCls + '" data-week="' + c.week + '"'
                     + (on ? ' style="background:' + esc(d.color) + '"' : '') + (tip ? ' title="' + tip + '"' : '')
                     + '>' + (fase ? '<span class="og-fase">' + esc(fase) + '</span>' : '') + '</td>';
@@ -801,7 +842,7 @@
                   var any = false;
                   for (var w in set) { if (set[w] && maandVanWeek(doc.jaar, Number(w)) === c.maand) { any = true; break; } }
                   html += '<td class="og-td-tijd og-maand-sum' + (any ? ' filled' : '') + hCls + '"'
-                    + (any ? ' style="background:' + esc(d.color) + '"' : '') + '>' + (any ? persLabel : '') + '</td>';
+                    + (any ? ' style="background:' + esc(d.color) + '"' : '') + '></td>';
                 }
               });
               html += '</tr>';
@@ -832,10 +873,10 @@
         });
       });
 
-      el.querySelectorAll('.og-pers-btn').forEach(function (b) {
+      el.querySelectorAll('.og-mont-btn').forEach(function (b) {
         b.addEventListener('click', function (e) {
           e.stopPropagation();
-          openBezetting(b.getAttribute('data-id'), b.getAttribute('data-disc'));
+          openMonteurs(b.getAttribute('data-id'));
         });
       });
 
@@ -929,22 +970,25 @@
         render();
       }
     }
-    function setBezetting(projId, discKey, lijst) {
+    function setMonteurs(projId, lijst) {
       var p = doc.projecten.filter(function (x) { return x.id === projId; })[0];
       if (!p) return;
-      if (!p.bezetting) p.bezetting = {};
-      if (lijst && lijst.length) p.bezetting[discKey] = lijst;
-      else delete p.bezetting[discKey];
+      p.monteurs = (Array.isArray(lijst) ? lijst : []).map(normMonteur).filter(Boolean);
       saveProject(p); render();      /* alleen dit project veranderde */
     }
-    function openBezetting(projId, discKey) {
+    function openMonteurs(projId) {
       var p = doc.projecten.filter(function (x) { return x.id === projId; })[0];
       if (!p) return Promise.resolve(null);
-      var disc = discByKey(discKey);
-      var titel = (disc ? disc.label : discKey) + ' — personen';
-      return openBezettingPicker(titel, bezettingVoor(p, discKey)).then(function (lijst) {
+      var naam = p.omschrijving || p.wo || p.klant || 'project';
+      var titel = naam + ' — monteurs';
+      /* Default-periode = de geplande projectspan in het getoonde jaar. */
+      var snap = planSnapshot(p, doc.jaar);
+      var deflt = { jaar: doc.jaar,
+        startWeek: (snap && snap.startJaar === doc.jaar) ? snap.startWeek : null,
+        eindWeek:  (snap && snap.eindJaar  === doc.jaar) ? snap.eindWeek  : null };
+      return openMonteursPicker(titel, p.monteurs || [], deflt).then(function (lijst) {
         if (lijst === null) return null;        /* geannuleerd → ongewijzigd */
-        setBezetting(projId, discKey, lijst);
+        setMonteurs(projId, lijst);
         return lijst;
       });
     }
@@ -992,7 +1036,6 @@
         function pasToe() {
           doc.projecten.forEach(function (p) {
             Object.keys(p.weken || {}).forEach(function (k) { if (behoudKeys.indexOf(k) === -1) delete p.weken[k]; });
-            Object.keys(p.bezetting || {}).forEach(function (k) { if (behoudKeys.indexOf(k) === -1) delete p.bezetting[k]; });
           });
           doc.disciplines = nieuwe;
           save(); render();   /* save() → persistProject schrijft ook de plan-snapshots opnieuw */
@@ -1015,8 +1058,8 @@
       addProject: addProject,
       promptAddProject: promptAddProject,
       removeProject: removeProject,
-      setBezetting: setBezetting,
-      openBezetting: openBezetting,
+      setMonteurs: setMonteurs,
+      openMonteurs: openMonteurs,
       toggleExpand: toggleExpand,
       setAllExpanded: setAllExpanded,
       allesOpen: allesOpen,

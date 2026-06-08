@@ -66,23 +66,14 @@ tr.og-row-disc .og-td-act, tr.og-row-disc .og-td-disc { background: #fdf3df !imp
 .og-paint-cell { cursor: crosshair; }
 .og-paint-cell:hover { box-shadow: inset 0 0 0 1px var(--accent, #e8a000); }
 
-/* Personen-tellingen */
-.og-cnt {
-  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  font-family: var(--mono); font-size: 10px; font-weight: 700; color: #3d4558;
-  text-shadow: 0 0 2px rgba(255,255,255,0.9); pointer-events: none;
+/* Monteurs-knop in de projectkop (omschrijving-kolom) */
+.og-mont-btn {
+  margin-left: 6px; border: 1px solid rgba(232,160,0,0.45);
+  background: rgba(232,160,0,0.10); color: #9a6b00;
+  border-radius: 10px; padding: 0 7px; font-family: var(--mono); font-size: 9px;
+  font-weight: 700; cursor: pointer; line-height: 1.6; vertical-align: middle;
 }
-.og-pers {
-  display: block; text-align: center; font-family: var(--mono); font-size: 10px;
-  font-weight: 700; color: #1a1f2e; text-shadow: 0 0 2px rgba(255,255,255,0.9); pointer-events: none;
-}
-.og-pers-btn {
-  margin-left: 6px; border: 1px solid rgba(124,58,237,0.35);
-  background: rgba(124,58,237,0.06); color: #7c3aed;
-  border-radius: 10px; padding: 0 6px; font-family: var(--mono); font-size: 9px;
-  font-weight: 700; cursor: pointer; line-height: 1.5; vertical-align: middle;
-}
-.og-pers-btn:hover { background: #7c3aed; color: #fff; border-color: #7c3aed; }
+.og-mont-btn:hover { background: #e8a000; color: #000; border-color: #e8a000; }
 
 /* Caret / verwijderen / leeg */
 .og-caret {

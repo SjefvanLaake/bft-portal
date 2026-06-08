@@ -15,8 +15,11 @@
  * ────────────────────────────────────────────────────────────────────────
  */
 
-/* Vaste rollen-set (sluit aan op de meta-kolommen PL / EN / WVB). */
-var BFT_ROLLEN = ['Projectleider', 'Engineering', 'WVB'];
+/* Vaste rollen-set (PL / EN / WVB sluiten aan op de meta-kolommen; Monteur is de
+   montage-rol voor de per-project monteurbezetting in OverallPlanning). Eén persoon
+   kan meerdere rollen dragen — een WVB'er die ook monteert, of een engineer die
+   bijspringt in de montage, krijgt simpelweg meer dan één rol. */
+var BFT_ROLLEN = ['Projectleider', 'Engineering', 'WVB', 'Monteur'];
 
 /* Namen afgekort naar 2-3 letters (conventie: werknemers worden zo aangeduid). */
 const BFT_MEDEWERKERS = [
@@ -24,9 +27,12 @@ const BFT_MEDEWERKERS = [
   { id: 'mdw_pja', naam: 'PJ',  rollen: ['Projectleider'] },
   { id: 'mdw_mba', naam: 'MB',  rollen: ['Projectleider'] },
   { id: 'mdw_she', naam: 'SH',  rollen: ['Engineering'] },
-  { id: 'mdw_kev', naam: 'KE',  rollen: ['Engineering'] },
-  { id: 'mdw_two', naam: 'TW',  rollen: ['WVB'] },
-  { id: 'mdw_rde', naam: 'RD',  rollen: ['WVB'] }
+  { id: 'mdw_kev', naam: 'KE',  rollen: ['Engineering', 'Monteur'] },  // engineer die bijspringt in montage
+  { id: 'mdw_two', naam: 'TW',  rollen: ['WVB', 'Monteur'] },          // WVB'er die ook monteert
+  { id: 'mdw_rde', naam: 'RD',  rollen: ['WVB'] },
+  { id: 'mdw_gdk', naam: 'GdK', rollen: ['Monteur'] },
+  { id: 'mdw_bvr', naam: 'BvR', rollen: ['Monteur'] },
+  { id: 'mdw_hjm', naam: 'HM',  rollen: ['Monteur'] }
 ];
 
 /* ──────────────────────────────────────────────────────────────────────

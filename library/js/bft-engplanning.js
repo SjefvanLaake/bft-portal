@@ -906,13 +906,13 @@
     }
 
     // Schrijf één lane-project naar de gedeelde planning-bron (bft_overallplanning_).
-    // weken (per-week) → reeksen (fase-bewust); behoud bezetting, andere jaren en
+    // weken (per-week) → reeksen (fase-bewust); behoud monteurs, andere jaren en
     // (bestaande) metadata. Eigenaar (verantwoordelijke) → projectenlijst. Config/index indien nodig.
     function persistProjectNaarBron(lp) {
       if (!lp) return;
       var jaar = doc.horizon.jaar;
       var bestond = ogGet('proj_' + lp.id);
-      var rec = bestond || { id: lp.id, bftId: lp.projectId || '', weken: {}, bezetting: {} };
+      var rec = bestond || { id: lp.id, bftId: lp.projectId || '', weken: {}, monteurs: [] };
       if (!rec.weken || typeof rec.weken !== 'object') rec.weken = {};
       // Metadata: bij een NIEUW record uit de tool overnemen; bestaande records volgen de
       // projectenlijst (herstelMetadataUitBron) — dus ongemoeid laten.
