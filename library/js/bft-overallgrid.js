@@ -251,7 +251,7 @@
       + '.og-bz-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;cursor:pointer;'
       +   'font-family:"IBM Plex Sans",sans-serif;font-size:14px;color:#1a1f2e;}'
       + '.og-bz-row:hover{background:#f1f3f6;}'
-      + '.og-bz-row input{width:16px;height:16px;cursor:pointer;}'
+      + '.og-bz-row input[type="checkbox"]{width:16px;height:16px;cursor:pointer;flex:none;}'
       + '.og-bz-naam{flex:1;}'
       + '.og-bz-disc{font-family:"IBM Plex Mono",monospace;font-size:11px;color:#8a909c;}'
       + '.og-bz-leeg{font-family:"IBM Plex Mono",monospace;font-size:12px;color:#8a909c;padding:8px;}'
@@ -261,7 +261,7 @@
       + '.og-bz-del:hover{background:#d63030;color:#fff;border-color:#d63030;}'
       // monteurs-picker: gemarkeerde gekozen rij + van/tot-week-inputs
       + '.og-mz-on{background:#fff7e8;}'
-      + '.og-mz-per{display:flex;align-items:center;gap:3px;font-family:"IBM Plex Mono",monospace;font-size:12px;color:#3d4558;}'
+      + '.og-mz-per{display:flex;align-items:center;gap:3px;flex:none;font-family:"IBM Plex Mono",monospace;font-size:12px;color:#3d4558;}'
       + '.og-mz-lbl{color:#8a909c;font-size:11px;}'
       + '.og-mz-wk{width:54px;padding:4px 5px;border:1px solid #c8ccd4;border-radius:5px;font-size:13px;'
       +   'font-family:"IBM Plex Mono",monospace;color:#1a1f2e;}'
