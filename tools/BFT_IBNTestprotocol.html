@@ -399,7 +399,9 @@ const FASEN = [
         {id:'1A-04',desc:'Werkruimte rondom machine vrij en veilig'},
         {id:'1A-05',desc:'Vloeistofniveaus gecontroleerd: hydrauliekolie, smeerolie, koelvloeistof',sub:'Noteer niveaus bij opmerking'},
         {id:'1A-06',desc:'Leidingverbindingen drukloos en lekkagevrij voor inschakeling'},
-        {id:'1A-07',desc:'Motorkoppelingen / aandrijfassen vrij van obstakels — hand-ronddraaitest'}
+        {id:'1A-07',desc:'Motorkoppelingen / aandrijfassen vrij van obstakels — hand-ronddraaitest'},
+        {id:'1A-08',desc:'Correcte borging toegepast (veerring, Loctite e.d.)'},
+        {id:'1A-09',desc:'Flenzen: pakkingen correct geplaatst, kruislings aangedraaid'}
       ]},
       { id:'1B', titel:'Elektrische pre-check', items:[
         {id:'1B-01',desc:'Voedingsspanning op kast gecontroleerd (3-fase aanwezig, volgorde juist)',sub:'Noteer gemeten spanning L1–L2–L3'},
@@ -408,7 +410,8 @@ const FASEN = [
         {id:'1B-04',desc:'Zekeringen / motorbeveiligers uitgeschakeld / correct geplaatst',sub:'Zie zekeringsschema'},
         {id:'1B-05',desc:'Alle LOGO-modules en uitbreidingen correct gestoken / bekabeld'},
         {id:'1B-06',desc:'PE-aansluitingen gecontroleerd (behuizing, motoren)'},
-        {id:'1B-07',desc:'Aansluitschema beschikbaar en overeenkomstig uitgevoerd',sub:'P&ID + E-schema'}
+        {id:'1B-07',desc:'Aansluitschema beschikbaar en overeenkomstig uitgevoerd',sub:'P&ID + E-schema'},
+        {id:'1B-08',desc:'Elektrische klemmen op koppel aangedraaid (steekproef)'}
       ]}
     ]
   },
@@ -535,7 +538,8 @@ const FASEN = [
         {id:'4C-04',desc:'M4 — Hydrofoorpomp: bump-test'},
         {id:'4C-05',desc:'Compressor: bump-test draairichting',sub:'w/ 4 neutraal seconden voor LED-check'},
         {id:'4C-06',desc:'Kraan Atlas (PTO): bump-test + koeler draairichting'},
-        {id:'4C-07',desc:'Shakers: draairichting controleren (rechts + symbool)'}
+        {id:'4C-07',desc:'Shakers: draairichting controleren (rechts + symbool)'},
+        {id:'4C-08',desc:'Droogdraaien pomp max ≤3 sec (KRITIEK — nooit langer droog laten draaien)'}
       ]},
       { id:'4D', titel:'Software storingen / meldingen', items:[
         {id:'4D-B039',desc:'B039 — VFD TransPmp (Q21)',sub:'Alarm forceren en bevestigen'},
@@ -564,7 +568,8 @@ const FASEN = [
         {id:'5A-01',desc:'Alle vloeistofaansluitingen gecontroleerd — geen losse koppelingen'},
         {id:'5A-02',desc:'Tankniveaus OK — water- en mudtank gevuld conform procedure'},
         {id:'5A-03',desc:'Inlaatfilters / strainers schoon en geplaatst'},
-        {id:'5A-04',desc:'Ontluchting pompen uitgevoerd (indien vereist)'}
+        {id:'5A-04',desc:'Ontluchting pompen uitgevoerd (indien vereist)'},
+        {id:'5A-05',desc:'Druktest leidingwerk/flenzen uitgevoerd — geen lekkage',sub:'Noteer testdruk'}
       ]},
       { id:'5B', titel:'Pompen — nat test', items:[
         {id:'5B-M1',desc:'M1 Transferpomp mud — stroom, druk, flow op HMI',sub:'Noteer gemeten stroom (A)'},
@@ -585,19 +590,19 @@ const FASEN = [
         {id:'5D-01',desc:'Volledige visuele ronde na 15 min draaien — geen lekkages'},
         {id:'5D-02',desc:'Afdichtingen pompen droog en intact'},
         {id:'5D-03',desc:'Hydraulische verbindingen lekkagevrij'},
-        {id:'5D-04',desc:'Motortemperaturen normaal na 15 min',sub:'Noteer temperaturen'}
+        {id:'5D-04',desc:'Motortemperaturen normaal na 15 min',sub:'Noteer temperaturen — criteria: motor ≤80°C OK / >90°C NOK · lagers ≤70°C OK'}
       ]}
     ]
   },
   {
     id: 6, titel: 'Duur- & Warmtetest', icon: '🌡',
-    sub: 'Minimaal 4 uur continu op productiebelasting — FLIR + vibratie',
-    gate: { label: 'Gate 6 — Duurtest geslaagd?', sub: 'Minimaal 4u continu zonder onverwachte stop, FLIR-fotos gemaakt' },
+    sub: 'Minimaal 1 uur continu op productiebelasting — FLIR + vibratie',
+    gate: { label: 'Gate 6 — Duurtest geslaagd?', sub: 'Minimaal 1u continu zonder onverwachte stop, FLIR-fotos gemaakt' },
     sections: [
       { id:'6A', titel:'Duurtest uitvoering', items:[
         {id:'6A-01',desc:'Startmoment duurtest genoteerd',sub:'Noteer datum + tijd start'},
         {id:'6A-02',desc:'Alle pompen en shakers in bedrijf bij generatorbelasting'},
-        {id:'6A-03',desc:'Duur: minimaal 4 uur continu — reset bij onverwachte stop'},
+        {id:'6A-03',desc:'Duur: minimaal 1 uur continu — reset bij onverwachte stop'},
         {id:'6A-04',desc:'Tussentijdse motorstromen gelogd (om het uur)',sub:'Noteer waarden'},
         {id:'6A-05',desc:'Olietemperatuur hydrauliek gecontroleerd'},
         {id:'6A-06',desc:'Eindmoment duurtest genoteerd — totale draaiduur',sub:'Noteer datum + tijd einde'}
@@ -605,7 +610,7 @@ const FASEN = [
       { id:'6B', titel:'FLIR thermografie', items:[
         {id:'6B-01',desc:'FLIR-fotos genomen van alle motoren en schakelkasten na duurtest'},
         {id:'6B-02',desc:'FLIR-fotos opgeslagen op server — bestanden verwijderd van camera'},
-        {id:'6B-03',desc:'Hotspots boven 80°C genoteerd en beoordeeld'},
+        {id:'6B-03',desc:'Hotspots boven 80°C genoteerd en beoordeeld',sub:'Criteria: motor ≤80°C OK / >90°C NOK · lagers ≤70°C OK'},
         {id:'6B-04',desc:'Vibratiebaseline definitief vastgelegd per lagerpunt'}
       ]}
     ]
@@ -619,13 +624,26 @@ const FASEN = [
         {id:'7A-01',desc:"Schema's retour naar bureau engineering / as-built bijgewerkt"},
         {id:'7A-03',desc:'Testprotocol volledig ingevuld en ondertekend'},
         {id:'7A-04',desc:'Open punch-list items afgehandeld of intern goedgekeurd'},
-        {id:'7A-05',desc:'DG14 motordisplay ingesteld (Item 20 procedure)',sub:'John Deere gauge — 2x 4-up schermen'}
+        {id:'7A-05',desc:'DG14 motordisplay ingesteld (Item 20 procedure)',sub:'John Deere gauge — 2x 4-up schermen'},
+        {id:'7A-06',desc:'E-P-H schema aanwezig bij machine (elektro / pneumatisch / hydraulisch)'},
+        {id:'7A-07',desc:'Onderdelenboek aanwezig'},
+        {id:'7A-08',desc:'Handleiding aanwezig'},
+        {id:'7A-09',desc:'CE-documentatie / conformiteitsverklaring compleet'},
+        {id:'7A-10',desc:'Keuringen uitgevoerd en aanwezig (kraan, TÜV, NEN)',sub:'Voeg keuringscertificaten toe'},
+        {id:'7A-11',desc:"Opleverfoto's gemaakt en geüpload naar server",sub:'Overzicht- en detailfotos van de machine'}
       ]},
       { id:'7B', titel:'Verzendgereed', items:[
         {id:'7B-01',desc:'Pompbehuizingen geleegd voor transport (bij vorst)',sub:'Alleen bij verwacht transport onder 0°C'},
         {id:'7B-02',desc:'Identificatiestickers / typeplaten aangebracht en zichtbaar'},
         {id:'7B-03',desc:'Transportbeveiliging vastgesnoerd / losse onderdelen vastgezet'},
         {id:'7B-04',desc:'Certificaten en documenten in transportpakket',sub:'CE, conformiteit, handleidingen'}
+      ]},
+      { id:'7C', titel:'Orde & netheid', items:[
+        {id:'7C-01',desc:'Geen staalspanen of slijpslinters op/in de machine'},
+        {id:'7C-02',desc:'Geen uitstekende kitnaden — afdichtingen netjes afgewerkt'},
+        {id:'7C-03',desc:'Lakbeschadigingen bijgewerkt'},
+        {id:'7C-04',desc:'Machine gepoetst / schoongemaakt'},
+        {id:'7C-05',desc:'Elektrokast gereinigd met rvs-reiniger'}
       ]}
     ]
   }
