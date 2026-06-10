@@ -262,10 +262,10 @@
       // monteurs-picker: gemarkeerde gekozen rij + van/tot-week-inputs
       + '.og-mz-on{background:#fff7e8;}'
       + '.og-mz-per{display:flex;align-items:center;gap:3px;font-family:"IBM Plex Mono",monospace;font-size:12px;color:#3d4558;}'
-      + '.og-mz-wk{width:46px;padding:4px 5px;border:1px solid #c8ccd4;border-radius:5px;font-size:13px;'
+      + '.og-mz-lbl{color:#8a909c;font-size:11px;}'
+      + '.og-mz-wk{width:54px;padding:4px 5px;border:1px solid #c8ccd4;border-radius:5px;font-size:13px;'
       +   'font-family:"IBM Plex Mono",monospace;color:#1a1f2e;}'
-      + '.og-mz-wk:focus{outline:2px solid #e8a000;outline-offset:1px;border-color:#e8a000;}'
-      + '.og-mz-dash{color:#8a909c;}';
+      + '.og-mz-wk:focus{outline:2px solid #e8a000;outline-offset:1px;border-color:#e8a000;}';
     var st = document.createElement('style'); st.id = FORM_CSS_ID; st.textContent = css;
     document.head.appendChild(st);
   }
@@ -461,10 +461,11 @@
 
       function wkInputs(id) {
         var g = gekozen[id] || {};
-        return '<span class="og-mz-per">w'
-          + '<input class="og-mz-wk" type="number" min="1" max="53" data-fld="startWeek" data-id="' + esc(id) + '" value="' + (g.startWeek != null ? g.startWeek : '') + '" title="Van week">'
-          + '<span class="og-mz-dash">–</span>w'
-          + '<input class="og-mz-wk" type="number" min="1" max="53" data-fld="eindWeek" data-id="' + esc(id) + '" value="' + (g.eindWeek != null ? g.eindWeek : '') + '" title="Tot en met week">'
+        return '<span class="og-mz-per">'
+          + '<span class="og-mz-lbl">van</span> w'
+          + '<input class="og-mz-wk" type="number" min="1" max="53" placeholder="wk" data-fld="startWeek" data-id="' + esc(id) + '" value="' + (g.startWeek != null ? g.startWeek : '') + '" title="Van week">'
+          + '<span class="og-mz-lbl">t/m</span> w'
+          + '<input class="og-mz-wk" type="number" min="1" max="53" placeholder="wk" data-fld="eindWeek" data-id="' + esc(id) + '" value="' + (g.eindWeek != null ? g.eindWeek : '') + '" title="Tot en met week">'
           + '</span>';
       }
       function rowHtml(id, naam, rollen, isWees) {
