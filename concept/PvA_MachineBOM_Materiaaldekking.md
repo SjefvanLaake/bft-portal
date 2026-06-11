@@ -1,6 +1,7 @@
 # PvA — Machine-BOM & materiaaldekking (read-only overzicht per machine)
 
-**Datum:** 2026-06-11 · **Status:** concept ter bespreking
+**Datum:** 2026-06-11 (demo-spoor toegevoegd) · **Status:** concept ter bespreking
+**Update 2026-06-11:** PowerAll-API-sleutel **goedgekeurd, komt binnenkort** → demo-spoor toegevoegd (§6b): Stuklijstvergelijker live op `WorkOrderLine`.
 **Aanleiding (Sjef):** een complete machine in één keer bestellen (staal, RVS, PE-leidingen, appendages) is nu lastig door het **versplinterde SolidWorks-archief** (bestanden worden gekopieerd; bij wijzigingen is de juiste versie niet terug te vinden). Idee: een "virtuele machine" die toont wat je besteld hebt, met benaming, visualisatie, ERP-koppeling, auto-bijwerkende BOM en afvinklijst — **alles met elkaar verbonden**.
 
 > **Kernconclusie vooraf (eerlijk):** dit is **geen visualisatieprobleem maar een koppelsleutel-probleem**. De waarde zit in *betrouwbare, actuele BOM ↔ bestelstatus*, niet in 3D. De 3D-viewer is het duurste deel met de laagste ROI en gaat **uit scope** (geparkeerd). ~80% van het idee valt samen met de al geplande **PowerAll-materiaaldekking-tool**; dit PvA scherpt die aan met de SolidWorks-BOM-invalshoek.
@@ -93,10 +94,36 @@ Geen apart "virtuele machine"-eiland: dit is een **machine-/projectgerichte BOM-
 - `soort`: `appendage` (1:1 artikel) vs `bulk` (materiaal→voorraadartikel-regel) — dekt K2.
 - `id` stabiel afgeleid van het SolidWorks-part → afvink-state blijft behouden bij her-import (vgl. IBN-aanpak).
 
+## 6b. Demo-spoor — "live PowerAll" snel laten zien (toegevoegd 2026-06-11)
+
+**Aanleiding:** de PowerAll-API-sleutel is **goedgekeurd en komt binnenkort**. Er is behoefte aan een **snelle demo** die de ERP-samenwerking *zichtbaar* maakt — vóór het hele machine-BOM-traject af is.
+
+**Snelste geloofwaardige demo = de Stuklijstvergelijker live maken.** De V1-tool (`Bofram Tools Portaal/.../BFT_Stuklijstvergelijker.html`) leest nu `.xlsx`-werkorderexports (SheetJS): **kolom A = artikelnummer, kolom B = aantal**, en vergelijkt een referentie tegen één of meer werkorders → Ontbreekt / Afwijkend aantal / Extra artikel / Correct. Die geïmporteerde werkorder is **exact** wat de API als `WorkOrderLine` levert (artikel + aantal per machine).
+
+> **Verdict op Sjefs vraag (live i.p.v. import): ja, en het is de ideale demo.** De vergelijk-logica blijft 1:1; alleen de databron wisselt van *FileReader/XLSX* → *fetch naar de proxy*. Hoge zichtbaarheid ("kies werkorder → trekt live de regels"), lage bouwkost (bewezen UI), en het bewijst meteen het swap-punt-patroon dat de hele V2-koers onderbouwt.
+
+**Demo-architectuur (minimaal):**
+```
+[V2-tool]  ── fetch /api/workorder/<id>/lines ──►  [thin proxy]  ── sleutel ──►  PowerAll
+ bewezen compare-UI         (read-only)            (Function/serverless)         WorkOrderLine
+```
+- **Sleutel NOOIT in de browser** → een minimale proxy is óók voor de demo verplicht (zie [[richting-hosted-live]]).
+- Datavorm-mapping: `WorkOrderLine` → `{artikel, aantal}` = dezelfde rij-vorm die de compare-functie al verwacht. Alleen `parseFile()` vervangen door `fetchWorkOrderLines()`.
+- De compare-logica zit nog in **V1**; voor de demo porten/hergebruiken we die naar V2 als eerste plak van de materiaaldekking-tool.
+
+**Wat de demo bewust NIET is:** geen SolidWorks-BOM, geen mapping (K1), geen dekkings-%-over-tijd. Puur: *referentie-stuklijst ↔ live werkorder uit PowerAll*. Het machine-BOM-traject (§1–9) blijft de einddoel-route; de demo is de eerste, los bruikbare plak ervan.
+
+**Wat Sjef nog moet regelen (belangrijkste eerst):**
+1. **PowerAll-auth + omgeving** — auth-methode (header/bearer/sleutelnaam?), **sandbox vs productie**, rate limits. Grootste onbekende ([[reference-powerall-api]]); blokkeert de proxy. → PowerAll-helpdesk/Bever.
+2. **Waar draait de demo-proxy** — minimale Azure Function in de tenant (doelarchitectuur, vereist Bever-toegang) óf een interim eigen serverless/lokale proxy voor de demo. Beslissing + toegang nodig.
+3. **1–2 concrete werkordernummers** (`relationCode:entryNumber`) met bekende uitkomst — liefst machine **201267_BFMR2000EK** (zit al in het project) → herkenbare, controleerbare demo.
+4. **WO↔BFT-projectnummer-veld** bevestigen (welk WO-veld linkt aan ons projectnr) — voor de echte tool, niet strikt voor de demo.
+
 ## 7. Fasering (oplopende ROI; 3D bewust laatst/uit)
 
 | Stap | Inhoud | Resultaat |
 |---|---|---|
+| **D** (demo, eerst) | Stuklijstvergelijker-compare porten naar V2; `parseFile()` → `fetchWorkOrderLines()` via thin proxy; live `WorkOrderLine` voor 1 werkorder | **zichtbare PowerAll-demo** (zie §6b) |
 | **0** | K1-beslissing + bulk/catalogus-onderscheid vastleggen; sandbox-check PowerAll WO-/PO-regel | fundering staat |
 | **1** | **Mappingtabel** (aanpak B): SolidWorks-part ↔ PowerAll-artikel, hergebruikbaar | de join bestaat |
 | **2** | **SolidWorks-BOM-import** per machine → `machine-bom.json` (uitbouw `Stuklijstvergelijker`) | één actuele BOM per machine |
