@@ -119,6 +119,13 @@ Geen apart "virtuele machine"-eiland: dit is een **machine-/projectgerichte BOM-
 3. **1–2 concrete werkordernummers** (`relationCode:entryNumber`) met bekende uitkomst — liefst machine **201267_BFMR2000EK** (zit al in het project) → herkenbare, controleerbare demo.
 4. **WO↔BFT-projectnummer-veld** bevestigen (welk WO-veld linkt aan ons projectnr) — voor de echte tool, niet strikt voor de demo.
 
+**Te toetsen in de sandbox vóór we bouwen (review 2026-06-11 — anders breekt de demo):**
+- **R1 (kritiek) — artikelnummer-uitlijning.** Joint de compare op kolom A = artikelnummer; werkt alleen als de **referentie-stuklijst dezelfde nummering gebruikt als PowerAll**. Is de V1-referentie SolidWorks-genummerd i.p.v. PowerAll, dan toont de live demo alles als "Ontbreekt/Extra" (= K1 sluipt terug). **Eerst checken: wat staat in kolom A van de V1-referentie en is dat identiek aan het artikel-veld op `WorkOrderLine`?** Het "1:1" hierboven is een aanname tot dit bevestigd is.
+- **R2 — `WorkOrderLine`-veldvorm.** Zit het artikel direct op de regel of pas via `?include=Product`? Is het aantal de **behoefte** of het **restant** (compare wil behoefte)? Decimalen komen als **string** → numerieke parse moet dat aankunnen.
+- **R3 — bereikbaarheid omweg.** Zelf-hosten van de proxy gaat ervan uit dat `connect.powerall.io` van buitenaf met token bereikbaar is. Bij **IP-allowlisting/tenant-origin-eis** valt de omweg weg → bevestigen dat er geen IP-restrictie is.
+- **R4 — read-only scoping.** "Read-only" is gebruiksintentie; geldt alleen als de **sleutel zo gescoped** is. Bevestigen, niet aannemen.
+- **R5 — wegwerpbaar houden.** Demo bewust níét op het einddoel-datamodel bouwen (geen schema/mapping); pas de echte tool-structuur ná sandbox-bewijs van de API-vorm. Voorkomt vergulden.
+
 ## 7. Fasering (oplopende ROI; 3D bewust laatst/uit)
 
 | Stap | Inhoud | Resultaat |

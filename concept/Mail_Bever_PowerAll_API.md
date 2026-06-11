@@ -11,15 +11,15 @@
 
 Beste [naam],
 
-Om de eerste demo van ons interne BFT-portaal te kunnen bouwen, hebben we van jullie kant nog **één ding** nodig: **read-only toegang tot de PowerAll Connect API** — de reeds goedgekeurde API-sleutel, plus de bijbehorende authenticatie-methode. Willen jullie de sleutel activeren en ons in contact brengen met de PowerAll-helpdesk voor de technische details?
+Om de eerste demo van ons interne BFT-portaal te kunnen bouwen, hebben we van jullie kant nog **één ding** nodig: **read-only toegang tot de PowerAll Connect API**. De sleutel is al goedgekeurd; we horen graag langs welke weg die ons bereikt en hoe we ons authenticeren. Willen jullie ons daarvoor in contact brengen met de PowerAll-helpdesk voor de technische details?
 
 Ter geruststelling over de scope: we bouwen een kleine, **read-only** demo die live werkordergegevens uit PowerAll naast onze eigen referentie-stuklijst toont. De sleutel blijft **server-side** (nooit in de browser); we hosten dit demo-onderdeel **zelf** via een kleine proxy. We vragen jullie dus uitdrukkelijk **niet** om de applicatie te bouwen, te hosten of te beheren — alleen om de API-toegang mogelijk te maken. Dat sluit aan bij de rolverdeling uit jullie eerdere antwoord.
 
 Wat we concreet van jullie nodig hebben:
 
-1. **Activeer en lever de read-only API-sleutel/token** (of bevestig langs welke weg we hem ontvangen).
+1. **Bevestig langs welke weg de reeds goedgekeurde sleutel ons bereikt** (en dat deze **read-only** gescoped is). Wordt de sleutel door PowerAll zelf uitgegeven, dan volstaat dat we weten waar we hem ophalen.
 2. **Breng ons in contact met de PowerAll-helpdesk** voor de auth-methode en het endpoint (`connect.powerall.io/v1`).
-3. **Bevestig of we een test-/sandbox-omgeving gebruiken** of read-only op de productieomgeving werken.
+3. **Bevestig of we een test-/sandbox-omgeving gebruiken** of read-only op de productieomgeving werken — en of er **geen IP-restrictie** op de Connect-API staat (we benaderen hem vanaf onze eigen proxy).
 
 Zodra dit geregeld is, kunnen wij de demo volledig zelfstandig afbouwen. De bredere live-omgeving (Entra-app, SharePoint, Azure-hosting) pakken we als een apart, later traject op — daar komen we separaat op terug.
 
