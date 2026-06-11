@@ -394,7 +394,7 @@ const FASEN = [
     sections: [
       { id:'1A', titel:'Mechanische inspectie', items:[
         {id:'1A-01',desc:'Machine vrij van transportschade — visuele inspectie behuizing, aansluitingen, leidingen'},
-        {id:'1A-02',desc:'Alle bevestigingen en bouten vast en correct aangedraaid'},
+        {id:'1A-02',desc:'Alle bevestigingen en bouten vast en correct aangedraaid',sub:'Steekproef-veiligheidscontrole vóór inschakeling — kan na transport/handling zijn losgekomen'},
         {id:'1A-03',desc:'Veiligheidskappen en beschermplaten aangebracht'},
         {id:'1A-04',desc:'Werkruimte rondom machine vrij en veilig'},
         {id:'1A-05',desc:'Vloeistofniveaus gecontroleerd: hydrauliekolie, smeerolie, koelvloeistof',sub:'Noteer niveaus bij opmerking'},
@@ -617,7 +617,7 @@ const FASEN = [
   },
   {
     id: 7, titel: 'Vrijgave & verzendgereed', icon: '📦',
-    sub: 'Documentatie afronden, machine gereed voor uitlevering',
+    sub: 'Commissioning-afsluiting — project-documentatie, CE en verzending: zie MachinebouwChecklist Fase 9–10',
     type: 'vrijgave',
     sections: [
       { id:'7A', titel:'Documentatie', items:[
@@ -627,22 +627,16 @@ const FASEN = [
         {id:'7A-05',desc:'DG14 motordisplay ingesteld (Item 20 procedure)',sub:'John Deere gauge — 2x 4-up schermen'},
         {id:'7A-06',desc:'E-P-H schema aanwezig bij machine (elektro / pneumatisch / hydraulisch)'},
         {id:'7A-07',desc:'Onderdelenboek aanwezig'},
-        {id:'7A-08',desc:'Handleiding aanwezig'},
-        {id:'7A-09',desc:'CE-documentatie / conformiteitsverklaring compleet'},
-        {id:'7A-10',desc:'Keuringen uitgevoerd en aanwezig (kraan, TÜV, NEN)',sub:'Voeg keuringscertificaten toe'},
-        {id:'7A-11',desc:"Opleverfoto's gemaakt en geüpload naar server",sub:'Overzicht- en detailfotos van de machine'}
+        {id:'7A-10',desc:'Keuringen uitgevoerd en aanwezig (kraan, TÜV, NEN)',sub:'Voeg keuringscertificaten toe'}
       ]},
       { id:'7B', titel:'Verzendgereed', items:[
         {id:'7B-01',desc:'Pompbehuizingen geleegd voor transport (bij vorst)',sub:'Alleen bij verwacht transport onder 0°C'},
-        {id:'7B-02',desc:'Identificatiestickers / typeplaten aangebracht en zichtbaar'},
-        {id:'7B-03',desc:'Transportbeveiliging vastgesnoerd / losse onderdelen vastgezet'},
-        {id:'7B-04',desc:'Certificaten en documenten in transportpakket',sub:'CE, conformiteit, handleidingen'}
+        {id:'7B-02',desc:'Identificatiestickers / typeplaten aangebracht en zichtbaar'}
       ]},
       { id:'7C', titel:'Orde & netheid', items:[
         {id:'7C-01',desc:'Geen staalspanen of slijpslinters op/in de machine'},
         {id:'7C-02',desc:'Geen uitstekende kitnaden — afdichtingen netjes afgewerkt'},
         {id:'7C-03',desc:'Lakbeschadigingen bijgewerkt'},
-        {id:'7C-04',desc:'Machine gepoetst / schoongemaakt'},
         {id:'7C-05',desc:'Elektrokast gereinigd met rvs-reiniger'}
       ]}
     ]
