@@ -6,6 +6,27 @@
 
 ---
 
+## Status na antwoord Bever (2026-06-10)
+
+Bever beantwoordde de mail puntsgewijs (1–6). **Rode draad:** Bever heeft géén eigen
+ervaring met het bouwen van AI-tools/webservers en levert daar **geen support/advies**
+op — Bever is de infra-/M365-/PowerAll-leverancier, niet de bouwer/beheerder van de app.
+
+| # | Onze openstaande vraag | Bever | Status |
+|---|---|---|---|
+| 1 Entra-app | Scope-keuze? Wie beheert? | Kan app-registratie maken/inrichten; niet verantwoordelijk voor de software erachter. | **Deels** — inrichten kan ✅; **scope-keuze open**. |
+| 2 SharePoint | Nieuw vs bestaand? Toegangsgroep? | Sites aanmaken kan; on-prem-data migreren = **apart project**. | **Deels** — aanmaken ✅; **site-keuze + groep open**. |
+| 3 Hosting | Azure-abonnement? Wie deployt? | Azure kan; on-prem op huidige server sterk afgeraden; evt. VM op nieuwe server of sterk workstation. | **Open** — geen Azure-commitment; "wie deployt" open. ⚠️ botst met "geen eigen server". |
+| 4 PowerAll API | Auth-methode, sandbox, rate limits. | Doorverwezen naar **PowerAll-helpdesk** (aanbod om door te zetten). | **Niet beantwoord (doorverwezen)** — grootste open technische punt. |
+| 5 Security | (door ons als randvoorwaarde geframed) | Behandel als **speerpunt/eerste punt**, niet als randvoorwaarde. | **Advies** — overnemen: security naar voren. |
+| 6 Proces & rollen | Wie keurt/richt in/deployt? Contactpersoon? | Geen beheer/support op zo'n tool; adviseert **3e partij**; admin-accounts: stemt af. | **Deels** — beheer/deploy ≠ Bever → 3e partij/intern; goedkeuring/contactpersoon open. |
+
+**Beantwoord:** Bever kan Entra-app + SharePoint-site/lijsten inrichten (1–2); duidelijk dat Bever de app niet bouwt/beheert/deployt (6).
+
+**Nog open aan onze zijde:** (i) PowerAll auth/sandbox/rate limits → PowerAll-helpdesk; (ii) hosting-keuze Azure-in-tenant vs VM/workstation + wie deployt; (iii) SharePoint-scope + toegangsgroep; (iv) eigenaar app-beheer/deploy (3e partij of intern); (v) goedkeuring + contactpersoon.
+
+---
+
 ## In het kort — wat het is (en niet is)
 
 - Een **webapplicatie met interne tools** (planning, projectbeheer, checklists e.d.) voor Bofram-medewerkers.

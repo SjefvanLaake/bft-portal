@@ -184,7 +184,15 @@ var ROADMAP = {
            + 'de API-sleutel mag niet in de browser. Bestellen blijft in PowerAll.',
       items: [
         { titel: 'Materiaaldekking-/tekortentool', status: 'idee',
-          desc: 'Live per machine tonen wat nog besteld/ontvangen moet worden: voorraad, inkoopstatus, verwachte leverdata. Vervangt de handmatige Stuklijstvergelijker.' },
+          desc: 'Live per machine tonen wat nog besteld/ontvangen moet worden: voorraad, inkoopstatus, verwachte leverdata. Vervangt de handmatige Stuklijstvergelijker. Incl. SolidWorks-BOM-invalshoek — zie het item hieronder.' },
+        { titel: 'Machine-BOM ↔ materiaaldekking (SolidWorks-invalshoek)', status: 'idee',
+          desc: 'Per machine de SolidWorks-BOM importeren en read-only verrijken met PowerAll '
+              + 'bestel-/ontvangststatus → live dekkings-% + mismatch-flags ("ontworpen maar niet '
+              + 'besteld"). Kernknelpunt = de koppelsleutel SolidWorks-part ↔ PowerAll-artikel: '
+              + 'start met een mappingtabel (aanpak B), later het artikel-ID op de PDM-datakaart '
+              + '(aanpak A). Onderscheid catalogus-artikel (1:1) vs voorraad/bulkmateriaal '
+              + '(staal/RVS/PE, via materiaal→voorraadartikel-regel). 3D-visualisatie geparkeerd; '
+              + '"visueel" = gegroepeerde BOM-boom met statuskleuren. Zie concept/PvA_MachineBOM_Materiaaldekking.md.' },
         { titel: 'Koppeling op de werkorderregel', status: 'idee',
           desc: 'Inkoop en ontvangsten koppelen op ID aan de WO-regel — geen broos artikelnummer-matchen. WorkOrderLine = materiaalbehoefte per machine.' },
         { titel: 'Vergelijkbare machines', status: 'idee',
