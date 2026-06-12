@@ -1,8 +1,10 @@
-# Checklist voor de softwarebeheerder — live hosting BFT-toolset
+# Checklist voor IT — live hosting BFT-toolset (Entra ID / SharePoint / Azure)
 
-**Aan:** softwarebeheerder (M365 / SharePoint / Azure / PowerAll)
+**Aan:** IT (Entra ID / SharePoint / Azure)
 **Van:** Bofram Techniek
 **Doel:** de interne BFT-toolset (web) live brengen, gekoppeld aan M365/SharePoint (gedeelde data) en PowerAll (ERP). Bofram host dit **niet** op een eigen server. Graag onderstaande punten beoordelen en, waar akkoord, inrichten of toestemming verlenen.
+
+> **Twee-sporen-splitsing (2026-06-12):** dit is het **IT-spoor** (Entra ID / SharePoint / Azure — de live-omgeving). De **PowerAll API-sleutel/data** loopt via een apart spoor bij de **PowerAll-helpdesk** (zie `Mail_Bever_PowerAll_API.md`) en blokkeert de eerste demo; dit IT-spoor is parallel/later en is **geen** demo-afhankelijkheid.
 
 ---
 
@@ -95,19 +97,11 @@ op — Bever is de infra-/M365-/PowerAll-leverancier, niet de bouwer/beheerder v
 
 ---
 
-## 4. PowerAll — API-toegang (read-only)  ☐ akkoord / ☐ aanleveren
+## 4. PowerAll — API-toegang (read-only)  → loopt via de PowerAll-helpdesk, NIET via IT
 
-**Wat we vragen:** lees-toegang tot de PowerAll Connect API (`connect.powerall.io/v1`).
+**Verplaatst naar het helpdesk-spoor** (`Mail_Bever_PowerAll_API.md`): de API-sleutel, auth-methode, sandbox en rate limits regelen we rechtstreeks met de PowerAll-helpdesk. Hier alleen voor de volledigheid.
 
-**Waarom:** materiaaldekking/voortgang tonen naast de planning. Uitsluitend **lezen**; muteren blijft in PowerAll.
-
-**Specificatie / aan te leveren:**
-- **API-sleutel/credentials** voor **sandbox** (eerst testen) en later **productie**.
-- **Auth-methode** — bevestigen (API-key header, bearer-token, OAuth?). *Dit is nu het grootste open technische punt.*
-- **Toegestane endpoints/scope** (read-only volstaat).
-- **Rate limits** en of een **vast uitgaand IP** / allowlist nodig is (de Azure Function kan een vast IP krijgen).
-
-**Te bevestigen door beheerder/PowerAll-leverancier:** auth-methode, sandbox-toegang, rate limits.
+**Enige IT-raakvlak (later, niet nu):** zodra de proxy van Cloudflare naar een **Azure Function** verhuist en PowerAll een **IP-allowlist** blijkt te eisen, heeft IT een **vast uitgaand IP** voor die Function nodig. Tot die tijd geen IT-actie op dit punt.
 
 ---
 
