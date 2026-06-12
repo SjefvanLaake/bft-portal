@@ -1,0 +1,14 @@
+name = "bft-powerall"
+main = "powerall-proxy.js"
+compatibility_date = "2026-06-01"
+
+# Niet-geheime configuratie
+[vars]
+POWERALL_BASE   = "https://connect.powerall.io/v1"
+# Kommalijst van toegestane origins (geen trailing slash).
+# Vul de live GitHub Pages-origin in; voeg later het SWA-domein toe.
+ALLOWED_ORIGINS = "https://sjefvanlaake.github.io"
+
+# Secrets NIET hier zetten — via CLI:
+#   wrangler secret put POWERALL_KEY
+#   wrangler secret put PROXY_SHARED_SECRET
