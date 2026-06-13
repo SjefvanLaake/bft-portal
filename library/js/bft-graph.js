@@ -42,7 +42,8 @@ const BFTGraph = (function () {
       return false;
     }
     try {
-      const data = await _call('GET', `/sites/${SP_HOSTNAME}`);
+      /* Stille init: geen popup als er (nog) geen consent/sessie is → mock. */
+      const data = await _call('GET', `/sites/${SP_HOSTNAME}`, null, 0, false);
       _siteId = data.id;
       return true;
     } catch (err) {
@@ -52,8 +53,8 @@ const BFTGraph = (function () {
   }
 
   /* ── Basis fetch-wrapper met retry bij throttling (429) ── */
-  async function _call(method, path, body = null, attempt = 0) {
-    const token = await BFTAuth.getToken();
+  async function _call(method, path, body = null, attempt = 0, interactive = true) {
+    const token = await BFTAuth.getToken(interactive);
     if (!token) throw new Error('[BFTGraph] Geen access token — log eerst in.');
 
     const opts = {
@@ -73,7 +74,7 @@ const BFTGraph = (function () {
     if (res.status === 429 && attempt < 3) {
       const wacht = parseInt(res.headers.get('Retry-After') || '5', 10) * 1000;
       await new Promise(r => setTimeout(r, wacht));
-      return _call(method, path, body, attempt + 1);
+      return _call(method, path, body, attempt + 1, interactive);
     }
 
     if (res.status === 204) return null; /* No content (DELETE) */

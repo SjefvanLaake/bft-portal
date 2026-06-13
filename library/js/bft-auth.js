@@ -105,10 +105,10 @@ const BFTAuth = (function () {
   }
 
   /* ── Token ophalen: stil proberen, anders popup ── */
-  async function getToken() {
+  async function getToken(interactive = true) {
     if (!isConfigured()) return null;
     if (!_msal)          throw new Error('[BFTAuth] init() eerst aanroepen.');
-    if (!_account)       throw new Error('[BFTAuth] Niet ingelogd.');
+    if (!_account)       { if (!interactive) return null; throw new Error('[BFTAuth] Niet ingelogd.'); }
 
     const request = { scopes: SCOPES, account: _account };
 
@@ -116,7 +116,9 @@ const BFTAuth = (function () {
       const result = await _msal.acquireTokenSilent(request);
       return result.accessToken;
     } catch {
-      /* Stil ophalen mislukt — toon popup */
+      /* Stil ophalen mislukt. Zonder interactie (achtergrond-init) géén popup
+         → terug op mock; alleen bij een expliciete gebruikersactie poppen. */
+      if (!interactive) return null;
       const result = await _msal.acquireTokenPopup(request);
       return result.accessToken;
     }
