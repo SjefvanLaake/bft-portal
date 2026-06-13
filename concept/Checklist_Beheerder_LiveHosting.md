@@ -40,26 +40,24 @@ op — Bever is de infra-/M365-/PowerAll-leverancier, niet de bouwer/beheerder v
 
 ---
 
-## 1. Entra ID (Azure AD) — app-registratie  ☐ akkoord / ☐ inrichten
+## 1. Entra ID (Azure AD) — app-registratie  ✅ AANGEMAAKT — alleen admin-consent nog nodig
 
-**Wat we vragen:** één app-registratie in de Bofram-tenant voor de webapp.
+**Status (2026-06-13):** de app-registratie bestaat al (zelf aangemaakt door Bofram). Inloggen met M365 (`User.Read`) werkt al op de live testhub. Het **enige** dat IT nog moet doen, is **admin-consent verlenen** voor de SharePoint-scope — die knop is voor ons grijs.
 
-**Waarom:** zodat medewerkers met hun M365-account kunnen inloggen en de app namens hen SharePoint kan benaderen (MSAL).
+**App-gegevens:**
+- Naam: **BFT-Portal**
+- Toepassings-(client-)id: **`4b66833a-51d4-464b-be6d-e895627a7ad9`**
+- Tenant-id: **`74eb8598-538b-4b3b-9245-18abf10f5174`**
+- Type: **Single-Page Application (SPA)**; redirect-URI's geregistreerd (GitHub Pages-testhub; productie-SWA-URL volgt).
+- Huidige Graph-permissie: **`User.Read`** (gedelegeerd, werkt zonder admin-consent).
 
-**Specificatie:**
-- Type: **Single-Page Application (SPA)**.
-- **Redirect-URI's** (worden aangeleverd zodra de hostingplek vaststaat), bv.:
-  - `https://<naam>.azurestaticapps.net` (productie)
-  - `http://localhost:*` en de huidige test-URL (ontwikkeling/test) — optioneel
-- **Delegated** Microsoft Graph-permissies (least privilege, ter beoordeling):
-  - `User.Read` — inloggen + naam/e-mail van de gebruiker.
-  - **SharePoint** — keuze:
-    - voorkeur least-privilege: **`Sites.Selected`** (app krijgt alleen toegang tot de ene BFT-site, punt 2), of
-    - eenvoudiger: `Sites.ReadWrite.All` (delegated → begrensd door de eigen rechten van de gebruiker).
-- **Admin-consent** op de gekozen scopes.
-- Geen application-/app-only permissies nodig voor de frontend (alles delegated).
+**Wat IT moet doen — één actie:**
+1. Voeg de SharePoint-scope toe en **verleen admin-consent** voor app `4b66833a-…`. Scope-keuze:
+   - **voorkeur least-privilege: `Sites.Selected`** (app krijgt alleen toegang tot de ene BFT-site, punt 2), of
+   - eenvoudiger: `Sites.ReadWrite.All` (gedelegeerd → begrensd door de eigen rechten van de ingelogde gebruiker).
+2. Bij `Sites.Selected`: de app expliciet schrijfrechten geven op alléén de BFT-site (punt 2).
 
-**Te bevestigen door beheerder:** welke SharePoint-scope de voorkeur heeft; wie de app-registratie beheert.
+**Te bevestigen door IT:** welke SharePoint-scope de voorkeur heeft. Géén nieuwe app of app-only-permissies nodig — alles gedelegeerd op de bestaande registratie.
 
 ---
 
