@@ -515,7 +515,7 @@
 <script>
 /* ── Auth UI ── */
 async function handleLogin() {
-  if (!window.BFTAuth || !BFTAuth.isConfigured()) {
+  if (typeof BFTAuth === 'undefined' || !BFTAuth.isConfigured()) {
     alert('Inloggen is nog niet beschikbaar.\nWacht op de IT App Registration (Tenant ID + Client ID).');
     return;
   }
@@ -528,13 +528,13 @@ async function handleLogin() {
 }
 
 async function handleLogout() {
-  if (!window.BFTAuth) return;
+  if (typeof BFTAuth === 'undefined') return;
   await BFTAuth.logout();
   updateAuthUI();
 }
 
 function updateAuthUI() {
-  if (!window.BFTAuth) return;
+  if (typeof BFTAuth === 'undefined') return;
   const zone = document.getElementById('authZone');
   const user  = BFTAuth.getUser();
   if (user) {
@@ -570,7 +570,7 @@ document.getElementById('footerDatum').textContent =
 
 /* ── Init auth indien geconfigureerd ── */
 window.addEventListener('load', async () => {
-  if (window.BFTAuth && BFTAuth.isConfigured()) {
+  if (typeof BFTAuth !== 'undefined' && BFTAuth.isConfigured()) {
     await BFTAuth.init();
     updateAuthUI();
     document.getElementById('mockBanner').style.display = 'none';
