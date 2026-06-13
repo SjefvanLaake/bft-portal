@@ -340,7 +340,7 @@ window.addEventListener('load', function () {
         const es = cl ? cl.getState() : { checks: {}, notes: {} };
         FASEN.forEach(f => f.items.forEach(it => {
           const s = es.checks[it.id] && es.checks[it.id].status;
-          if (!s) items.push({ id: it.id, label: it.desc, sub: `Fase ${f.id}: ${f.titel}`, currentStatus: 'open', currentNote: es.notes[it.id] || '' });
+          if (!s) items.push({ id: it.id, label: it.desc, sectie: `Fase ${f.id} — ${f.titel}`, sub: it.sub || '', currentStatus: 'open', currentNote: es.notes[it.id] || '' });
         }));
         return items;
       },
