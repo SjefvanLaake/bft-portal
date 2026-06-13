@@ -31,6 +31,24 @@
 - **G4 — Droog vs Nat.** Dezelfde I/O wordt 2× getest. Mapping is een protocol-keuze (bestaande wizard dupliceert al). *(blijft)*
 - **G5 — Stabiele id's.** Afvink-state mag niet verloren gaan bij her-import → id afgeleid van `controller + klem` (bv. `L1-I3`), stabiel. *(blijft)*
 
+## 3b. Scope-uitbreiding — generiek sjabloon + per-machinetype data (besluit 2026-06-13, met Sjef)
+
+**Aanleiding:** het IBN-protocol stond vol BFMR2000EK-specifieke aanduidingen (F7, K16, V1–V8, M1–M4, B039…). Besluit: de **framework-fases blijven generiek** (al doorgevoerd: zekeringen, faserelais, controller, noodstop, softstarter/VFD), en de **machine-specifieke functie-inhoud komt per machinetype uit een importbron** — niet hardcoded in de tool.
+
+**Route A (gekozen) — uitgebreide scope:** niet alleen Fase 3 (I/O), maar ook:
+- **4B kleppen** (open/close via HMI) — afleidbaar uit de klep-I/O
+- **4C bump-test motoren** (draairichting) — afleidbaar uit de motor-I/O
+- **5B/5C pompen & kleppen nat** — idem
+- **4D software-alarmen (B###)** — uit de LOGO-programmablokken (⏸️ geparkeerd: zit niet in de I/O-XML, aparte bron nodig)
+
+**Per machinetype, niet per instance.** Net als de Bouwvolgordelijst (`library/data/bouwvolgorde/<type>.js`) krijgt de IBN een **per-machinetype databestand** met de type-specifieke secties; alle machines van dat type delen het. Bestaand patroon hergebruiken.
+
+**Grens generiek ↔ type-specifiek:**
+- *Generiek in de tool:* Fase 1, 2A/2B/2C, 4A, 4E, 6, 7.
+- *Per machinetype (import):* Fase 3 I/O, 4B, 4C, 4D, 5B/5C.
+
+**BFMR2000EK blijft intact** als werkende test tot de import-route staat (lopend project 201267).
+
 ## 4. Voorgestelde architectuur
 
 ```
