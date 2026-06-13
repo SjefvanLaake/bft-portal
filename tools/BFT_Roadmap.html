@@ -239,8 +239,16 @@ var ROADMAP = {
           desc: 'Foto’s vastleggen bij een stap, via het journaal-fundament. Optioneel.' },
         { titel: 'Cross-tool activiteiten-tijdlijn', status: 'idee',
           desc: 'Eén chronologische feed over álle tools in het Projectoverzicht. Pas bouwen als de behoefte er is → dan een volwaardig audit-event-log.' },
-        { titel: 'SOLIDWORKS Electrical XML → IBN-protocol', status: 'idee',
-          desc: 'XML-export uit SOLIDWORKS Electrical inlezen om het machine-specifieke deel van het IBN-protocol automatisch te vullen (componenten / I-O / aansluitingen) i.p.v. handmatig overtypen. Deterministisch parsen van de gestructureerde XML — anders dan het doodlopende PDF-spoor. Onderscheidt zich van “Schema-logica toetsen”: dat valideert het schema, dit vult het protocol.' }
+        { titel: 'SOLIDWORKS Electrical XML → IBN-protocol (per machinetype)', status: 'idee',
+          desc: 'Het machine-specifieke deel van het IBN-protocol per machinetype vullen uit de '
+              + 'SOLIDWORKS Electrical XML-export (deterministisch parsen) i.p.v. handmatig overtypen. '
+              + 'Besluit 2026-06-13: de framework-fases (zekeringen, faserelais, controller, noodstop, '
+              + 'softstarter, duurtest, vrijgave) zijn generiek; de type-specifieke inhoud — Fase 3 I/O '
+              + 'én 4B kleppen / 4C bump-test motoren / 5B–5C nat (afleidbaar uit de I/O) — komt uit een '
+              + 'per-machinetype databestand (zelfde patroon als de Bouwvolgordelijst-sjablonen). '
+              + 'Alarmblokken (B###) geparkeerd: zitten niet in de I/O-XML. Fase-3-import-POC werkt al. '
+              + 'Onderscheidt zich van “Schema-logica toetsen”: dat valideert het schema, dit vult het protocol. '
+              + 'Zie concept/PvA_IBN_IO_Import.md.' }
       ]
     },
     {
