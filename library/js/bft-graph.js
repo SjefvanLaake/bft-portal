@@ -29,7 +29,9 @@ const BFTGraph = (function () {
     resource:     'BFT_ResourcePlanning'
   };
 
-  const LIBRARY_DOCS = 'BFT_Documenten';
+  /* Document Library bestaat al op de root-site onder deze naam (zie geheugen
+     project_bft_v2_architectuur: BFTPortal, gebruikt voor PDF-opslag). */
+  const LIBRARY_DOCS = 'BFTPortal';
 
   /* ── Interne state ── */
   let _siteId = null;
