@@ -59,6 +59,9 @@
     + '.bft-wiz-body{padding:32px;flex:1;overflow-y:auto;}'
     + '.bft-wiz-context{font-family:"IBM Plex Mono",monospace;font-size:11px;'
     +   'color:#7a849a;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;}'
+    + '.bft-wiz-sectie{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:12px;'
+    +   'font-weight:600;color:#b87a00;background:rgba(232,160,0,0.10);'
+    +   'border-left:3px solid #e8a000;padding:5px 12px;border-radius:0 4px 4px 0;margin-bottom:14px;}'
     + '.bft-wiz-id{font-family:"IBM Plex Mono",monospace;font-size:10px;color:#b87a00;'
     +   'background:rgba(232,160,0,0.10);padding:2px 7px;border-radius:3px;'
     +   'display:inline-block;margin-bottom:10px;}'
@@ -305,6 +308,7 @@
     overlay.querySelector('#bft-wiz-counter').textContent = (idx + 1) + ' / ' + items.length + ' open';
     overlay.querySelector('#bft-wiz-fill').style.width = ((idx / items.length) * 100) + '%';
     var bodyHtml = '';
+    if (it.sectie) bodyHtml += '<div class="bft-wiz-sectie">' + escapeHtml(it.sectie) + '</div>';
     if (it.sub)   bodyHtml += '<div class="bft-wiz-context">' + escapeHtml(it.sub) + '</div>';
     if (it.id)    bodyHtml += '<div class="bft-wiz-id">' + escapeHtml(it.id) + '</div>';
     bodyHtml += '<div class="bft-wiz-question">' + escapeHtml(it.label) + '</div>';

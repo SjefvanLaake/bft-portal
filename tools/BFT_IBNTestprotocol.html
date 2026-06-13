@@ -845,7 +845,7 @@ window.addEventListener('load', function() {
         FASEN.filter(f => f.type !== 'info' && f.type !== 'vrijgave').forEach(f =>
           f.sections.forEach(s => s.items.forEach(it => {
             if (!state.checks[it.id]?.status)
-              items.push({ id: it.id, label: it.desc, sub: `Fase ${f.id} · ${s.id}: ${s.titel}`, currentStatus: 'open', currentNote: state.notes[it.id] || '' });
+              items.push({ id: it.id, label: it.desc, sectie: `Fase ${f.id} — ${f.titel} › ${s.id} · ${s.titel}`, sub: it.sub || '', currentStatus: 'open', currentNote: state.notes[it.id] || '' });
           }))
         );
         return items;
