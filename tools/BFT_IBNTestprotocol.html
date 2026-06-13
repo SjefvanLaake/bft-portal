@@ -401,7 +401,10 @@ const FASEN = [
         {id:'1A-06',desc:'Leidingverbindingen drukloos en lekkagevrij voor inschakeling'},
         {id:'1A-07',desc:'Motorkoppelingen / aandrijfassen vrij van obstakels — hand-ronddraaitest'},
         {id:'1A-08',desc:'Correcte borging toegepast (veerring, Loctite e.d.)'},
-        {id:'1A-09',desc:'Flenzen: pakkingen correct geplaatst, kruislings aangedraaid'}
+        {id:'1A-09',desc:'Flenzen: pakkingen correct geplaatst, kruislings aangedraaid'},
+        {id:'1A-10',desc:'Ontluchtingskraantjes aanwezig op pompen'},
+        {id:'1A-11',desc:'Afstelruimte aanwezig bij deur/luik — draadeinden niet volledig ingedraaid'},
+        {id:'1A-12',desc:'Afsluiters/kranen volledig doorgedraaid — blokkeernok correct geborgd'}
       ]},
       { id:'1B', titel:'Elektrische pre-check', items:[
         {id:'1B-01',desc:'Voedingsspanning op kast gecontroleerd (3-fase aanwezig, volgorde juist)',sub:'Noteer gemeten spanning L1–L2–L3'},
@@ -569,7 +572,9 @@ const FASEN = [
         {id:'5A-02',desc:'Tankniveaus OK — water- en mudtank gevuld conform procedure'},
         {id:'5A-03',desc:'Inlaatfilters / strainers schoon en geplaatst'},
         {id:'5A-04',desc:'Ontluchting pompen uitgevoerd (indien vereist)'},
-        {id:'5A-05',desc:'Druktest leidingwerk/flenzen uitgevoerd — geen lekkage',sub:'Noteer testdruk'}
+        {id:'5A-05',desc:'Druktest leidingwerk/flenzen uitgevoerd — geen lekkage',sub:'Noteer testdruk'},
+        {id:'5A-06',desc:'Tank/bak volledig gevuld (boven deur/luik) en lekvrij'},
+        {id:'5A-07',desc:'Deur-/luikhendel op spanning bij volle tank — anders afstelplaatjes plaatsen'}
       ]},
       { id:'5B', titel:'Pompen — nat test', items:[
         {id:'5B-M1',desc:'M1 Transferpomp mud — stroom, druk, flow op HMI',sub:'Noteer gemeten stroom (A)'},
@@ -584,7 +589,8 @@ const FASEN = [
         {id:'5C-02',desc:'V8 auto-bedrijf — auto-ctrl via S23 on'},
         {id:'5C-03',desc:'Tank level water (AI1/AI2) reageert correct op HMI'},
         {id:'5C-04',desc:'Tank level mud (AI2/AI3) reageert correct op HMI'},
-        {id:'5C-05',desc:'Recirculatiepad functioneel — V6 open, flow aantoonbaar'}
+        {id:'5C-05',desc:'Recirculatiepad functioneel — V6 open, flow aantoonbaar'},
+        {id:'5C-06',desc:'Vlotters/niveauschakelaars functioneren — ook tijdens pompbedrijf'}
       ]},
       { id:'5D', titel:'Lekkagecheck na natte test', items:[
         {id:'5D-01',desc:'Volledige visuele ronde na 15 min draaien — geen lekkages'},
@@ -627,7 +633,8 @@ const FASEN = [
         {id:'7A-05',desc:'DG14 motordisplay ingesteld (Item 20 procedure)',sub:'John Deere gauge — 2x 4-up schermen'},
         {id:'7A-06',desc:'E-P-H schema aanwezig bij machine (elektro / pneumatisch / hydraulisch)'},
         {id:'7A-07',desc:'Onderdelenboek aanwezig'},
-        {id:'7A-10',desc:'Keuringen uitgevoerd en aanwezig (kraan, TÜV, NEN)',sub:'Voeg keuringscertificaten toe'}
+        {id:'7A-10',desc:'Keuringen uitgevoerd en aanwezig (kraan, TÜV, NEN)',sub:'Voeg keuringscertificaten toe'},
+        {id:'7A-12',desc:"Documentatie compleet (CE, handleiding, opleverfoto's) — zie MachinebouwChecklist Fase 9",sub:'Reminder — wordt in MBC Fase 9 afgevinkt'}
       ]},
       { id:'7B', titel:'Verzendgereed', items:[
         {id:'7B-01',desc:'Pompbehuizingen geleegd voor transport (bij vorst)',sub:'Alleen bij verwacht transport onder 0°C'},
@@ -637,6 +644,7 @@ const FASEN = [
         {id:'7C-01',desc:'Geen staalspanen of slijpslinters op/in de machine'},
         {id:'7C-02',desc:'Geen uitstekende kitnaden — afdichtingen netjes afgewerkt'},
         {id:'7C-03',desc:'Lakbeschadigingen bijgewerkt'},
+        {id:'7C-04',desc:'Machine (exterieur) gepoetst / schoongemaakt'},
         {id:'7C-05',desc:'Elektrokast gereinigd met rvs-reiniger'}
       ]}
     ]
