@@ -418,25 +418,25 @@ const FASEN = [
     gate: { label: 'Gate 2 — Besturingskast functioneel akkoord?', sub: 'Controller OK, communicatie OK, parameters geladen' },
     sections: [
       { id:'2A', titel:'Spanningopbouw', items:[
-        {id:'2A-01',desc:'Hoofdzekering F7 (2A) ingeschakeld — 24VDC voeding OK'},
-        {id:'2A-02',desc:'Fase-zekeringen F8 (7,5A) en F30 (0,5A) ingeschakeld',sub:'F30 = softstarter controlecircuit'},
-        {id:'2A-03',desc:'Spanning gemeten op kast: IL1 / IL2 / IL3 (voedingssteker)',sub:'Noteer 3x spanning'},
-        {id:'2A-04',desc:'Faserelais K16 check — alle 3 fasen aanwezig'},
-        {id:'2A-05',desc:'Controleer fasevolgorde — bij generatorbedrijf: 400VAC op alle fasen'}
+        {id:'2A-01',desc:'Hoofdzekering ingeschakeld — 24/12V voedingen OK'},
+        {id:'2A-02',desc:'Fase-zekeringen ingeschakeld',sub:'Incl. stuurstroom-/controlecircuit'},
+        {id:'2A-03',desc:'Spanning gemeten op kast: L1 / L2 / L3',sub:'Noteer 3x spanning'},
+        {id:'2A-04',desc:'Faserelais check — alle 3 fasen aanwezig'},
+        {id:'2A-05',desc:'Controleer fasevolgorde — bij generatorbedrijf spanning op alle 3 fasen'}
       ]},
       { id:'2B', titel:'Controller & software', items:[
         {id:'2B-01',desc:'LOGO! / PLC opgestart zonder foutmelding',sub:'Controleer LED-status controller'},
         {id:'2B-02',desc:'Softwareversie geladen en geverifieerd',sub:'Noteer versienummer'},
         {id:'2B-03',desc:'IP-adres ingesteld, ping succesvol via cmd-prompt'},
-        {id:'2B-04',desc:'TDE / HMI: LOGO1 als target ingesteld en verbonden'},
-        {id:'2B-05',desc:'Klok / datum ingesteld op Logo1'},
+        {id:'2B-04',desc:'TDE / HMI: controller als target ingesteld en verbonden'},
+        {id:'2B-05',desc:'Klok / datum ingesteld op controller'},
         {id:'2B-06',desc:'HMI-schermen: tellers, meters en homescherm correct geladen'}
       ]},
       { id:'2C', titel:'Netwerk & communicatie', items:[
-        {id:'2C-01',desc:'Netwerkcommunicatie tussen LOGO-modules onderling OK',sub:'Logo 1.0 ↔ Logo 1.1 ↔ Logo 1.2'},
-        {id:'2C-02',desc:'DM16-uitbreidingsmodules herkend en gecommuniceerd'},
-        {id:'2C-03',desc:'TeleRadio / remote bediening verbonden en herkend',sub:'Spare-kanalen genoteerd'},
-        {id:'2C-04',desc:'Motorbeveiligers Q21/Q22/Q23 ingesteld op typeplaat-ampère',sub:'Noteer ingestelde waarden'}
+        {id:'2C-01',desc:'Netwerkcommunicatie tussen controllers/modules onderling OK'},
+        {id:'2C-02',desc:'Uitbreidingsmodules herkend en gecommuniceerd'},
+        {id:'2C-03',desc:'Remote bediening (indien aanwezig) verbonden en herkend',sub:'Spare-kanalen genoteerd'},
+        {id:'2C-04',desc:'Motorbeveiligers ingesteld op typeplaat-ampère',sub:'Noteer ingestelde waarden'}
       ]}
     ]
   },
@@ -513,9 +513,9 @@ const FASEN = [
     gate: { label: 'Gate 4 — Droge functionele test akkoord?', sub: 'Alle kleppen werken, draairichtingen OK, software-storingen getest' },
     sections: [
       { id:'4A', titel:'Noodstop & veiligheidscircuit', items:[
-        {id:'4A-01',desc:'Noodstop S3 — circuit testen: schakel Q3 in, voeding 24VDC'},
-        {id:'4A-02',desc:'Relais K3 valt af bij activeren E-stop — controleer alle E-stop locaties'},
-        {id:'4A-03',desc:'Reset E-stop: relais K3 trekt terug aan na reset-commando'},
+        {id:'4A-01',desc:'Noodstop — veiligheidscircuit testen (voeding aanwezig)'},
+        {id:'4A-02',desc:'Veiligheidsrelais valt af bij activeren E-stop — controleer alle E-stop locaties'},
+        {id:'4A-03',desc:'Reset E-stop: veiligheidsrelais trekt terug aan na reset-commando'},
         {id:'4A-04',desc:'Extern noodstop-circuit (indien aanwezig) getest'}
       ]},
       { id:'4B', titel:'Kleppen — functioneel droog', items:[
@@ -550,8 +550,8 @@ const FASEN = [
         {id:'4D-B097',desc:'B097 — MPS_HydrPump: MPS Hydrofoorpomp NOK (Q23)'}
       ]},
       { id:'4E', titel:'Softstarters & VFD', items:[
-        {id:'4E-01',desc:'K16 softstarter — parameters instellen per handleiding softstarter'},
-        {id:'4E-02',desc:'D18 VFD — frequentieregelaar parameters laden en testen'},
+        {id:'4E-01',desc:'Softstarter — parameters instellen per handleiding'},
+        {id:'4E-02',desc:'VFD / frequentieregelaar — parameters laden en testen'},
         {id:'4E-03',desc:'Ext. Connection +L3-T3 gecontroleerd'}
       ]}
     ]
