@@ -14,9 +14,10 @@
 const BFTAuth = (function () {
   'use strict';
 
-  /* ── Pas deze twee waarden aan zodra IT ze levert ── */
-  const TENANT_ID = 'PLACEHOLDER_TENANT_ID';
-  const CLIENT_ID = 'PLACEHOLDER_CLIENT_ID';
+  /* ── Entra app-registratie "BFT-Portal" (zelf aangemaakt 2026-06-13) ──
+     Client- en tenant-ID zijn GEEN geheimen (staan sowieso in elke SPA-JS). */
+  const TENANT_ID = '74eb8598-538b-4b3b-9245-18abf10f5174';
+  const CLIENT_ID = '4b66833a-51d4-464b-be6d-e895627a7ad9';
 
   const SCOPES   = ['Sites.ReadWrite.All', 'User.Read'];
   const ADMINS   = [
