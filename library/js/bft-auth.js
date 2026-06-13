@@ -19,7 +19,11 @@ const BFTAuth = (function () {
   const TENANT_ID = '74eb8598-538b-4b3b-9245-18abf10f5174';
   const CLIENT_ID = '4b66833a-51d4-464b-be6d-e895627a7ad9';
 
-  const SCOPES   = ['Sites.ReadWrite.All', 'User.Read'];
+  /* LOGIN_SCOPES = alleen inloggen (geen admin-consent nodig).
+     SCOPES = data-rechten voor Graph/SharePoint; pas opgevraagd bij
+     daadwerkelijke BFTGraph-calls, vereist admin-consent (IT-spoor). */
+  const LOGIN_SCOPES = ['User.Read'];
+  const SCOPES       = ['Sites.ReadWrite.All', 'User.Read'];
   const ADMINS   = [
     /* M365-bedrijfse-mailadressen van beheerders — invullen na ingebruikname.
        Geen privé-/gmail-adressen: isAdmin() matcht op de SSO-identiteit. */
@@ -82,7 +86,7 @@ const BFTAuth = (function () {
   async function login() {
     if (!_msal) throw new Error('[BFTAuth] init() eerst aanroepen.');
     try {
-      const result = await _msal.loginPopup({ scopes: SCOPES });
+      const result = await _msal.loginPopup({ scopes: LOGIN_SCOPES });
       _account = result.account;
       _ready   = true;
       return _account;
