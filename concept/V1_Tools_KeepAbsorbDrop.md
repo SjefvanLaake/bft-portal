@@ -24,11 +24,11 @@
 | Stuklijstvergelijker | BOM vs werkorder vergelijken | 📋 roadmap | **ABSORB** | gaat op in materiaaldekking-tool |
 | HandleidingGenerator | handleiding maken | ⏸️ roadmap | **KEEP-PARKED** | geparkeerd (deel B) |
 | HandleidingImporter | .bft-handleiding inlezen | ⏸️ roadmap | **KEEP-PARKED** | geparkeerd (.bft-contract) |
-| **StoringsAnalyse** | **AI-storingsdiagnose** | ❌ niet in V2 | **KEEP (migreren)** ⭐ | distinct, waardevol — zie hieronder |
-| ExcelExport | storingen → Excel | ❌ niet in V2 | **ABSORB** ⚠️ | Excel-export toevoegen aan V2-Storingslog (of DROP als PDF volstaat) |
-| ResourcePlanning | resource-/personeelsplanning | ↔ Personeelsplanning/OverallPlanning | **ABSORB** ⚠️ | bevestigen dat V2 het volledig dekt, dan DROP |
-| QuestionsImporter | vragensets importeren | ❌ niet in V2 | **DROP** ⚠️ | vervangen door per-machinetype import (route A); bevestigen |
-| DataConverter | dataformaat converteren | ❌ niet in V2 | **DROP** ⚠️ | lijkt dev-/migratie-utility, geen eindgebruiker-tool; bevestigen |
+| **StoringsAnalyse** | **AI-storingsdiagnose** | ❌ niet in V2 | **KEEP (roadmap)** ⭐ | op roadmap: probable causes uit PowerAll ServiceMessage |
+| ExcelExport | storingen → Excel | ❌ niet in V2 | **DROP** | was lokale-werk-omweg; met live data overbodig (besloten 2026-06-14) |
+| ResourcePlanning | resource-/personeelsplanning | ✅ geïntegreerd in V2 | **DROP (absorbed)** | functionaliteit zit in Personeelsplanning + OverallPlanning |
+| QuestionsImporter | vragensets importeren | ❌ niet in V2 | **DROP** | vervangen door per-machinetype import (route A) |
+| DataConverter | dataformaat converteren | ❌ niet in V2 | **DROP** | dev-/migratie-utility, geen eindgebruiker-tool |
 
 ## ⭐ De belangrijkste: StoringsAnalyse (AI-diagnose)
 Dit is de enige **echt onderscheidende capaciteit** die stil dreigde te verdwijnen. V2 heeft wél het Storingslog (vastleggen), maar **geen analyse/diagnose**. Aanbeveling: **migreren naar V2** — en het sluit naadloos aan op twee dingen die we al hebben staan:
@@ -36,11 +36,12 @@ Dit is de enige **echt onderscheidende capaciteit** die stil dreigde te verdwijn
 - een diagnose-laag over de **installed base** (terugkerende storingen per machinetype).
 Dit zou een sterk roadmap-punt zijn: "Storingsanalyse / AI-diagnose over Storingslog + ServiceMessage".
 
-## Wat ik van jou nodig heb (de ⚠️'s)
-1. **ExcelExport** — wil je Excel-export van storingen in V2 (absorb), of is PDF genoeg (drop)?
-2. **ResourcePlanning** — dekken Personeelsplanning + OverallPlanning dit volledig? Zo ja → drop.
-3. **QuestionsImporter** — klopt het dat de per-machinetype-import (route A) dit vervangt?
-4. **DataConverter** — was dit een eenmalige migratie-/dev-utility? Dan drop.
+## Besloten (2026-06-14, met Sjef)
+1. **ExcelExport → DROP** — was een omweg om de tools lokaal te laten werken; met live data niet meer nodig.
+2. **ResourcePlanning → DROP** — al geïntegreerd in de V2-tools (Personeelsplanning + OverallPlanning).
+3. **QuestionsImporter → DROP** — vervangen door de per-machinetype-import (route A).
+4. **DataConverter → DROP** — dev-/migratie-utility, niet voor eindgebruikers.
+5. **StoringsAnalyse → roadmap** — AI-diagnose die "probable causes" genereert uit PowerAll-servicehistorie.
 
 ## Resultaat
-Na jouw bevestiging is de V1→V2-migratie **expliciet afgesloten**: elke oude tool heeft een besluit, en de enige waardevolle weeskandidaat (StoringsAnalyse) is geborgd i.p.v. vergeten.
+De V1→V2-migratie is **expliciet afgesloten**: elke oude tool heeft een besluit, niets zweeft meer. De enige waardevolle wees (StoringsAnalyse) is geborgd op de roadmap i.p.v. vergeten.

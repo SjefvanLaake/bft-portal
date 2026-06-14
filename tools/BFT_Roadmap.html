@@ -213,6 +213,8 @@ var ROADMAP = {
           desc: 'Facturen + inkoopfacturen (+ uren uit ERP) → werkelijke kosten vs voorcalculatie per project. De financiële spiegel van de configurator/voorcalculatie. Uren uit het ERP lézen, niet nabouwen (duplicatierisico).' },
         { titel: 'Servicemeldingen ↔ Storingslog', status: 'idee',
           desc: 'PowerAll ServiceMessage = veld-/servicemeldingen. Koppel aan het interne Storingslog: garantie/servicecases stromen door, velddata komt terug. Eén storingsbeeld van bouw tot veld.' },
+        { titel: 'Storingsanalyse / AI-diagnose (probable causes)', status: 'idee',
+          desc: 'Herleeft de V1-tool "BF AI Diagnose": over het Storingslog + PowerAll ServiceMessage (servicehistorie per machine/type) waarschijnlijke oorzaken ("probable causes") genereren bij een nieuwe storing — patronen uit terugkerende storingen op de installed base. De ERP-data voedt de diagnose, AI rangschikt de oorzaken, de monteur beslist. Sluit aan op "Servicemeldingen ↔ Storingslog" en de installed base (ServiceObject).' },
         { titel: 'Oplever-/verzendgegevens (Deliveries/Parcels)', status: 'idee',
           desc: 'PowerAll Deliveries + Parcels → verzendgereedheid, transportdocumenten en klantoverdracht. Sluit op MBC Fase 10 en het opleverdossier.' },
         { titel: 'BFT-deliverables terug in PowerAll (POST /files)', status: 'idee',
